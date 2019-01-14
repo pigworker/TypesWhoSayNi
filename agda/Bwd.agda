@@ -33,7 +33,10 @@ module _ (X : Set) where
   coidC MonoidBwd _ = refl
   cocoC MonoidBwd _ _ = snocInd refl refl refl refl
 
-  _-+_ = coC MonoidBwd {_}{_}{_}
+module _ {X : Set} where
+  open Cat (MonoidBwd X)
+
+  _-+_ = coC {_}{_}{_}
   infixl 30 _-+_
 
 module _ {S T : Set}(f : S -> T) where

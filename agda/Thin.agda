@@ -7,51 +7,60 @@ open import Bwd
 
 module _ {X : Set} where
 
-  data Thin (R : Bwd X -> Bwd X -> Set) : Bwd X -> Bwd X -> Set where
-    _no : forall {xz yz z} -> Thin R xz yz -> Thin R  xz       (yz -, z)
-    _su : forall {xz yz z} -> Thin R xz yz -> Thin R (xz -, z) (yz -, z)
-    <_> : forall {xz yz} -> R xz yz -> Thin R xz yz
+  data _<=_ : Bwd X -> Bwd X -> Set where
+    _no : forall {xz yz z} -> xz <= yz ->  xz       <= (yz -, z)
+    _su : forall {xz yz z} -> xz <= yz -> (xz -, z) <= (yz -, z)
+    ze  : [] <= []
 
-  data Nils : Bwd X -> Bwd X -> Set where
-    ze : Nils [] []
+  _<-_ : X -> Bwd X -> Set
+  x <- xz = ([] -, x) <= xz
 
-  _<=_ = Thin Nils
+  oe : {xz : Bwd X} -> [] <= xz
+  oe {[]}      = ze
+  oe {xz -, x} = oe no
+
+  oeU : forall {xz}(th ph : [] <= xz) -> th == ph
+  oeU (th no) (ph no) = _no $= oeU th ph
+  oeU ze      ze      = refl
 
   module _ where
     open Cat
     
     OPE : Cat (Bwd X) _<=_
-    idC OPE {[]}      = < ze >
+    idC OPE {[]}      = ze
     idC OPE {xz -, x} = idC OPE su
     coC OPE th      (ph no) = coC OPE th ph no
     coC OPE (th no) (ph su) = coC OPE th ph no
     coC OPE (th su) (ph su) = coC OPE th ph su
-    coC OPE < () >  (ph su)
-    coC OPE < ze >  < ze >  = < ze >
+    coC OPE ze      ze      = ze
     idcoC OPE (th no) = _no $= idcoC OPE th
     idcoC OPE (th su) = _su $= idcoC OPE th
-    idcoC OPE < ze >  = refl
+    idcoC OPE ze      = refl
     coidC OPE (th no) = _no $= coidC OPE th
     coidC OPE (th su) = _su $= coidC OPE th
-    coidC OPE < ze >  = refl
+    coidC OPE ze      = refl
     cocoC OPE  th      ph     (ps no) = _no $= cocoC OPE th ph ps
     cocoC OPE  th     (ph no) (ps su) = _no $= cocoC OPE th ph ps
     cocoC OPE (th no) (ph su) (ps su) = _no $= cocoC OPE th ph ps
     cocoC OPE (th su) (ph su) (ps su) = _su $= cocoC OPE th ph ps
-    cocoC OPE < () >  (ph su) (ps su)
-    cocoC OPE  th     < () >  (ps su)
-    cocoC OPE < ze >  < ze >  < ze >  = refl
+    cocoC OPE ze      ze      ze      = refl
 
     oi   = idC OPE
     _-<_ = coC OPE
 
+  _^+_ : forall {az bz cz dz}(th : az <= bz)(ph : cz <= dz) -> (az -+ cz) <= (bz -+ dz)
+  th ^+ (ph no) = (th ^+ ph) no
+  th ^+ (ph su) = (th ^+ ph) su
+  th ^+ ze      = th
+
+{-
   data Thin' (xz : Bwd X) : Bwd X -> Set
   _<='_ = Thin Thin'
   data Thin' xz where
     <_> : forall {yz} -> xz <= yz -> Thin' xz yz
     id' : Thin' xz xz
     co' : forall {yz zz} -> xz <=' yz -> yz <=' zz -> Thin' xz zz
-
+-}
 {-
   module THINSTUFF where
     open Cat OPE

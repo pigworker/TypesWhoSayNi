@@ -22,3 +22,6 @@ S + T = Sg Two (S <?> T)
 un : forall {l}{S T}{P : Sg S T -> Set l} ->
      ((s : S)(t : T s) -> P (s , t)) -> (x : Sg S T) -> P x
 un f (s , t) = f s t
+
+Dec : Set -> Set
+Dec X = (X -> Zero) + X

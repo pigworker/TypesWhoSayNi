@@ -111,7 +111,7 @@ module _ {I : Set} where
         <_>  : All (X t) iz -> All' t iz
         all' : forall {s} -> Comp' _ _=>'_ s t -> All' s iz -> All' t iz
         sel' : forall {jz} -> iz <=' jz -> All' t jz -> All' t iz
-
+{-
       module ALLSTUFF where
         module TH = THINSTUFF
         
@@ -139,3 +139,4 @@ module _ {I : Set} where
     open Concrete (ALL (\ {i} -> TRI (f {i}) g h q) {iz})
     allCo = funCo f01 f12
 
+-}
