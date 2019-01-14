@@ -16,6 +16,10 @@ module _ {I : Set} where
   module _ {P : I -> Set} where
     open Concrete ; open Cat (OPE {I} op)
 
+    _:+_ : forall {iz jz} -> All P iz -> All P jz -> All P (iz -+ jz)
+    pz :+ []        = pz
+    pz :+ (qz -, q) = (pz :+ qz) -, q
+
     top : forall {iz} -> A: All P ` (iz -,_) -:> P
     top (_ -, p) = p
 
@@ -29,22 +33,24 @@ module _ {I : Set} where
     Select : Concrete (OPE op) (All P)
     fun Select (th no) pz = fun Select th (pop pz)
     fun Select (th su) pz = fun Select th (pop pz) -, top pz
-    fun Select < ze >  pz = []
+    fun Select ze      pz = []
     funId Select []        = refl
     funId Select (pz -, p) = (_-, _) $= funId Select pz
     funCo Select (ph no)  th     pz = funCo Select ph th (pop pz)
     funCo Select (ph su) (th no) pz = funCo Select ph th (pop pz)
     funCo Select (ph su) (th su) pz = (_-, _) $= funCo Select ph th (pop pz)
-    funCo Select (ph su) < () >  pz
-    funCo Select < ze >  < ze >  pz = refl
+    funCo Select ze      ze      pz = refl
 
     select = fun Select
+
+    project : forall {j jz}(i : j <- jz) -> All P jz -> P j
+    project i pz = top (select i pz)
 
     selectPure : forall {iz jz}(th : iz <= jz)(p : A: P) ->
       select th (pure p) == pure p
     selectPure (th no) p = selectPure th p
     selectPure (th su) p = (_-, _) $= selectPure th p
-    selectPure < ze >  p = refl
+    selectPure ze      p = refl
 
   module _ {S T : I -> Set} where
   
@@ -58,7 +64,7 @@ module _ {I : Set} where
       select th (fz <*> sz) == select th fz <*> select th sz
     selectApp (th no) (fz -, f) (sz -, s) = selectApp th fz sz
     selectApp (th su) (fz -, f) (sz -, s) = (_-, _) $= selectApp th fz sz
-    selectApp < ze >  []        []        = refl
+    selectApp ze      []        []        = refl
 
     all : A: (S -:> T) -> A: All S -:> All T
     all f sz = pure f <*> sz
@@ -102,7 +108,7 @@ module _ {I : Set} where
     funCo ALL f g []        = refl
     funCo ALL f g (rz -, r) = rf _-,_ =$= funCo ALL f g rz =$= funCo F f g r
       -- deriving funCo ALL from allComp needs all's extensionality
-
+{-
     module _ {_=>'_ : O -> O -> Set}
       (R : {s t : O} -> Reflector (s =>' t) (s => t)) where
       open Reflector
@@ -111,7 +117,7 @@ module _ {I : Set} where
         <_>  : All (X t) iz -> All' t iz
         all' : forall {s} -> Comp' _ _=>'_ s t -> All' s iz -> All' t iz
         sel' : forall {jz} -> iz <=' jz -> All' t jz -> All' t iz
-{-
+
       module ALLSTUFF where
         module TH = THINSTUFF
         
