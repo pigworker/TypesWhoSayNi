@@ -136,6 +136,8 @@ module _ {I : Set} where
         evalA (all' f xz)  = all (fun F {!!}) (evalA xz)
         evalA (sel' th xz) = select (eval THIN' th) (evalA xz)
 
+-}
+
   module _ {P}(f : A: P -:> P)(q : {i : I} -> f {i} =:= id){iz : Bwd I} where
     open Concrete (ALL (\ {i} -> ID (f {i}) q) {iz})
     allId = funId {_}
@@ -144,5 +146,3 @@ module _ {I : Set} where
     (q : {i : I} -> h {i} =:= g ` f){iz : Bwd I} where
     open Concrete (ALL (\ {i} -> TRI (f {i}) g h q) {iz})
     allCo = funCo f01 f12
-
--}

@@ -23,6 +23,22 @@ module _ {X : Set} where
   oeU (th no) (ph no) = _no $= oeU th ph
   oeU ze      ze      = refl
 
+  thinEq? : forall {xz yz}(th ph : xz <= yz) -> Dec (th == ph)
+  thinEq? (th no) (ph no) with thinEq? th ph
+  thinEq? (th no) (ph no)  | #0 , q = #0 , \ { refl -> q refl }
+  thinEq? (th no) (.th no) | #1 , refl = #1 , refl
+  thinEq? (th no) (ph su) = #0 , \ ()
+  thinEq? (th su) (ph no) = #0 , \ ()
+  thinEq? (th su) (ph su) with thinEq? th ph
+  thinEq? (th su) (ph su)  | #0 , q = #0 , \ { refl -> q refl }
+  thinEq? (th su) (.th su) | #1 , refl = #1 , refl
+  thinEq? ze      ze      = #1 , refl
+
+  _^+_ : forall {az bz cz dz}(th : az <= bz)(ph : cz <= dz) -> (az -+ cz) <= (bz -+ dz)
+  th ^+ (ph no) = (th ^+ ph) no
+  th ^+ (ph su) = (th ^+ ph) su
+  th ^+ ze      = th
+  
   module _ where
     open Cat
     
@@ -48,10 +64,6 @@ module _ {X : Set} where
     oi   = idC OPE
     _-<_ = coC OPE
 
-  _^+_ : forall {az bz cz dz}(th : az <= bz)(ph : cz <= dz) -> (az -+ cz) <= (bz -+ dz)
-  th ^+ (ph no) = (th ^+ ph) no
-  th ^+ (ph su) = (th ^+ ph) su
-  th ^+ ze      = th
 
 {-
   data Thin' (xz : Bwd X) : Bwd X -> Set

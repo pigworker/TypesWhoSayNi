@@ -56,19 +56,21 @@ record ObjAct (M : Bwd Nat)(A : Nat -> Nat -> Set) : Set where
     hit : forall {G D} -> (<> <- G) -> A G D -> Term M D lib syn
     wkn : forall {G D} -> A G D -> A (G -, <>) (D -, <>)
     emp : A [] []
-    
+
   act : forall {G D l d} -> Term M G l d -> A G D -> Term M D lib d
+  actk : forall {G D} -> Term M G ess chk -> A G D -> Term M D ess chk
   actz : forall {G D}{n : Nat} -> All (\ _ -> Term M G lib syn) n ->
                          A G D -> All (\ _ -> Term M D lib syn) n
-  act (atom a)    al = ! a
-  act (cons s t)  al = act s al & act t al
-  act (abst t)    al = \\ act t (wkn al)
-  act (meta x ez) al = x % actz ez al
+  actk (atom a)    al = atom a
+  actk (cons s t)  al = cons (act s al) (act t al)
+  actk (abst t)    al = abst (act t (wkn al))
+  actk (meta x ez) al = meta x (actz ez al)
+  act {l = ess}{d = chk} k al = essl (actk k al)
   act (vari i)    al = hit i al
   act (elim e s)  al = act e al $ act s al
   act (essl t)    al = act t al
   act (thnk n)    al = [ act n al ]
-  act (radi k T)  al = act k al :: act T al
+  act (radi k T)  al = radi (actk k al) (act T al)
   actz []         al = []
   actz (ez -, e)  al = actz ez al -, act e al
 
@@ -76,6 +78,12 @@ record ObjAct (M : Bwd Nat)(A : Nat -> Nat -> Set) : Set where
               (al : A G D) -> actz ez al == all (\ e -> act e al) ez
   actzAll []        al = refl
   actzAll (ez -, e) al = _-,_ $= actzAll ez al =$= refl
+
+  actThunk : forall {G D}(e : Term M G lib syn)(al : A G D) ->
+    act [ e ] al == [ act e al ]
+  actThunk (essl n)   al = refl
+  actThunk (radi k T) al = refl
+
 
 module _ where
   open ObjAct
@@ -125,3 +133,4 @@ thnk n    %/ xi = [ n %/ xi ]
 radi k T  %/ xi = (k %/ xi) :: (T %/ xi)
 []        %// xi = []
 (ez -, e) %// xi = (ez %// xi) -, (e %/ xi)
+

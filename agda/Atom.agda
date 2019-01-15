@@ -2,44 +2,61 @@ module Atom where
 
 open import Basics
 open import Eq
+open import Fun
+open import Bwd
+open import Thin
+
+data NAT : Set where
+  zero : NAT
+  suc  : NAT -> NAT
+{-# BUILTIN NATURAL NAT #-}
+
+natEq? : (x y : NAT) -> Dec (x == y)
+natEq? zero zero = #1 , refl
+natEq? zero (suc y) = #0 , \ ()
+natEq? (suc x) zero = #0 , \ ()
+natEq? (suc x) (suc y) with natEq? x y
+natEq? (suc x) (suc y) | #0 , q = #0 , \ { refl -> q refl }
+natEq? (suc x) (suc .x) | #1 , refl = #1 , refl
+
+module ENUMERATION
+  (X : Set)(f : X -> NAT)(finj : (x y : X) -> f x == f y -> x == y)
+  where
+
+  enumEq? : (x y : X) -> Dec (x == y)
+  enumEq? x y with natEq? (f x) (f y)
+  enumEq? x y | #0 , q = #0 , \ { refl -> q refl }
+  enumEq? x y | #1 , q = #1 , finj x y q
 
 data Atom : Set where
   NIL U PI SG CAR CDR : Atom
 
-atomEq? : (x y : Atom) -> Dec (x == y)
-atomEq? NIL NIL = #1 , refl
-atomEq? NIL U   = #0 , \ ()
-atomEq? NIL PI  = #0 , \ ()
-atomEq? NIL SG  = #0 , \ ()
-atomEq? NIL CAR = #0 , \ ()
-atomEq? NIL CDR = #0 , \ ()
-atomEq? U   NIL = #0 , \ ()
-atomEq? U   U   = #1 , refl
-atomEq? U   PI  = #0 , \ ()
-atomEq? U   SG  = #0 , \ ()
-atomEq? U   CAR = #0 , \ ()
-atomEq? U   CDR = #0 , \ ()
-atomEq? PI  NIL = #0 , \ ()
-atomEq? PI  U   = #0 , \ ()
-atomEq? PI  PI  = #1 , refl
-atomEq? PI  SG  = #0 , \ ()
-atomEq? PI  CAR = #0 , \ ()
-atomEq? PI  CDR = #0 , \ ()
-atomEq? SG  NIL = #0 , \ ()
-atomEq? SG  U   = #0 , \ ()
-atomEq? SG  PI  = #0 , \ ()
-atomEq? SG  SG  = #1 , refl
-atomEq? SG  CAR = #0 , \ ()
-atomEq? SG  CDR = #0 , \ ()
-atomEq? CAR NIL = #0 , \ ()
-atomEq? CAR U   = #0 , \ ()
-atomEq? CAR PI  = #0 , \ ()
-atomEq? CAR SG  = #0 , \ ()
-atomEq? CAR CAR = #1 , refl
-atomEq? CAR CDR = #0 , \ ()
-atomEq? CDR NIL = #0 , \ ()
-atomEq? CDR U   = #0 , \ ()
-atomEq? CDR PI  = #0 , \ ()
-atomEq? CDR SG  = #0 , \ ()
-atomEq? CDR CAR = #0 , \ ()
-atomEq? CDR CDR = #1 , refl
+mune : NAT -> One + Atom
+mune 0 = #1 , NIL
+mune 1 = #1 , U
+mune 2 = #1 , PI
+mune 3 = #1 , SG
+mune 4 = #1 , CAR
+mune 5 = #1 , CDR
+mune n = #0 , <>
+
+enum : (a : Atom) -> Sg NAT \ n -> mune n == (#1 , a)
+enum NIL = 0 , refl
+enum U   = 1 , refl
+enum PI  = 2 , refl
+enum SG  = 3 , refl
+enum CAR = 4 , refl
+enum CDR = 5 , refl
+
+enumFact : (x y : Atom) -> fst (enum x) == fst (enum y) -> x == y
+enumFact x y q with enum x | enum y
+... | n , a | m , b with
+  (#1 , x) =< a ]=
+  mune n =[ mune $= q >=
+  mune m =[ b >=
+  (#1 , y) [QED]
+enumFact x .x q | n , a | m , b | refl = refl
+
+module _ where
+  open ENUMERATION Atom (\ a -> fst (enum a)) enumFact
+  atomEq? = enumEq?
