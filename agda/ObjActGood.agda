@@ -30,13 +30,13 @@ module _ {M}{A}(OA : ObjAct M A) where
     idaId {d = chk} (essl k) rewrite idaCan k = refl
     idaId {d = syn} (essl n) = idaNeu n
     idaId (thnk n)   rewrite idaNeu n = refl
-    idaId (radi k T) rewrite idaCan k | idaId T = refl
+    idaId (t :: T) rewrite idaId t | idaId T = refl
+    idaId (x ?- ez) rewrite idaz ez = refl
     idaCan (atom a)   = refl
     idaCan (cons s t) rewrite idaId s | idaId t = refl
     idaCan (abst t)   = abst $= (
       act t (wkn ida) =< act t $= idaWkn ]=
       act t ida =[ idaId t >= t [QED])
-    idaCan (meta x ez) = meta x $= idaz ez
     idaNeu (vari i)   = idaHit i
     idaNeu (elim e s) rewrite idaId e | idaId s = refl
     idaz []        = refl
@@ -86,11 +86,11 @@ module COMPO {M}{AF AB AC : Nat -> Nat -> Set}
     coLib {d = syn} (essl n)   f b = coNeu n f b
     coLib           (thnk n)   f b
       rewrite actThunk OAB (act OAF n f) b | coNeu n f b = refl
-    coLib           (radi k T) f b rewrite coCan k f b | coLib T f b = refl
+    coLib           (t :: T) f b rewrite coLib t f b | coLib T f b = refl
+    coLib (x ?- ez) f b = (x ?-_) $= coz ez f b
     coCan (atom a)    f b = refl
     coCan (cons s t)  f b rewrite coLib s f b | coLib t f b = refl
     coCan (abst t)    f b rewrite coLib t (wkn OAF f) (wkn OAB b) | wknCo f b = refl
-    coCan (meta x ez) f b = meta x $= coz ez f b
     coNeu (vari i)    f b = hitCo i f b
     coNeu (elim e s)  f b rewrite coLib e f b | coLib s f b = refl
     coz []        f b = refl

@@ -38,7 +38,15 @@ module _ {X : Set} where
   th ^+ (ph no) = (th ^+ ph) no
   th ^+ (ph su) = (th ^+ ph) su
   th ^+ ze      = th
-  
+
+  thinl : forall {az bz}(th : az <= bz) cz -> az <= (bz -+ cz)
+  thinl th cz = th ^+ oe {cz}
+
+  thinr : forall cz {az bz}(th : az <= bz) -> az <= (cz -+ bz)
+  thinr cz (th no) = thinr cz th no
+  thinr cz (th su) = thinr cz th su
+  thinr cz ze      = oe
+
   module _ where
     open Cat
     
@@ -64,6 +72,21 @@ module _ {X : Set} where
     oi   = idC OPE
     _-<_ = coC OPE
 
+  thinrLemma : forall {az bz cz dz ez}(th : az <= bz)(ph : cz <= dz)(ps : bz <= ez) ->
+    (thinr cz th -< (ph ^+ ps)) == thinr dz (th -< ps)
+  thinrLemma th ph (ps no) = _no $= thinrLemma th ph ps
+  thinrLemma (th no) ph (ps su) = _no $= thinrLemma th ph ps
+  thinrLemma (th su) ph (ps su) = _su $= thinrLemma th ph ps
+  thinrLemma ze ph ze = oeU _ _
+
+  moco : forall {az bz cz dz ez fz}
+           (th0 : az <= bz)(ph0 : bz <= cz)
+           (th1 : dz <= ez)(ph1 : ez <= fz) ->
+         ((th0 ^+ th1) -< (ph0 ^+ ph1)) == ((th0 -< ph0) ^+ (th1 -< ph1))
+  moco th0 ph0 th1 (ph1 no) = _no $= moco th0 ph0 th1 ph1
+  moco th0 ph0 (th1 no) (ph1 su) = _no $= moco th0 ph0 th1 ph1
+  moco th0 ph0 (th1 su) (ph1 su) = _su $= moco th0 ph0 th1 ph1
+  moco th0 ph0 ze ze = refl
 
 {-
   data Thin' (xz : Bwd X) : Bwd X -> Set

@@ -18,119 +18,148 @@ data Term (M : Bwd Nat)(G : Nat) : Lib -> Dir -> Set where
   cons : (s t : Term M G lib chk)                     -> Term M G ess chk
   abst : (t : Term M (G -, <>) lib chk)               -> Term M G ess chk
   --
-  meta : forall {n}(x : n <- M) ->
-         All (\ _ -> Term M G lib syn) n              -> Term M G ess chk
-  --
   vari : (i : <> <- G)                                -> Term M G ess syn
   elim : (e : Term M G lib syn)(s : Term M G lib chk) -> Term M G ess syn
   --
   essl : {d : Dir}(t : Term M G ess d)                -> Term M G lib d
   thnk : (n : Term M G ess syn)                       -> Term M G lib chk
-  radi : (k : Term M G ess chk)(T : Term M G lib chk) -> Term M G lib syn
+  _::_ : (t T : Term M G lib chk)                     -> Term M G lib syn
+  --
+  _?-_ : forall {n}(x : n <- M) ->
+         All (\ _ -> Term M G lib syn) n              -> Term M G lib chk
 
 pattern !_ a     = essl (atom a)
 pattern _&_ s t  = essl (cons s t)
 pattern \\_ t    = essl (abst t)
 pattern #_ i     = essl (vari i)
 pattern _$_ e s  = essl (elim e s)
-pattern _%_ x ez = essl (meta x ez)
 infixr 60 !_ #_
 infixl 50 _$_
 infixr 40 _&_ \\_
-infixr 30 _%_
+infixr 30 _?-_
 
 [_] : forall {M G} -> Term M G lib syn -> Term M G lib chk
-[ essl n ]   = thnk n
-[ radi k T ] = essl k
+[ essl n ] = thnk n
+[ t :: T ] = t
 
-_::_ : forall {M G}(t T : Term M G lib chk) -> Term M G lib syn
-essl k :: T = radi k T
-thnk n :: T = essl n
-
-upsilon : forall {M G}(t T : Term M G lib chk) -> [ t :: T ] == t
-upsilon (essl t) T = refl
-upsilon (thnk t) T = refl
-
-record ObjAct (M : Bwd Nat)(A : Nat -> Nat -> Set) : Set where
+record Act (A : Bwd Nat * Nat -> Bwd Nat * Nat -> Set) : Set where
   field
-    hit : forall {G D} -> (<> <- G) -> A G D -> Term M D lib syn
-    wkn : forall {G D} -> A G D -> A (G -, <>) (D -, <>)
-    emp : A [] []
+    hit : forall {M G N D} -> (<> <- G) -> A (M , G) (N , D) -> Term N D lib syn
+    met : forall {M G N D X} -> (X <- M) -> A (M , G) (N , D) ->
+            All (\ _ -> Term N D lib syn) X -> Term N D lib chk
+    wkn : forall {M G N D} -> A (M , G) (N , D) -> A (M , (G -, <>)) (N , (D -, <>))
 
-  act : forall {G D l d} -> Term M G l d -> A G D -> Term M D lib d
-  actk : forall {G D} -> Term M G ess chk -> A G D -> Term M D ess chk
-  actz : forall {G D}{n : Nat} -> All (\ _ -> Term M G lib syn) n ->
-                         A G D -> All (\ _ -> Term M D lib syn) n
+  wkns : forall {M G N D} -> A (M , G) (N , D) -> (X : Nat) ->
+    A (M , (G -+ X)) (N , (D -+ X))
+  wkns al [] = al
+  wkns al (X -, <>) = wkn (wkns al X)
+
+  act : forall {M G N D l d} -> Term M G l d -> A (M , G) (N , D) -> Term N D lib d
+  actk : forall {M G N D} -> Term M G ess chk -> A (M , G) (N , D) -> Term N D ess chk
+  actz : forall {M G N D}{X : Nat} -> All (\ _ -> Term M G lib syn) X ->
+                         A (M , G) (N , D) -> All (\ _ -> Term N D lib syn) X
   actk (atom a)    al = atom a
   actk (cons s t)  al = cons (act s al) (act t al)
   actk (abst t)    al = abst (act t (wkn al))
-  actk (meta x ez) al = meta x (actz ez al)
   act {l = ess}{d = chk} k al = essl (actk k al)
   act (vari i)    al = hit i al
   act (elim e s)  al = act e al $ act s al
   act (essl t)    al = act t al
   act (thnk n)    al = [ act n al ]
-  act (radi k T)  al = radi (actk k al) (act T al)
+  act (x ?- ez)    al = met x al (actz ez al)
+  act (t :: T)    al = act t al :: act T al
   actz []         al = []
   actz (ez -, e)  al = actz ez al -, act e al
 
-  actzAll : forall {G D}{n : Nat}(ez : All (\ _ -> Term M G lib syn) n)
-              (al : A G D) -> actz ez al == all (\ e -> act e al) ez
+  actzAll : forall {M G N D}{n : Nat}(ez : All (\ _ -> Term M G lib syn) n)
+              (al : A (M , G) (N , D)) -> actz ez al == all (\ e -> act e al) ez
   actzAll []        al = refl
   actzAll (ez -, e) al = _-,_ $= actzAll ez al =$= refl
 
-  actThunk : forall {G D}(e : Term M G lib syn)(al : A G D) ->
+  actThunk : forall {M G N D}(e : Term M G lib syn)(al : A (M , G) (N , D)) ->
     act [ e ] al == [ act e al ]
-  actThunk (essl n)   al = refl
-  actThunk (radi k T) al = refl
+  actThunk (essl n) al = refl
+  actThunk (t :: T) al = refl
 
+record ObjAct (N : Bwd Nat)(A : Nat -> Nat -> Set) : Set where
+  field
+    objHit : forall {G D}(i : <> <- G)(al : A G D) -> Term N D lib syn
+    objWkn : forall {G D}(al : A G D) -> A (G -, <>) (D -, <>)
 
-module _ where
-  open ObjAct
-  THIN : forall {M} -> ObjAct M _<=_
-  hit THIN i th = # (i -< th)
-  wkn THIN th = th su
-  emp THIN    = ze
+module _ (A : Bwd Nat -> Nat -> Nat -> Set)(o : forall {N} -> ObjAct N (A N)) where
+  open module POLYOBJACT {N} = ObjAct (o {N})
+  open Act
 
-  _^_ : forall {M}{G D l d} -> Term M G l d -> G <= D -> Term M D lib d
-  _^_ = act THIN
-
-module _ where
-  open ObjAct
+  ThinA : Bwd Nat * Nat -> Bwd Nat * Nat -> Set
+  ThinA (M , G) (N , D) = (M <= N) * A N G D
   
-  Sbst : Bwd Nat -> Nat -> Nat -> Set
-  Sbst M G D = All (\ _ -> Term M D lib syn) G
+  objAct : Act ThinA
+  hit objAct i (_ , al) = objHit i al
+  met objAct x (th , al) ez = (x -< th) ?- ez
+  wkn objAct (th , al) = th , objWkn al
+  oiAct : forall {M G D l d} -> Term M G l d -> A M G D -> Term M D lib d
+  oiAct t al = act objAct t (oi , al)
 
-  SBST : forall {M} -> ObjAct M (Sbst M)
-  hit SBST = project
-  wkn SBST sg = all (_^ (oi no)) sg -, # (oe su)
-  emp SBST = []
+module _ where
+  open ObjAct
+  OBJTHIN : forall {N} -> ObjAct N _<=_
+  objHit OBJTHIN i th = # (i -< th)
+  objWkn OBJTHIN = _su
 
-  _/_ : forall {M}{G D l d} -> Term M G l d -> Sbst M G D -> Term M D lib d
-  _/_ = act SBST
+  _^_ = oiAct _ OBJTHIN
+  THIN = objAct _ OBJTHIN
+  open Act THIN
+  _^^_ = act
 
-  ids : forall {M}{G} -> Sbst M G G
-  ids {G = []}     = emp SBST
-  ids {G = _ -, _} = wkn SBST ids
+module _ where
+  open ObjAct
 
-Inst : Bwd Nat -> Bwd Nat -> Nat -> Set
-Inst M N G = All (\ m -> Term N (G -+ m) lib chk) M
+  [_!_]/_ : Bwd Nat -> Nat ->  Nat -> Set
+  [ N ! G ]/ D = All (\ _ -> Term N D lib syn) G
 
-wki : forall {M N G} -> Inst M N G -> Inst M N (G -, <>)
-wki {G = G} xi = all (\ {n} t -> t ^ ((oi no) ^+ (oi {S = n}))) xi
+  wksb : forall {G N D} -> [ N ! G ]/ D -> [ N ! G -, <> ]/ D -, <>
+  wksb sg = all (_^ (oi no)) sg -, # (oe su)
 
-_%/_ : forall {M N G l d} -> Term M G l d -> Inst M N G -> Term N G lib d
-_%//_ : forall {M N G n} -> All {One} (\ _ -> Term M G lib syn) n ->
-          Inst M N G -> All (\ _ -> Term N G lib syn) n
-atom a    %/ xi = ! a
-cons s t  %/ xi = (s %/ xi) & (t %/ xi)
-abst t    %/ xi = \\ (t %/ wki xi)
-meta x ez %/ xi = project x xi / (ids :+ (ez %// xi))
-vari i    %/ xi = # i
-elim e s  %/ xi = (e %/ xi) $ (s %/ xi)
-essl t    %/ xi = t %/ xi
-thnk n    %/ xi = [ n %/ xi ]
-radi k T  %/ xi = (k %/ xi) :: (T %/ xi)
-[]        %// xi = []
-(ez -, e) %// xi = (ez %// xi) -, (e %/ xi)
+  idsb : forall {G N} ->  [ N ! G ]/ G
+  idsb {[]}      = []
+  idsb {G -, <>} = wksb idsb
 
+  OBJSBST : forall {N} -> ObjAct N ([_!_]/_ N)
+  objHit OBJSBST = project
+  objWkn OBJSBST = wksb
+
+  _/_ = oiAct _ OBJSBST
+  SBST = objAct _ OBJSBST
+  open Act SBST
+  _//_ = act
+
+module _ where
+  open Act
+
+  _%[_!_] : Bwd Nat -> Bwd Nat -> Nat -> Set
+  M %[ N ! D ] = All (\ X -> Term N (D -+ X) lib chk) M
+
+  wkin : forall {M N D} -> M %[ N ! D ] -> M %[ N ! D -, <> ]
+  wkin = all (\ {n} t -> t ^ ((oi no) ^+ (oi {S = n})))
+
+  idin : forall {M G} -> M %[ M ! G ]
+  idin {[]}     = []
+  idin {M -, X} =
+    all (\ {X} t -> t ^^ ((oi no) , oi)) idin -,
+    ((oe su) ?- all (_^ thinr _ oi) idsb)
+
+  Inst : Bwd Nat * Nat -> Bwd Nat * Nat -> Set
+  Inst (M , G) (N , D) = (M %[ N ! D ]) * ([ N ! G ]/ D)
+
+  INST : Act Inst
+  hit INST i (xi , sg) = project i sg
+  met INST x (xi , sg) ez = project x xi / (idsb :+ ez)
+  wkn INST (xi , sg) = wkin xi , wksb sg
+
+  _%%_ = act INST
+
+  _%_ : forall {M N G l d} -> Term M G l d -> M %[ N ! G ] -> Term N G lib d
+  t % xi = t %% (xi , idsb)
+
+  idi : forall {M G} -> Inst (M , G) (M , G)
+  idi = idin , idsb

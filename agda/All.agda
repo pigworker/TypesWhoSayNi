@@ -146,3 +146,36 @@ module _ {I : Set} where
     (q : {i : I} -> h {i} =:= g ` f){iz : Bwd I} where
     open Concrete (ALL (\ {i} -> TRI (f {i}) g h q) {iz})
     allCo = funCo f01 f12
+
+  module _ {S T}(f : A: S -:> T) where
+    allCat : forall {xz yz}(pz : All S xz)(qz : All S yz) ->
+      all f (pz :+ qz) == (all f pz :+ all f qz)
+    allCat pz [] = refl
+    allCat pz (qz -, q) = (_-, _) $= allCat pz qz
+
+  module _ {P} where
+    selCat : forall {az bz cz dz}(th : az <= bz)(ph : cz <= dz)
+      (pz : All P bz)(qz : All P dz) ->
+      select (th ^+ ph) (pz :+ qz) == (select th pz :+ select ph qz)
+    selCat th (ph no) pz (qz -, q) = selCat th ph pz qz
+    selCat th (ph su) pz (qz -, q) = (_-, _) $= selCat th ph pz qz
+    selCat th ze pz [] = refl
+
+    selNo : forall {az}(pz : All P az) -> select oe pz == []
+    selNo [] = refl
+    selNo (pz -, _) = selNo pz
+
+    selLeft : forall {az bz cz}(th : az <= bz)(pz : All P bz)(qz : All P cz) ->
+      select (thinl th cz) (pz :+ qz) == select th pz
+    selLeft {cz = cz} th pz qz =
+      select (th ^+ oe {xz = cz}) (pz :+ qz)
+        =[ selCat th oe pz qz >=
+      (select th pz :+ select oe qz)
+        =[ (select th pz :+_) $= selNo qz >=
+      select th pz [QED]
+
+    selRight : forall {az bz cz}(th : az <= cz)(pz : All P bz)(qz : All P cz) ->
+      select (thinr bz th) (pz :+ qz) == select th qz
+    selRight {bz = bz} (th no) pz (qz -, _) = selRight th pz qz
+    selRight {bz = bz} (th su) pz (qz -, q) = (_-, _) $= selRight th pz qz
+    selRight {bz = bz} ze pz [] = selNo pz
