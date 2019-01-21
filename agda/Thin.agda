@@ -72,6 +72,35 @@ module _ {X : Set} where
     oi   = idC OPE
     _-<_ = coC OPE
 
+  data Tri : forall {iz jz kz}(th : iz <= jz)(ph : jz <= kz)(ps : iz <= kz) -> Set where
+    _no : forall {iz jz kz k}{th : iz <= jz}{ph : jz <= kz}{ps : iz <= kz} ->
+      Tri th ph ps -> Tri {kz = _ -, k} th     (ph no) (ps no)
+    _nosuno : forall {iz jz kz k}{th : iz <= jz}{ph : jz <= kz}{ps : iz <= kz} ->
+      Tri th ph ps -> Tri {kz = _ -, k} (th no) (ph su) (ps no)
+    _su : forall {iz jz kz k}{th : iz <= jz}{ph : jz <= kz}{ps : iz <= kz} ->
+      Tri th ph ps -> Tri {kz = _ -, k} (th su) (ph su) (ps su)
+    ze : Tri ze ze ze
+
+  mkTri : forall {iz jz kz}(th : iz <= jz)(ph : jz <= kz) -> Tri th ph (th -< ph)
+  mkTri th (ph no) = mkTri th ph no
+  mkTri (th no) (ph su) = mkTri th ph nosuno
+  mkTri (th su) (ph su) = mkTri th ph su
+  mkTri ze ze = ze
+
+  triDet : forall {iz jz kz}{th : iz <= jz}{ph : jz <= kz}{ps0 ps1} ->
+    Tri th ph ps0 -> Tri th ph ps1 -> ps0 == ps1
+  triDet (t0 no) (t1 no) rewrite triDet t0 t1 = refl
+  triDet (t0 nosuno) (t1 nosuno) rewrite triDet t0 t1 = refl
+  triDet (t0 su) (t1 su) rewrite triDet t0 t1 = refl
+  triDet ze ze = refl
+
+  triMono : forall {iz jz kz}{th0 th1 : iz <= jz}{ph : jz <= kz}{ps} ->
+    Tri th0 ph ps -> Tri th1 ph ps -> th0 == th1
+  triMono (t0 no) (t1 no) rewrite triMono t0 t1 = refl
+  triMono (t0 nosuno) (t1 nosuno) rewrite triMono t0 t1 = refl
+  triMono (t0 su) (t1 su) rewrite triMono t0 t1 = refl
+  triMono ze ze = refl
+
   thinrLemma : forall {az bz cz dz ez}(th : az <= bz)(ph : cz <= dz)(ps : bz <= ez) ->
     (thinr cz th -< (ph ^+ ps)) == thinr dz (th -< ps)
   thinrLemma th ph (ps no) = _no $= thinrLemma th ph ps
@@ -87,6 +116,49 @@ module _ {X : Set} where
   moco th0 ph0 (th1 no) (ph1 su) = _no $= moco th0 ph0 th1 ph1
   moco th0 ph0 (th1 su) (ph1 su) = _su $= moco th0 ph0 th1 ph1
   moco th0 ph0 ze ze = refl
+
+  Thick : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) -> Set
+  Thick th ph = Sg _ \ ps -> ph == (ps -< th)
+  thick? : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) -> Dec (Thick th ph)
+  thick? (th no) (ph no) with thick? th ph
+  thick? (th no) (ph no) | #0 , bad = #0 , \ { (_ , refl) -> bad (_ , refl) }
+  thick? (th no) (.(ps -< th) no) | #1 , (ps , refl) = #1 , (ps , refl)
+  thick? (th no) (ph su) = #0 , \ { (_ , ()) }
+  thick? (th su) (ph no) with thick? th ph
+  thick? (th su) (ph no) | #0 , bad = #0 ,
+    \ { ((ps no) , refl) -> bad (ps , refl) ; ((ps su) , ()) }
+  thick? (th su) (.(ps -< th) no) | #1 , (ps , refl) = #1 , ((ps no) , refl)
+  thick? (th su) (ph su) with thick? th ph
+  thick? (th su) (ph su) | #0 , bad = #0 ,
+    \ { ((ps no) , ()) ; ((ps su) , refl) -> bad (ps , refl) }
+  thick? (th su) (.(ps -< th) su) | #1 , (ps , refl) = #1 , ((ps su) , refl)
+  thick? ze ze = #1 , (ze , refl)
+
+  pullback : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
+    Sg _ \ hz ->
+    Sg (hz <= iz) \ th' -> Sg (hz <= jz) \ ph' -> Sg (hz <= kz) \ ps' ->
+    Tri th' th ps' * Tri ph' ph ps' * forall {gz}
+    {th_ : gz <= iz}{ph_ : gz <= jz}{ps_ : gz <= kz} ->
+    Tri th_ th ps_ -> Tri ph_ ph ps_ ->
+    Sg (gz <= hz) \ ps -> Tri ps th' th_ * Tri ps ph' ph_
+    
+  pullback (th no) (ph no) with pullback th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 no) , (t1 no) ,
+    \ { (t2 no) (t3 no) -> let _ , t4 , t5 = u t2 t3 in _ , t4 , t5 }
+  pullback (th no) (ph su) with pullback th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 no) , (t1 nosuno) ,
+   \ { (t2 no) (t3 nosuno) -> let _ , t4 , t5 = u t2 t3 in _ , t4 , (t5 no) }
+  pullback (th su) (ph no) with pullback th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 nosuno) , (t1 no) , 
+   \ { (t2 nosuno) (t3 no) -> let _ , t4 , t5 = u t2 t3 in _ , (t4 no) , t5
+     ; (t2 su) () }
+  pullback (th su) (ph su) with pullback th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 su) , (t1 su) , 
+   \ { (t2 nosuno) (t3 nosuno) -> let _ , t4 , t5 = u t2 t3 in _ , (t4 nosuno) , (t5 nosuno)
+     ; (t2 su)     (t3 su)     -> let _ , t4 , t5 = u t2 t3 in _ , (t4 su) , (t5 su) }
+  pullback ze ze = _ , _ , _ , _ , ze , ze , 
+   \ { ze ze -> ze , ze , ze }
+
 
 {-
   data Thin' (xz : Bwd X) : Bwd X -> Set

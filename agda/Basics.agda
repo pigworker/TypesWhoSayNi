@@ -14,6 +14,7 @@ record Sg (S : Set)(T : S -> Set) : Set where
     fst : S
     snd : T fst
 open Sg public
+infixr 4 _,_ _*_
 
 _*_ _+_ : Set -> Set -> Set
 S * T = Sg S \ _ -> T

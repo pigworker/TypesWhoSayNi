@@ -179,3 +179,25 @@ module _ {I : Set} where
     selRight {bz = bz} (th no) pz (qz -, _) = selRight th pz qz
     selRight {bz = bz} (th su) pz (qz -, q) = (_-, _) $= selRight th pz qz
     selRight {bz = bz} ze pz [] = selNo pz
+
+    module _ where
+      open module SELECTI {P} = Concrete (Select {P})
+      
+      lefts  : forall iz jz (pz : All P (iz -+ jz)) -> All P iz
+      lefts iz jz  = select (thinl oi jz)
+      leftis : forall {iz jz}(pz : All P iz)(qz : All P jz) ->
+        lefts iz jz (pz :+ qz) == pz
+      leftis pz []        = funId _
+      leftis pz (qz -, q) = leftis pz qz
+
+      rights : forall iz jz (pz : All P (iz -+ jz)) -> All P jz
+      rights iz jz = select (thinr iz (oi {S = jz}))
+      rightis : forall {iz jz}(pz : All P iz)(qz : All P jz) ->
+        rights iz jz (pz :+ qz) == qz
+      rightis pz []        = selNo pz
+      rightis pz (qz -, q) = (_-, _) $= rightis pz qz
+
+      split : forall iz jz (pz : All P (iz -+ jz)) ->
+        pz == (lefts iz jz pz :+ rights iz jz pz)
+      split iz [] pz = sym (_:+_ $= funId pz =$= selNo pz)
+      split iz (jz -, j) (pz -, p) = (_-, p) $= split iz jz pz
