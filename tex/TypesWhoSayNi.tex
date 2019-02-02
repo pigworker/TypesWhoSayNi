@@ -92,7 +92,7 @@ which we address these questions give us keys to their answers.
 
 In order to ensure that types can be synthesized, we will need to
 write type annotations in some places. We work in a setting where
-types involve computation, so it is clear we would have to solve an
+types involve computation, so it is clear we should have to solve an
 ambiguous, let alone undecidable class of unification problems to omit
 all the type information in the Milner manner.  We cannot sustain a
 type system on the manifestly false promise that functions are in
@@ -196,7 +196,7 @@ to compute the type at which to check the abstraction, inferring the
 general pattern of dependency from one instance of it.
 
 The standard remedy is to restrict the language to $\beta$-normal forms
-and conceal all opportunities behind \emph{definitions}. We may give a definition
+and conceal all opportunities for computation behind \emph{definitions}. We may give a definition
 \[\mathsf{f} : (x\!:\!S)\to T;\; \mathsf{f} = \lambda x.\,t
   \]
 where the type annotation is no mere act of pious documentation but rather our
