@@ -750,6 +750,7 @@ conditions in braces to the right.
 
 \newcommand{\bx}[1]{\framebox{\ensuremath{#1}}}
 \newcommand{\ty}[1]{\textsc{type}\;#1}
+\newcommand{\univ}[1]{\textsc{univ}\;#1}
 \newcommand{\chk}[2]{#1 \ni #2}
 \newcommand{\syn}[2]{#1 \in #2}
 \newcommand{\cxe}[2]{#1\!:\!#2\vdash}
@@ -763,6 +764,8 @@ conditions in braces to the right.
       \hline
       \{\} &\ty{\bx{T_\gamma}}& \{\}  & \mbox{type construction}
                                         \smallskip\\
+      \{\ty{T_\gamma}\} &\univ{T_\gamma}\;\bx{}& \{\}  & \mbox{universe}
+                                        \smallskip\\
       \{\ty{T_\gamma}\} & \chk{T_\gamma}{\bx{t_\gamma}} &\{\}  & \mbox{type checking}
                                                                  \smallskip\\
       \{\}  & \syn{\bx{e_\gamma}}{S_\gamma} & \{\ty{S_\gamma}\} & \mbox{type synthesis}
@@ -775,6 +778,14 @@ conditions in braces to the right.
            & \{\cxe x{S_\gamma}\Post{J'_{\gamma,x}}\} & \mbox{context extension} 
   \end{array}\]
 \end{definition}
+
+We may check that a construction is a valid type, which means that it
+is reasonable to give as an input to type checking or an output from
+type synthesis. We may check that something already known to be a type is in fact
+a \emph{universe}, or type of types. We may check the types of constructions or synthesize
+the type of computations. We may look up the type of a variable. We may check two known types
+for equality. We may form a judgement which assigns a valid type to a fresh variable and
+then demands a judgement in the scope extended with that variable.
 
 If you are familiar with presentations of type theories, you will immediately notice the
 omission of explicit \emph{contexts}. This is not mere laziness on my part, but is done
@@ -923,8 +934,58 @@ the very same rule to deduce $\Delta\vdash J_i\eth$, and again, $\eth = \eth;\th
 so we have the induction conclusion.
 \end{proof}
 
+We are nearly ready to consider how, in general, to construct the
+typing rules for particular theories, but we have three more rules to
+give which must be present in any theory, characterising the
+relationship between types, type checking and type synthesis.
+
+\begin{definition}[change of direction]
+  The following rules shall exist.
+  \[
+    \textsc{thunk}\;
+    \Rule{\syn{n}{S}\quad S=T}
+    {\chk T{[n]}}
+    \qquad
+    \textsc{universe}\;
+    \Rule{\syn{n}{S}\quad\univ S}
+         {\ty [n]}
+    \qquad
+    \textsc{radical}\;
+    \Rule{\ty T\quad \chk Tt}
+    {\syn{(t:T)}T}
+  \]
+\end{definition}
+
+For the purposes of this paper, type equality will be given by the axiom
+\[
+  \textsc{reflexivity}\;\Axiom{T = T}
+\]
+which is the only nonlinear rule I shall permit here, but it serves to make
+an insistence on linearity in schematic variables --- at least, those which
+stand for types --- unproblematic. The \textsc{thunk} rule insists that when
+we have a synthesized type and a type to check, they must agree precisely
+(or, for humans, they must agree up to the renaming of bound variables).
+Meanwhile, we may have computations in a type only if the type synthesized
+for that computation is recognizably a type of types. Lastly, while a radical
+offers us a candidate for the type, $T$, to synthesize, we must check both that it
+really is a type, and, now that $T$ is known to be a type, that $T$ accepts the
+term, $t$. These rules all conform to \ref{dogma:free}.
+
+It is worth remarking that more generous notions of type equality are worthy
+of consideration. Moreover, as the \textsc{thunk} rule is clearly \emph{directed},
+we could relax the requirement to the demand that $S$ be a \emph{subtype} of $T$.
+That might be one way to arrange for a Russell-style cumulative hierarchy of
+universes. Let us leave those possibilities for the future.
+
+The seasoned type theorist will further notice the total absence from the rules
+so far of any form of \emph{computation}. Our type systems are, thus far,
+entirely \emph{inert}. That much I shall remedy after we have introduced the
+means of creating a redex, but for that, we shall need to check canonical constructions
+and synthesize types for computations. And to do that, we should think further
+about which typing rules make sense by construction.
 
 
+\section{Ruling on rules}
 
 % \begin{definition}[readable notation for variables and thinnings]
 % Just as de Bruijn indices are not a suitable notation for human-readable variables, so bit vectors are not a suitable notation for human-readable thinnings.
