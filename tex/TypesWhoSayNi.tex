@@ -770,7 +770,7 @@ conditions in braces to the right.
                                                                  \smallskip\\
       \{\}  & \syn{\bx{e_\gamma}}{S_\gamma} & \{\ty{S_\gamma}\} & \mbox{type synthesis}
                                                                   \smallskip\\
-      \{\}  & \cxl{x_\gamma}{S_\gamma} & \{\ty{S_\gamma}\} & \mbox{type lookup}
+      \{\}  & \cxl{\bx{x_\gamma}}{S_\gamma} & \{\ty{S_\gamma}\} & \mbox{type lookup}
                                                              \smallskip\\
       \{\ty{S_\gamma},\ty{T_\gamma}\} & S_\gamma = T_\gamma\;\bx{} & \{\}  & \mbox{type equality}
                                                                              \smallskip\\
@@ -981,11 +981,85 @@ The seasoned type theorist will further notice the total absence from the rules
 so far of any form of \emph{computation}. Our type systems are, thus far,
 entirely \emph{inert}. That much I shall remedy after we have introduced the
 means of creating a redex, but for that, we shall need to check canonical constructions
-and synthesize types for computations. And to do that, we should think further
+and synthesize types for computations. And in order to do that, we should think further
 about which typing rules make sense by construction.
 
 
 \section{Ruling on rules}
+
+\emph{in which I introduce the formal notions of `pattern' and `expression', with a
+  systematic treatment of the schematic variables in rules; I also give the permitted
+  shapes of rules which check constructions and rules which synthesize types for eliminations;
+  I give the scoping dogma for schematic variables in rules, in particular the dogma which insists that subjects in premises must come from the subjects of the conclusion; I demonstrate stability under substitution}
+
+\subsection{Martin-L\"of's 1971 type theory reconstructed}
+
+\newcommand{\U}{\star}
+\[\begin{array}{c}
+  \Axiom{\ty\U}\qquad
+  \Rule{\ty S\quad \cxe xS \ty T}
+    {\ty \PI SxT}\qquad\qquad
+  \Axiom{\univ \U}
+  \\
+  \Rule{\ty T}
+  {\chk\U T}
+  \qquad
+  \Rule{\cxe xS \chk Tt}
+  {\chk {\PI SxT}{\la x t}}
+  \qquad\qquad
+  \Rule{e\in\PI SxT\quad \chk Ss}
+       {e\:s\in T/(s:S)}
+\end{array}\]
+
+
+\section{Questions better left unasked}
+
+\emph{in which I investigate further the consequences of the deliberately restrictive language of patterns; the structural rules for reduction ensure that pattern matching is stable with respect to reduction; patterns have simple unification, ensuring the appropriate invertibility of rules; on syntax-directedness and its consequences; I specify the sanity clause and prove its decidability}
+
+\section{Mind diamonds!}
+
+\emph{in which I show how a system of syntax-directed typing rules demands a set of $\beta$-rules
+  which are non-overlapping by construction, resulting in the definability of a Takahashi-style notion of `development', and thence confluence --- parallel reduction has the diamond property by construction}
+
+In our reconstruction of Martin-L\"of's 1971 theory, the demanded $\beta$-rule is
+\[
+  (\la x t : \PI SxT)\:s \leadsto (? : T/(s:S))
+\]
+For best results, take $? = t/(s:S)$.
+
+
+\section{Subject reduction by construction}
+
+\emph{in which I demand that the $\beta$-rules be well typed in the inert fragment of a type theory,
+  and show that compliance with this demand is decidable;
+  I then prove that confluence is sufficient to ensure that subject reduction holds in the presence of the following}
+\[
+  \textsc{pre}\;
+  \Rule{T\leadsto T' \quad \chk{T'}t}
+  {\chk Tt}
+  \qquad
+  \textsc{post}\;
+  \Rule{\syn eS\quad S\leadsto S'}
+  {\syn eS}
+\]
+
+In our reconstruction of Martin-L\"of's 1971 theory, inertly inverting
+the typing rules for the left-hand side yields
+\[
+  \ty S\quad \cxe xS\ty T\quad \chk Ss\quad \cxe xS\chk Tt
+\]
+from which we may inertly deduce that
+\[
+  \chk{T/(s:S)}{t/(s:S)}
+\]
+and hence that Martin-L\"of's 1971 theory has the subject reduction property.
+
+
+\section{Discussion}
+
+\emph{in which I review related work and progress, then set out the prospectus for
+the research programme opened by this paper}
+
 
 % \begin{definition}[readable notation for variables and thinnings]
 % Just as de Bruijn indices are not a suitable notation for human-readable variables, so bit vectors are not a suitable notation for human-readable thinnings.
