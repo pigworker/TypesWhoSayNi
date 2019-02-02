@@ -19,6 +19,14 @@ natEq? (suc x) (suc y) with natEq? x y
 natEq? (suc x) (suc y) | #0 , q = #0 , \ { refl -> q refl }
 natEq? (suc x) (suc .x) | #1 , refl = #1 , refl
 
+natEqLemma : (x : NAT) -> natEq? x x == (#1 , refl)
+natEqLemma zero = refl
+natEqLemma (suc x) rewrite natEqLemma x = refl
+
+-- if you don't like uip, use Hedberg's Lemma
+uip : {X : Set}{x y : X}{q0 : x == y}{q1 : x == y} -> q0 == q1
+uip {q0 = refl}{q1 = refl} = refl
+
 module ENUMERATION
   (X : Set)(f : X -> NAT)(finj : (x y : X) -> f x == f y -> x == y)
   where
@@ -27,6 +35,9 @@ module ENUMERATION
   enumEq? x y with natEq? (f x) (f y)
   enumEq? x y | #0 , q = #0 , \ { refl -> q refl }
   enumEq? x y | #1 , q = #1 , finj x y q
+
+  enumEqLemma : (x : X) -> enumEq? x x == (#1 , refl)
+  enumEqLemma x rewrite natEqLemma (f x) = (#1 ,_) $= uip
 
 data Atom : Set where
   NIL U PI SG CAR CDR : Atom
@@ -60,3 +71,4 @@ enumFact x .x q | n , a | m , b | refl = refl
 module _ where
   open ENUMERATION Atom (\ a -> fst (enum a)) enumFact
   atomEq? = enumEq?
+  atomEqLemma = enumEqLemma

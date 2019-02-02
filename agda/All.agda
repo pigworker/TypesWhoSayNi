@@ -201,3 +201,16 @@ module _ {I : Set} where
         pz == (lefts iz jz pz :+ rights iz jz pz)
       split iz [] pz = sym (_:+_ $= funId pz =$= selNo pz)
       split iz (jz -, j) (pz -, p) = (_-, p) $= split iz jz pz
+
+      data Chop iz jz : (pz : All P (iz -+ jz)) -> Set where
+        chopped : (pz : All P iz)(qz : All P jz) -> Chop iz jz (pz :+ qz)
+      chop : forall iz jz (pz : All P (iz -+ jz)) -> Chop iz jz pz
+      chop iz [] pz = chopped pz []
+      chop iz (jz -, j) (pz -, q) with chop iz jz pz
+      chop iz (jz -, j) (.(pz :+ qz) -, q) | chopped pz qz
+        = chopped pz (qz -, q)
+
+      chopEq : forall {iz jz}(pz : All P iz)(qz : All P jz) ->
+        chop iz jz (pz :+ qz) == chopped pz qz
+      chopEq pz [] = refl
+      chopEq pz (qz -, q) rewrite chopEq pz qz = refl

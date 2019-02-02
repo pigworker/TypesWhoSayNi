@@ -87,6 +87,11 @@ module _ {X : Set} where
   mkTri (th su) (ph su) = mkTri th ph su
   mkTri ze ze = ze
 
+  oeTri : forall {iz jz}(th : iz <= jz) -> Tri oe th oe
+  oeTri (th no) = oeTri th no
+  oeTri (th su) = oeTri th nosuno
+  oeTri ze = ze
+
   triDet : forall {iz jz kz}{th : iz <= jz}{ph : jz <= kz}{ps0 ps1} ->
     Tri th ph ps0 -> Tri th ph ps1 -> ps0 == ps1
   triDet (t0 no) (t1 no) rewrite triDet t0 t1 = refl
@@ -158,6 +163,31 @@ module _ {X : Set} where
      ; (t2 su)     (t3 su)     -> let _ , t4 , t5 = u t2 t3 in _ , (t4 su) , (t5 su) }
   pullback ze ze = _ , _ , _ , _ , ze , ze , 
    \ { ze ze -> ze , ze , ze }
+
+  coproduct : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
+    Sg _ \ hz ->
+    Sg (iz <= hz) \ th' -> Sg (jz <= hz) \ ph' -> Sg (hz <= kz) \ ps' ->
+    Tri th' ps' th * Tri ph' ps' ph * forall {gz}
+    {th_ : iz <= gz}{ph_ : jz <= gz}{ps_ : gz <= kz} ->
+    Tri th_ ps_ th -> Tri ph_ ps_ ph ->
+    Sg (hz <= gz) \ ps -> Tri th' ps th_ * Tri ps ps_ ps' * Tri ph' ps ph_
+  coproduct (th no) (ph no) with coproduct th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , t0 no , t1 no ,
+    \ { (t2 no) (t3 no)         ->
+        let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 , t5 no , t6
+      ; (t2 nosuno) (t3 nosuno) ->
+        let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 no , t5 nosuno , t6 no }
+  coproduct (th no) (ph su) with coproduct th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , t0 nosuno , t1 su , 
+    \ { (t2 no) () ; (t2 nosuno) (t3 su) ->
+        let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 nosuno , t5 su , t6 su }
+  coproduct (th su) (ph no) with coproduct th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , t0 su , t1 nosuno , 
+    \ { (t2 su) (t3 nosuno) -> let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 su , t5 su , t6 nosuno }
+  coproduct (th su) (ph su) with coproduct th ph
+  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , t0 su , t1 su , 
+    \ { (t2 su) (t3 su) -> let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 su , t5 su , t6 su }
+  coproduct ze ze = _ , _ , _ , _ , ze , ze , \ { ze ze -> _ , ze , ze , ze }
 
 
 {-
