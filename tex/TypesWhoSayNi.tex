@@ -30,13 +30,13 @@
 
 \newcommand{\hb}{\texttt{:}}
 \newcommand{\ra}[2]{\Pa{#1 \hb #2}}
-\newcommand{\grp}[1]{\!\left\lgroup #1 \right\rgroup\!}
+\newcommand{\grp}[1]{\{ #1 \}}
 
 \newcommand{\ths}{}
 
 \begin{document}
 \title[Journal of Functional Programming]{The types who say $\backslash$ni}
-\author[C. T. McBride]{CONOR T. MCBRIDE\\
+\author[C. McBride]{CONOR MCBRIDE\\
   University of Strathclyde\\
   \email{conor.mcbride@strath.ac.uk}}
 \maketitle
@@ -381,6 +381,12 @@ constants which play the role of tags --- their purpose is not
 to stand for things but to be told apart. The symbol $()$ is
 considered an atom and pronounced `nil'.
 
+\newcommand{\lib}{\textbf{lib}}
+\newcommand{\ess}{\textbf{ess}}
+\newcommand{\cons}{\textbf{cons}}
+\newcommand{\comp}{\textbf{comp}}
+
+
 \newcommand{\Tm}[3]{\mathbf{Term}(#1,#2,#3)}
 \begin{definition}[constructions and computations, essential and liberal]
 The object-level syntax is specified,
@@ -389,9 +395,9 @@ is divided into four distinct mutually defined grammatical classes,
 each with standard metavariable conventions,
 arranged as four quadrants thus:
 \[\begin{array}{r|l|l}
- d \;\backslash\; l& \mbox{\bf essential} & \mbox{\bf liberal} \\
+ d \;\backslash\; l& \ess\mbox{ential} & \lib\mbox{eral} \\
 \hline
-    \mbox{\bf construction} & k_\gamma, K_\gamma & s_\gamma, t_\gamma, S_\gamma, T_\gamma \\
+    \cons{truction} & k_\gamma, K_\gamma & s_\gamma, t_\gamma, S_\gamma, T_\gamma \\
     & \;\begin{array}[t]{rl}
           ::= & a \\
           | & (s_\gamma.t_\gamma) \\
@@ -403,7 +409,7 @@ arranged as four quadrants thus:
         \end{array}
     \\
     \hline
-    \mbox{\bf computation} & n_\gamma, N_\gamma & e_\gamma, f_\gamma, E_\gamma, F_\gamma \\
+    \comp\mbox{utation} & n_\gamma, N_\gamma & e_\gamma, f_\gamma, E_\gamma, F_\gamma \\
     & \;\begin{array}[t]{rl}
           ::= & x_\gamma \\
           | & e_\gamma\:s_\gamma 
@@ -435,7 +441,8 @@ For example, dependent function types in $\gamma$ will be constructions of form
 where $\Uppi$ is a particular atom, $S$ is a $\gamma$-construction and
 $T$ is a $\gamma,x$-construction. It is not my habit to notate
 explicitly the potential dependency of $T$ on $x$: the abstraction
-makes that much clear.
+makes that much clear. Formally, working de Bruijn style, there is no reason
+to name the variable bound by an abstraction, but humans seem to appreciate it.
 
 The \emph{liberal} constructions extend the canonical constructions
 with \emph{thunks} --- essential computations which have not yet achieved canonical
@@ -586,7 +593,7 @@ If $\theta : \gamma\thin\gamma'$, we may write $\theta\delta$ for
 the concatentation $\theta,\ith_\delta : \gamma,\delta \thin \gamma',\delta$.
 
 The formal truth is that a `variable' $x_\gamma$ is a thinning
-in some $\emp,x \thin \gamma$, i.e., from the singleton scope to $\gamma$. Noting that $\gamma$ occurs
+in some $x \thin \gamma$, i.e., from the singleton scope to $\gamma$. Noting that $\gamma$ occurs
 positively in the grammar, we obtain that each of our four syntactic
 quadrants is a functor from thinnings to \textbf{Set}.
 
@@ -657,10 +664,10 @@ in a scope. Let us take $\sigma$ and $\rho$ as metavariables for substitutions.
 \newcommand{\su}{\Rightarrow}
 \begin{definition}[substitution]
   Let $\gamma\su\delta$ be the set of substitutions from $\gamma$ variables to $\delta$ terms,
-  i.e., mappings \[\sigma : (\emp,x\thin\gamma) \to \Tm{\textbf{liberal}}{\textbf{computation}}\delta\]
+  i.e., mappings \[\sigma : (x\thin\gamma) \to \Tm\lib\comp\delta\]
   Let us write $x\sigma$ for the image of some $x$. We may write $\emp$ for the trivial
   substitution from the empty scope. If $\sigma : \gamma \su \delta$
-  and $e : \Tm{\textbf{liberal}}{\textbf{computation}}\delta$, then we say
+  and $e : \Tm\lib\comp\delta$, then we say
   \[\sigma,e : \gamma,x \su \delta\qquad x(\sigma,e) = e\qquad
     y(\sigma,e) = y\sigma\;\mbox{if}\;x\neq y\]
   Formally, a substitution is a vector of terms, acting on de Bruijn indices by
@@ -686,7 +693,7 @@ pass under binders.
 
 \begin{definition}[action of a substitution]
   If $\sigma:\gamma\su \delta$, it has a liberalising action,
-  $\cdot\sigma:\Tm ld\gamma\to\Tm{\textbf{liberal}}d\delta$, extending its action on variables
+  $\cdot\sigma:\Tm ld\gamma\to\Tm\lib d\delta$, extending its action on variables
   to terms.
   \[
     \begin{array}{rlc@{\qquad}rlc}
@@ -743,7 +750,7 @@ To complete the components for the category of substitutions, we must have the i
 \begin{lemma}[category of substitutions]
   Substitutions $\sigma : \gamma\su\delta$ are the arrows of a category with identity $\isu$
   and composition $;$. Moreover, scope extension, $\cdot,x$ is an endofunctor acting
-  on arrows as $\cdot1$, and action on terms makes $\Tm{\textbf{liberal}}d\cdot$ a functor
+  on arrows as $\cdot1$, and action on terms makes $\Tm\lib d\cdot$ a functor
   from substitutions to \textbf{Set}.
 \end{lemma}
 \begin{proof}
@@ -1104,7 +1111,7 @@ binding sites for schematic variables; expressions the use sites.
 
 \newcommand{\Pat}[1]{\textbf{Pat}(#1)}
 \begin{definition}[$\gamma$-pattern]
-The formal grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
+The grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
 \[\begin{array}{rrl@{\quad}l}
     p_\gamma, q_\gamma & ::= & a \\
          &   | & (p_\gamma.q_\gamma) \\
@@ -1113,6 +1120,7 @@ The formal grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
 \end{array}\]
 \end{definition}
 
+\newcommand{\huth}[1]{\langle #1 \rangle}
 That is, patterns contain only the essential constructions, together with
 placeholders bearing a thinning whose purpose is to specify which of
 the variables in $\gamma$ may occur in the place. They go where constructions
@@ -1124,9 +1132,9 @@ Formally, the pattern used for the function type in our example theory is
 with two placeholders, the second of which allows dependency on the bound variable.
 
 It is straightforward to define the action of a thinning on a pattern: if
-$\theta : \gamma\thin\gamma'$ then $\cdot\theta : \Pat\gamma\to\Pat\gamma'$.
-The effect of this is to grow the notional scope of the pattern while
-forbidding any of the `extra' variables to occur in the pattern's places.
+$\theta : \gamma\thin\gamma'$ then $\cdot\theta : \Pat\gamma\to\Pat{\gamma'}$.
+The effect of this is to grow the notional scope of a pattern while
+forbidding any of the inserted variables to occur in its places.
 
 Informally, of course, we write distinct names in the places: these are the
 binding sites for the schematic variables. We may omit the identity thinning,
@@ -1134,24 +1142,24 @@ hence
 \[
   \PI SxT
 \]
-If we wish a different thinning, we may attach a square bracket to the name,
-listing the permitted variable. We could also have written:
+If we wish a different thinning, we may attach angle brackets to the name,
+listing the permitted variables. We could also have written:
 \[
-  \PI{S[]}x{T[x]}
+  \PI{S\huth{}}x{T\!\huth{x}}
 \]
-Meanwhile, the pattern $\PI{S[]}x{T[]}$ matches only function types which
+Meanwhile, the pattern $\PI{S\huth{}}x{T\!\huth{}}$ matches only function types which
 happen to be non-dependent.
 
 Such are the patterns for constructions. The only patterns we ever need for
 computations take the form $\trg\:p$.
 
 Every pattern has a \emph{domain}, which is a left-nested sequence of
-scopes: $\emp,\delta_{n-1},\ldots,\delta_0$. Domains are to schematic variables
+scopes: $\delta_{n-1},\ldots,\delta_0$. Domains are to schematic variables
 as scopes are to term variables, and I refer to them by the
 metavariables $\omega$ and $\chi$. All of our machinery related to thinnings works
-perfectly well for domains, embedding one sequence in other by inserting
+perfectly well for domains, embedding one sequence in another by inserting
 zero or more new entries. Formally, then, we may select a schematic variable
-from a domain by giving a singleton thinning, $\xi : \emp,\gamma \thin \omega$.
+from a domain by giving a singleton thinning, $\xi : \gamma \thin \omega$.
 
 \newcommand{\dom}[1]{\textbf{dom}(#1)}
 \newcommand{\src}[1]{\textbf{src}(#1)}
@@ -1177,16 +1185,17 @@ a scope of term variables.
 \begin{definition}[$\omega$-$\gamma$-expression]
   The expressions $\Exp\omega\gamma$ are liberal constructions in the full syntax of
   terms, augmented by the liberal constructions $\xi/\sigma$, where
-  $\xi : \emp,\delta \thin \omega$ and $\rho : \delta\su\gamma$.
+  $\xi : \delta \thin \omega$ and $\rho : \delta\su\gamma$.
   Expressions in the synthesis rule for an elimination may also contain the
   essential computation, $\trg$, standing for the target. These we classify
   as $\Expo\omega\gamma$.
 \end{definition}
 
 Informally, just as we write names at the binding sites of schematic variables
-in patterns, we refer to them by names instead of some $\xi$. We may omit the
-initial $\emp,$ of a substitution, and we may omit the $/$ when the substitution, $\rho$ is
-empty. The binding site of a schematic variable determines its scope, so we
+in patterns, we refer to them by names instead of some $\xi$. We may omit the identity
+substitution $/\isu$, hence $S$ not $S/\emp$ and $T$ not $T/x$ in, e.g., the example
+rule for checking an abstraction.
+The binding site of a schematic variable determines its scope, so we
 need not say which variables are being substituted.
 
 It is straightforward to extend the action of thinnings $\cdot\theta$ and substitutions
@@ -1224,7 +1233,7 @@ premises and conclusion of a configurable rule.
   \item initially, $\omega_1 = \dom{\vec p'}$ and $\chi_1=\dom q$;
   \item if $J_i$ has no subject, then $\omega{i+1}=\omega_i,\dom{\vec p_i}$ and $\chi_{i+1}=\chi_i$;
   \item if $J_i$ has context extensions yielding scope $\gamma$ and a subject, then that
-    subject must be specified by a pair $\xi\theta$, such that $\xi : \emp,\delta\thin\chi_i$
+    subject must be specified by a pair $\xi\theta$, such that $\xi : \delta\thin\chi_i$
     and $\theta : \delta\thin\gamma$; that being the case,
     $\omega_{i+1}=\omega_i,\dom{\vec p_i},\delta$
     and $\chi_{i+1} = \chi_i-\xi$, i.e., $\chi_i$ with $\xi$ removed.
@@ -1267,7 +1276,7 @@ instantiating expressions with environments. Let us make this intuition precise.
   We may refer to such environments by metavariable $\Omega$, and define them inductively as follows:
   \[
     \Axiom{\emp : \Env\emp} \qquad
-    \Rule{\Omega : \Env\omega\quad t : \Tm{\textbf{liberal}}{\textbf{construction}}\delta}
+    \Rule{\Omega : \Env\omega\quad t : \Tm\lib\cons\delta}
          {\Omega,t : \Env{\omega,\delta}}
   \]
 \end{definition}
@@ -1284,7 +1293,7 @@ as it is the partial inverse of thinning.
   We may compute $\theta t$ by a failure-propagating structural recursion on $t$. It suffices
   to consider the cases for abstraction and variables, as all others proceed componentwise.
   Straightforwardly, $\theta\grp{\la x t} = \la x\grp{(\theta1)t}$. For variables, recall
-  that the variable we write as $x$ is really a singleton thinning $\phi : \emp,x\thin\gamma$:
+  that the variable we write as $x$ is really a singleton thinning $\phi : x\thin\gamma$:
   let $(\theta',\phi') = \pb\theta\phi$ and return $\theta'$ if $\phi'=\ith$, as by
   the definition of a pullback, we have $\theta';\theta = \ith;\phi = \phi$.
 \end{definition}
@@ -1293,13 +1302,13 @@ We may thus characterize pattern matching as a partial function yielding environ
 
 \newcommand{\match}[2]{\textbf{match}(#1,#2)}
 \begin{definition}[pattern matching]
-  \[\match\cdot\cdot : (p : \Pat{\gamma})\times\Tm{\textbf{liberal}}{\textbf{construction}}\gamma
+  \[\match\cdot\cdot : (p : \Pat{\gamma})\times\Tm\lib\cons\gamma
     \mto \Env{\dom p}\]
   \begin{array}{l@{\;=\;}l}
     \match aa & \emp \\
     \match{(p.q)}{(s.t)} & \match ps, \match qt \\
     \match{\la x q}{\la x t} & \match qt \\
-    \match\theta t & \emp,\theta t
+    \match\theta t & \theta t
   \end{array}
 \end{definition}
 
@@ -1326,15 +1335,15 @@ terms which contain the free variables that the rules are not allowed to talk ab
 
 If $\gamma$ is the scope of free variables and $\gamma'$ the scope of variables
 locally bound in a rule, we may take a pattern $p : \Pat{\gamma'}$ and
-a term $t : \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma,\gamma'}$,
-and compute $\match{\gamma,p}t$, obtaining, if we are lucky, an $\Env{\gamma,\dom p}$.
+a term $t : \Tm\lib\cons{\gamma,\gamma'}$,
+and compute $\match{(\gamma,p)}t$, obtaining, if we are lucky, an $\Env{\gamma,\dom p}$.
 
 What happens to expressions? We should be able to instantiate an expression
 $t : \Exp\omega\gamma$ with an environment $\Omega : \Env{\gamma,\omega}$, and obtain a
 $t\Omega : \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma}$. We shall need a little
 room to manoeuvre before we begin.
 
-\begin{lemma}{functoriality of environments}
+\begin{lemma}[functoriality of environments]
   We may extend $\Env{\cdot,\omega}$ to functors from thinnings or substitutions
   to \textbf{Set}.
 \end{lemma}
@@ -1359,9 +1368,9 @@ With this in place, we may now push environments under binders.
   componentwise, except when we encounter an abstraction or a schematic variable:
   \begin{itemize}
   \item $\grp{\la x t}\Omega = \la x \grp{t\hat\Omega}$
-  \item $\grp{\xi/\rho}\Omega = t(\iota_\gamma,\rho)$ where
-    $\xi : \emp,\delta\thin\omega$, thence
-    $t : \Tm{\textbf{liberal}}{\textbf{construction}}{(\gamma,\delta)}$ is the
+  \item $\grp{\xi/\rho}\Omega = t(\isu_\gamma,\rho)$ where
+    $\xi : \delta\thin\omega$, thence
+    $t : \Tm\lib\cons{(\gamma,\delta)}$ is the
     projection at $\xi$ from $\Omega$.
   \end{itemize}
 \end{definition}
