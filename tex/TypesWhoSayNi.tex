@@ -445,10 +445,10 @@ is impeding reduction.
 Meanwhile, the \emph{computations} will always admit a type synthesis
 process. The \emph{essential} constructions comprise variables (whose
 type will be assigned by a context) and eliminations, overloading the
-application syntax --- the computation $e$ to the left is being
+application syntax --- the \emph{target} computation $e$ to the left is being
 eliminated, and its synthesizable
 type will tell us how to check that the construction $s$ to its right
-is a valid eliminator. These two give us the traditional forms
+is a valid \emph{eliminator}. These two give us the traditional forms
 of \emph{neutral} term.
 
 The \emph{liberal} computations extend the neutral computations with
@@ -711,10 +711,12 @@ To complete the components for the category of substitutions, we must have the i
 \end{proof}
 
 
-\section{Judging judgements}
+\section{Judging the judgements and ruling the rules}
 
 A type theory is presented as a system of rules, each of which has
 zero or more premises and one conclusion, all of which are \emph{judgements}.
+
+\subsection{The judgement forms}
 
 The judgement forms are specified as sequences of \emph{punctuation} and \emph{places}.
 A judgement is written by putting \emph{formulae} which stand for sets of terms into the
@@ -739,7 +741,11 @@ represents a proof obligation to be discharged by a rule client. For
 each output place in a judgement form, we must specify a judgement
 where that output now stands as a subject --- such a judgement is
 called a \emph{postcondition} and represents a proof obligation to be
-discharged by a rule server.
+discharged by a rule server. When we have a little more apparatus in
+place, we shall be able to compute precisely the proof obligation which ensures
+that a rule justifies the preconditions for its premises and the postcondition
+for its conclusion, given the preconditions for its conclusion and the postconditions
+for its premises.
 
 Without further ado, let me specify the judgement forms I propose. Judgements
 exist in some scope, $\gamma$, and I shall be careful to give scopes to their
@@ -787,18 +793,30 @@ the type of computations. We may look up the type of a variable. We may check tw
 for equality. We may form a judgement which assigns a valid type to a fresh variable and
 then demands a judgement in the scope extended with that variable.
 
+A judgement with a subject may be called a \emph{validation} --- its
+purpose is exactly to establish trust in its subject. Type construction, type checking, type synthesis and type lookup are validations. A judgement with no subject may be called a
+\emph{test} --- its purpose is to refine our knowledge of things which are already trusted.
+The universe and type equality judgements are tests. A context extension is either a validation
+or a test according to the status of its inner judgement.
+
 If you are familiar with presentations of type theories, you will immediately notice the
 omission of explicit \emph{contexts}. This is not mere laziness on my part, but is done
 with a purpose that I shall shortly reveal. Typing $\gamma$-rules conclude one $\gamma$-judgement
 from zero or more $\gamma$-judgement premises, where all of these $\gamma$-judgements
-implicitly share the same $\gamma$-context. Typing rules may \emph{locally} extend the
-context, assigning a valid type to the new most local variable.
+implicitly share the same $\gamma$-context. Let us say that such rules are \emph{locally presentable}.
+Locally presentable rules may extend the context, assigning a valid type to the new most local
+variable, but they are not explicit about the global context in which they apply.
+
+
+\subsection{A short farewell to contexts}
+
+Free variables exist, so we must have contexts to explain them.
 
 \begin{definition}[$\gamma$-context, context validity, global judgements]
   Let us say when $\Gamma$ is a syntactically well formed $\gamma$-context, and when it is,
   moreover, \emph{valid}. If so, we may write $\Gamma\vdash J_\gamma$ to assert
-  the \emph{global judgement} that a
-  particular $\gamma$-judgement holds in $\Gamma$.
+  the \emph{global judgement} that a particular $\gamma$-judgement holds in $\Gamma$.
+  A rule expressed in terms of global judgements is \emph{globally presented}.
   \begin{itemize}
   \item The only $\emp$-context is $\emp$, and it is valid.
   \item If $\Gamma$ is a $\gamma$-context, then $\Gamma,x\!:\!S_\gamma$ is a $\gamma,x$ context,
@@ -809,7 +827,7 @@ context, assigning a valid type to the new most local variable.
 It may seem peculiar that context validity is not presented as a
 judgement. This, also, is purposeful: it prevents the
 \emph{re}validation of the context by typing rules. I thus depart from
-standard practice from taking the validity of the empty context as the
+standard practice of taking the validity of the empty context as the
 only axiom, where the rules which concern atomic or variable subjects
 take context validity as a premise. In the client-server analysis of typing
 rules, we may consider context validity to be entirely the responsibility
@@ -818,9 +836,9 @@ extension judgement form does exactly the work required to ensure that the
 extended context is valid if the original context is.
 
 There is but one rule to derive context extension judgements, and it must
-be given globally.
+be globally presented.
 \begin{definition}[context extension]
-  \[\textsc{extn}\;
+  \[\textsc{extend}\;
     \Rule{\Gamma,\cxe xS J}
     {\Gamma\vdash \cxe xS J}
   \]
@@ -829,7 +847,8 @@ The client invoking the above rule must ensure that $\Gamma$ is valid and that
 $\Gamma\vdash\ty S$, which is sufficient to ensure the validity of the context
 in the premise.
 
-Meanwhile, we have two global rules for looking up the type of a variable in a context.
+Meanwhile, we have two globally presented rules for looking up the type of
+a variable in a context.
 \begin{definition}[type lookup]
   \[
     \textsc{top}\;
@@ -845,19 +864,338 @@ obligation in respect of these rules. In each case, we are promised (by the clie
 in the former, by the server of the premise in the latter), that $\Gamma\vdash\ty S$,
 but the postcondition for type lookup judgements requires us to show that
 $\Gamma,\cxe yT \ty{\wka S}$. To have any chance of that, we need type construction to be
-stable under thinning in general. I propose to achieve that basic and useful property
-once and for all, by means of two self-denying ordinances.
+stable under thinning in general, to say nothing of substitution.
 
-Firstly, no other rules may be presented in terms of global judgements: all must be
-\emph{locally} presented in terms of $\gamma$-judgements for an arbitrary $\gamma$, and interpreted
-for global judgements by globalisation with respect to an arbitrary shared $\gamma$-context,
-$\Gamma$. Secondly, the only rule which may use type lookup in a premise is the following:
+We shall develop the technical apparatus to achieve stability with respect to actions
+on free variables shortly, but for now, let me give the high-level idea. If you do not talk
+about free variables, you cannot assert anything which can be falsified by an action on
+free variables.
+
+\begin{dogma}[locally presented rules]
+  Only context extension and type lookup are globally presented. Rules for all other
+  judgement forms are locally presented.
+\end{dogma}
+
+Of course, given that variables do occur free in computations, we shall need one rule
+to synthesize their types. The purpose of the type lookup judgement is to permit
+its local presentation.
+
 \begin{definition}[variable type synthesis]
   \[\textsc{var}\;
       \Rule{\cxl xS}
          {\syn xS}
     \]
 \end{definition}
+
+However, apart from this rule, access to the global context is absolutely forbidden.
+
+\begin{dogma}[\label{dogma:free}no context access]
+  The rules \textsc{top}, \textsc{pop} and \textsc{var} are the only rules which may
+  use the type lookup judgement, in either premises or conclusion.
+  All other locally presented rules must have $\emp$-judgements for their premises
+  and conclusions, referring only to schematic variables and term variables which
+  are bound locally within judgements, either by abstraction or by context extension.
+\end{dogma}
+
+Intuitively, it is clear that variable lookup is stable under
+thinning. Inserting more free variables does not preclude access to
+those we already know about. There is no shadowing in a de Bruijn system.
+We shall similarly achieve stability under substitution by replacing
+uses of the \textsc{var} rule with other synthesis derivations whose types
+match, thinned as necessary. In order to ensure that these intuitions
+can be realised, let us stop talking about free variables before we say
+something we have cause to regret.
+
+
+\subsection{Change of direction and type equality}
+
+The configurable parts of a type theory in this setting are the rules
+which police constructions, whether they represent types, values or
+eliminators. Let us treat the remaining syntactic constructs once and
+for all.
+
+\begin{definition}[change of direction]
+  The following rules shall exist in all systems.
+  \[
+    \textsc{thunk}\;
+    \Rule{\syn{n}{S}\quad S=T}
+    {\chk T{[n]}}
+    \qquad
+    \textsc{universe}\;
+    \Rule{\syn{n}{S}\quad\univ S}
+         {\ty [n]}
+    \qquad
+    \textsc{radical}\;
+    \Rule{\ty T\quad \chk Tt}
+    {\syn{(t:T)}T}
+  \]
+\end{definition}
+
+For the purposes of this paper, type equality will be given by the axiom
+\[
+  \textsc{reflexivity}\;\Axiom{T = T}
+\]
+which is the only nonlinear rule I shall permit here, but it serves to make
+an insistence on linearity in schematic variables --- at least, those which
+stand for types --- unproblematic. The \textsc{thunk} rule insists that when
+we have a synthesized type and a type to check, they must agree precisely
+(or, for humans, they must agree up to the renaming of bound variables).
+Meanwhile, we may have computations in a type only if the type synthesized
+for that computation is recognizably a type of types. Lastly, while a radical
+offers us a candidate for the type, $T$, to synthesize, we must check both that it
+really is a type, and, now that $T$ is known to be a type, that $T$ accepts the
+term, $t$.
+
+It is worth remarking that more generous notions of type equality are worthy
+of consideration. Moreover, as the \textsc{thunk} rule is clearly \emph{directed},
+we could relax the requirement to the demand that $S$ be a \emph{subtype} of $T$.
+That might be one way to arrange for a Russell-style cumulative hierarchy of
+universes. Let us leave those possibilities for the future.
+
+We have now dealt with all the generic parts of bidirectional type systems.
+Before we turn to the machinery which allows us to specify individual type
+theories by classifying the constructions which occur in them, let us establish
+a concrete running example from which to generalise.
+
+
+\subsection{A bidirectional reconstruction of Martin-L\"of's 1971 type theory}
+
+I take Martin-L\"of's 1971 type theory~\cite{martinloef:atheoryoftypes} as
+the exemplary system for two reasons. Firstly, it is small:
+
+\newcommand{\U}{\star}
+\newcommand{\trg}{\bullet}
+\begin{definition}[bidirectional type-in-type]
+\[\begin{array}{c}
+  \Axiom{\ty\U}\qquad
+  \Rule{\ty S\quad \cxe xS \ty T}
+    {\ty \PI SxT}\qquad\qquad
+  \Axiom{\univ \U}
+  \\
+  \Rule{\ty T}
+  {\chk\U T}
+  \qquad
+  \Rule{\cxe xS \chk Tt}
+  {\chk {\PI SxT}{\la x t}}
+  \qquad\qquad
+  \Rule{\trg\in\PI SxT\quad \chk Ss}
+       {\trg\:s\in T/(s:S)}
+\end{array}\]
+\end{definition}
+
+Secondly, it is inconsistent: it is famously possible to construct a term
+which does not $\beta$-normalize. We shall not be able to appeal to normalization
+in our efforts to establish any of its other metatheoretic properties, such as
+subject reduction.
+
+In addition to $()$, we have two atoms, $\U$ and $\Uppi$, which tag our canonical
+types --- the universe and function spaces, respectively. We further assert that
+$\U$ may stand as a type of types, which allows types to be computations for which
+the type $\U$ may be synthesized. The inconsistency arises from the rule which
+makes any type, including $\U$ itself, checkably an inhabitant of $\U$. A
+function type $\PI SxT$ tells us how to check an abstraction, which we need not
+tag with a constructor. The $\trg$ symbol in the synthesis rule for application
+is a schematic variable: its peculiar name is because of a special property which
+will shortly become clear. When we can synthesize a function type for the target
+of an elimination, that tells us to interpret the entire eliminator as the function's
+argument and check that it inhabits the function's domain.
+
+Of course, this is not quite the whole story. We shall need to equip our theory
+with the possibility to \emph{compute} in types, with a reduction system involving
+the $\beta$-rule
+\[
+  (\la xt : \PI SxT)\:s \leadsto (t/(s:S):T/(s:S))
+\]
+but let us address that requirement later, when we have developed the precise
+language in which to talk about reductions.
+
+For now, let us focus on checking and synthesizing types. We can see that
+rules for judgements $\ty T$ and $\chk Tt$ trade only in essential constructions,
+with premises checking components of the conclusion's subject. Meanwhile, the synthesis
+rule makes no syntactic analysis of its target, requiring only a particular construction
+for its synthesized type, in order to check the construction of the eliminator
+and deliver the synthesized type of the whole.
+
+The typing rules do not talk about free variables. The only schematic variable
+which stands for a computation is the $\trg$ in the application rule, and it is used in a
+very particular pattern.
+
+\begin{dogma}[targets of eliminations]
+  We are free to write synthesis rules only for eliminations. These rules must
+  name the target $\trg$ but not analyse its syntactic structure. The first premise
+  of an elimination rule must synthesize the type of $\trg$.
+\end{dogma}
+
+That is, the only real choices we make, even in the synthesis rules, are how to
+analyse constructions.
+
+
+\subsection{How rules talk about constructions: patterns and expressions}
+
+The formulae which occur in typing rules are not terms of the underlying
+type theory. They contain \emph{schematic variables} and stand for the sets
+of terms generated by instantiating those schematic variables. If we are
+to achieve a generic approach to metatheory, we shall have to be precise
+about what constitutes these formulae, and how the schematic variables are
+scoped.
+
+The modes of the places in the judgement forms determine whether a given
+construction is being analysed by the rule or synthesized by it. Which formulae
+are appropriate depends on which of these two activities is happening, so
+we shall have \emph{two} syntaxes of formulae in typing rules --- \emph{patterns}
+for analysis and \emph{expressions} for synthesis. Patterns contain the
+binding sites for schematic variables; expressions the use sites.
+
+\begin{dogma}[\label{dogma:mode}formula syntax by mode]
+  The following table summarises the permitted formulae for each mode in premises
+  and conclusions.
+  \[\mbox{\begin{tabular}{r@{~ ~}@{~ ~}c@{~ ~}c@{~ ~}c}
+                    & \textbf{input} & \textbf{subject} & \textbf{output} \\
+            \textbf{premise}  & expression & schematic variable & pattern \\
+     \textbf{conclusion} & pattern & pattern & expression \\
+          \end{tabular} }\]
+\end{dogma}
+
+\begin{definition}[$\gamma$-pattern]
+The formal grammar of patterns is as follows:
+\[\begin{array}{rrl@{\quad}l}
+    p_\gamma, q_\gamma & ::= & a \\
+         &   | & (p_\gamma.q_\gamma) \\
+         &   | & \la x q_{\gamma,x} \\
+         &   | & \theta & \mbox{where}\;\exists\delta.\,\theta : \delta\thin\gamma
+\end{array}\]
+\end{definition}
+
+That is, patterns contain only the essential constructions, together with
+placeholders bearing a thinning whose purpose is to specify which of
+the variables in $\gamma$ may occur in the place. They go where constructions
+go. The same Lisp convention for avoiding dots in right-nested tuples applies.
+Formally, the pattern used for the function type in our example theory is
+\[
+  \PI \ith {}\ith
+\]
+with two placeholders, the second of which allows dependency on the bound variable.
+
+Informally, of course, we write distinct names in the places: these are the
+binding sites for the schematic variables. We may omit the identity thinning,
+hence
+\[
+  \PI SxT
+\]
+If we wish a different thinning, we may attach a square bracket to the name,
+listing the permitted variable. We could also have written:
+\[
+  \PI{S[]}x{T[x]}
+\]
+Meanwhile, the pattern $\PI{S[]}x{T[]}$ matches only function types which
+happen to be non-dependent.
+
+Such are the patterns for constructions. The only patterns we ever need for
+computations take the form $\trg\:p$.
+
+Every pattern has a \emph{domain}, which is a left-nested sequence of
+scopes: $\emp,\delta_{n-1},\ldots,\delta_0$. Domains are to schematic variables
+as scopes are to term variables, and I refer to them by the
+metavariables $\omega$ and $\chi$. All of our machinery related to thinnings works
+perfectly well for domains, embedding one sequence in other by inserting
+zero or more new entries. Formally, then, we may select a schematic variable
+from a domain by giving a singleton thinning, $\xi : \emp,\gamma \thin \omega$.
+
+\newcommand{\dom}[1]{\textbf{dom}(#1)}
+\newcommand{\src}[1]{\textbf{src}(#1)}
+\begin{definition}[domain of a pattern]
+  The \emph{domain} of a pattern is computed as follows:
+  \[\begin{array}{lcl}
+      \dom a & = & \emp \\
+      \dom{(p.q)} & = & \dom{p},\dom{q} \\
+      \dom{\la xq} & = & \dom{q} \\
+      \dom{\theta} & = & \src{\theta}
+    \end{array}\]
+  where $\omega,\omega'$ is concatenation of domains and $\src{\theta} = \delta$ whenever
+  $\theta : \delta\thin\gamma$.
+  We may write $\dom{\vec p}$ for the concatenation of the domains of a sequence
+  of patterns.
+\end{definition}
+
+Let us now say what are the expressions, relative to a domain of schematic variables and
+a scope of term variables.
+
+\begin{definition}[$\omega$-$\gamma$-expression]
+  The $\omega$-$\gamma$-expressions are liberal constructions in the full syntax of
+  terms, augmented by the liberal constructions $\xi/\sigma$, where
+  $\xi : \emp,\delta \thin \omega$ and $\sigma : \delta\su\gamma$.
+  Expressions in the synthesis rule for an elimination may also contain the
+  essential computation, $\trg$, standing for the target.
+\end{definition}
+
+Informally, just as we write names at the binding sites of schematic variables
+in patterns, we refer to them by names instead of some $\xi$. We may omit the
+initial $\emp,$ of a substitution, and we may omit the $/$ when the substitution is
+empty. The binding site of a schematic variable determines its scope, so we
+need not say which variables are being substituted.
+
+By inspection, our example theory conforms to Dogma \ref{dogma:mode}, using
+patterns $\U$, $\PI SxT$, $\la t$ and $\trg\:s$ where only patterns are permitted,
+and in expression positions, only schematic variables and $T/(s:S)$. We have
+already excluded the mention of free term variables from our rules, but there
+is still the matter of which schematic variables we may use where. Let us now
+be entirely precise.
+
+\begin{dogma}[\label{dogma:clockwise}clockwise flow]
+  Let a rule take the form
+  \[\Rule{J_1\quad\ldots J_n}
+         {J'}
+  \]
+  Let $\vec p_i$ be the sequence of patterns in the outputs of $J_i$ and $\vec p'$ the sequence of
+  patterns in the \emph{inputs} of $J'$. Let $q$ be the subject of $J'$ if it has one and $()$
+  otherwise.
+  We may compute sequences of domains
+  $\omega_1,\ldots,\omega_{n+1}$ of \emph{trusted} schematic variables
+  and $\chi_0,\ldots,\chi_1$ of \emph{untrusted} schematic variables. We shall require
+  the expressions in the inputs of $J_i$ to have domain $\omega_i$ and the subject of $J_i$ to
+  be chosen from $\chi_i$. The expressions in the outputs of $J'$ must have domain $\omega_{n+1}$.
+  We require that $\chi_{n+1}=\emp$. The computation proceeds as follows:
+  \begin{itemize}
+  \item initially, $\omega_1 = \dom{\vec p'}$ and $\chi_1=\dom q$;
+  \item if $J_i$ has no subject, then $\omega{i+1}=\omega_i,\dom{\vec p_i}$ and $\chi_{i+1}=\chi_i$;
+  \item if $J_i$ has context extensions yielding scope $\gamma$ and a subject, then that
+    subject must be specified by a pair $\xi\theta$, such that $\xi : \emp,\delta\thin\chi_i$
+    and $\theta : \delta\thin\gamma$; that being the case,
+    $\omega_{i+1}=\omega_i,\dom{\vec p_i},\delta$
+    and $\chi_{i+1} = \chi_i-\xi$, i.e., $\chi_i$ with $\xi$ removed.
+  \end{itemize}
+\end{dogma}
+
+What is going on? The \emph{trusted} $\omega_i$ grow as we work our way
+clockwise around the rule, starting with the schematic variables which come from the conclusion's
+inputs: we trust them in the sense that we know the precondition which must hold for them.
+The \emph{untrusted} $\chi_i$ come from the subject's conclusion
+and shrink to nothing as we work our way along the premises. Each premise
+grows the trusted domain by the schematic variables of its outputs (trusted because
+of postconditions) and moves its subject, if it has one, out of the untrusted domain
+and into the trusted: the premise states the trust which has been established.
+The thinning in a premise subject ensures that the term variables in
+scope for that schematic variable map to term variables locally bound in the
+context: informally, we achieve this by artful name capture, as in the
+premise $\cxe xS \chk Tt$ of the rule for $\la xt$.
+
+Let me emphasize a key consequence of Dogma \ref{dogma:clockwise}: subjects of premises
+come only from the subject of a conclusion; a rule establishes trust in \emph{every} part of its
+conclusion's subject; trust, once established, is \emph{never} revisited.
+
+We may readily check that our example rules all conform to Dogma \ref{dogma:clockwise}.
+
+
+$\U\U\U$
+
+
+I propose to achieve that basic and useful property
+once and for all, by means of two self-denying ordinances.
+
+Firstly, no other rules may be presented in terms of global judgements: all must be
+\emph{locally} presented in terms of $\gamma$-judgements for an arbitrary $\gamma$, and interpreted
+for global judgements by globalisation with respect to an arbitrary shared $\gamma$-context,
+$\Gamma$. Secondly, the only rule which may use type lookup in a premise is the following:
 
 That is the purpose for omitting the global context in typing rules: we obtain
 the stability of judgements with respect to actions on free variables by ensuring
@@ -939,43 +1277,7 @@ typing rules for particular theories, but we have three more rules to
 give which must be present in any theory, characterising the
 relationship between types, type checking and type synthesis.
 
-\begin{definition}[change of direction]
-  The following rules shall exist.
-  \[
-    \textsc{thunk}\;
-    \Rule{\syn{n}{S}\quad S=T}
-    {\chk T{[n]}}
-    \qquad
-    \textsc{universe}\;
-    \Rule{\syn{n}{S}\quad\univ S}
-         {\ty [n]}
-    \qquad
-    \textsc{radical}\;
-    \Rule{\ty T\quad \chk Tt}
-    {\syn{(t:T)}T}
-  \]
-\end{definition}
-
-For the purposes of this paper, type equality will be given by the axiom
-\[
-  \textsc{reflexivity}\;\Axiom{T = T}
-\]
-which is the only nonlinear rule I shall permit here, but it serves to make
-an insistence on linearity in schematic variables --- at least, those which
-stand for types --- unproblematic. The \textsc{thunk} rule insists that when
-we have a synthesized type and a type to check, they must agree precisely
-(or, for humans, they must agree up to the renaming of bound variables).
-Meanwhile, we may have computations in a type only if the type synthesized
-for that computation is recognizably a type of types. Lastly, while a radical
-offers us a candidate for the type, $T$, to synthesize, we must check both that it
-really is a type, and, now that $T$ is known to be a type, that $T$ accepts the
-term, $t$. These rules all conform to \ref{dogma:free}.
-
-It is worth remarking that more generous notions of type equality are worthy
-of consideration. Moreover, as the \textsc{thunk} rule is clearly \emph{directed},
-we could relax the requirement to the demand that $S$ be a \emph{subtype} of $T$.
-That might be one way to arrange for a Russell-style cumulative hierarchy of
-universes. Let us leave those possibilities for the future.
+These rules all conform to \ref{dogma:free}.
 
 The seasoned type theorist will further notice the total absence from the rules
 so far of any form of \emph{computation}. Our type systems are, thus far,
@@ -992,24 +1294,6 @@ about which typing rules make sense by construction.
   shapes of rules which check constructions and rules which synthesize types for eliminations;
   I give the scoping dogma for schematic variables in rules, in particular the dogma which insists that subjects in premises must come from the subjects of the conclusion; I demonstrate stability under substitution}
 
-\subsection{Martin-L\"of's 1971 type theory reconstructed}
-
-\newcommand{\U}{\star}
-\[\begin{array}{c}
-  \Axiom{\ty\U}\qquad
-  \Rule{\ty S\quad \cxe xS \ty T}
-    {\ty \PI SxT}\qquad\qquad
-  \Axiom{\univ \U}
-  \\
-  \Rule{\ty T}
-  {\chk\U T}
-  \qquad
-  \Rule{\cxe xS \chk Tt}
-  {\chk {\PI SxT}{\la x t}}
-  \qquad\qquad
-  \Rule{e\in\PI SxT\quad \chk Ss}
-       {e\:s\in T/(s:S)}
-\end{array}\]
 
 
 \section{Questions better left unasked}
