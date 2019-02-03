@@ -323,7 +323,7 @@ plays in the judgement forms and the flow of information through typing rules.
 The key idea is that a rule is a \emph{server} for derivations of its conclusion
 and a \emph{client} for derivations of its premise. A judgement form is thus a
 tiny little session type, specifying the protocol for these client-server
-interactions. We thus may thus formulate a clearer policy of who is promising
+interactions. We may thus formulate a clearer policy of who is promising
 what to whom and check whether rules are compliant --- we do not write down
 any old nonsense.
 
@@ -346,7 +346,7 @@ constructions which allow the binding of variables, with a uniform
 treatment of elimination and thus exactly one way to construct a
 redex, exposing the type at which reduction can happen. The patterns
 and expressions which may appear in rules will be specified with
-respect to this syntax. Redexes, too, will be characterised in terms
+respect to this syntax. Redexes, too, will be characterized in terms
 of patterns: for any canonical type, we shall be able to compute its
 set of non-overlapping redexes which must be given reducts to ensure
 progress, yielding a rewriting system which is confluent by
@@ -492,7 +492,7 @@ variable is eliminated. Moreover, the whole reduct will be radical. The type
 annotations thus mark the active computation sites and are discarded
 whenever computation concludes.
 
-The $\beta$-normal forms are characterised by replacing
+The $\beta$-normal forms are characterized by replacing
 $(t_\gamma:T_\gamma)$ in the grammar by $(n_\gamma:T_\gamma)$, ensuring that
 all radicals are inert because of some free variable. We must resist
 the clear temptation to elide type annotations on neutral terms
@@ -580,7 +580,10 @@ Informally, we may just write $\ith$. The empty thinning, $\eth$ is generated an
   Effectively, we may regard the integers as the infinite right-to-left bit vectors which eventually stabilise as all 0 (for non-negative integers) or all 1 (for negative integers). Thinning composition induces a monoid on the integers whose neutral element is $-1$. The details are left to the curious reader.
 \end{remark}
 
-Meanwhile, thinnings form a monoidal category by concatenation $\gamma,\gamma'$ of scopes and $\theta,\theta'$ of thinnings.
+Meanwhile, thinnings form a monoidal category by concatenation
+$\gamma,\delta$ of scopes and $\theta,\phi$ of thinnings.
+If $\theta : \gamma\thin\gamma'$, we may write $\theta\delta$ for
+the concatentation $\theta,\ith_\delta : \gamma,\delta \thin \gamma',\delta$.
 
 The formal truth is that a `variable' $x_\gamma$ is a thinning
 in some $\emp,x \thin \gamma$, i.e., from the singleton scope to $\gamma$. Noting that $\gamma$ occurs
@@ -593,12 +596,16 @@ quadrants is a functor from thinnings to \textbf{Set}.
     \begin{array}{rlc@{\qquad}rlc}
       a\theta & = & a & [n]\theta & = & [n\theta] \\
       (s.t)\theta & = & (s\theta.t\theta) && \\
-      \grp{\la x t}\theta & = & \la x \grp{t\grp{\theta1}} && \medskip\\
+      \grp{\la x t}\theta & = & \la x \grp{t(\theta1)} && \medskip\\
       x\theta & = & x;\theta & (t:T)\theta & = & (t\theta:T\theta) \\
       \grp{e\:s}\theta & = & \grp{e\theta}\:\grp{s\theta} && \\
     \end{array}
     \]
 \end{definition}
+
+Note that when disambiguating terms, I am careful to use a form of bracketing, $\grp{\cdot}$,
+which is not part of the syntax of terms, but happy to use ordinary parentheses to disambiguate
+other things, such as thinnings.
 
 \begin{lemma}[functoriality of the thinning action]
  The thinning action extends $\Tm ld\cdot$ to a functor from $\Delta_+$ to $\textbf{Set}$.
@@ -608,6 +615,38 @@ quadrants is a functor from thinnings to \textbf{Set}.
   This is established straightforwardly by induction on $m$, relying on the functoriality of scope extension
   to pass under an abstraction.
 \end{proof}
+
+Before we leave the category of thinnings, let me establish one more property which
+will prove crucial to my treatment of patterns.
+
+\newcommand{\pb}[2]{\textbf{pullback}(#1,#2)}
+\begin{lemma}[$\Delta_+$ has pullbacks]
+  If $\theta_i : \gamma_i\thin\gamma$ for $i=0,1$, then there exists a scope $\delta$ and
+  thinnings $\phi_i : \delta\thin\gamma_i$ for $i=0,1$ such that
+  $phi_0;\theta_0 = \phi_1;\theta_1$ with the universal property that
+  for any $\delta'$ and $\phi'_i : \delta'\thin\gamma_i$ such that
+  $phi'_0;\theta_0 = \phi'_1;\theta_1$, we have some $\psi : \delta'\thin\delta$ such that
+  $\phi'_i = \psi;\phi_i$ for $i=0,1$. We define $\pb{\theta_0}{\theta_1} = (\phi_0,\phi_1)$,
+  leaving $\delta$ implicit.
+\end{lemma}
+\begin{proof}
+  We shall see that $\delta$ is the part of $\gamma$ selected by \emph{both} $\theta_i$,
+  which needs must embed in both $\gamma_i$. More formally, we compute pullbacks thus:
+  \[\begin{array}{l@{\;=\;}r@{,\,}ll}
+    \pb{\emp}{\emp} & (\emp&\emp) & \\
+    \pb{\theta_00}{\theta_10} & (\phi_0&\phi_1)
+      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\                                     
+    \pb{\theta_00}{\theta_11} & (\phi_0&\phi_10)
+      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
+    \pb{\theta_01}{\theta_10} & (\phi_00&\phi_1)
+      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
+    \pb{\theta_01}{\theta_11} & (\phi_01&\phi_11)
+      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
+    \end{array}\]
+  The proof of the universal property is a straightforward induction on the call graph
+  of $\pb\cdot\cdot$.
+\end{proof}
+
 
 
 \subsection{The category of substitutions acts functorially on syntax}
@@ -638,9 +677,11 @@ pass under binders.
   If $\sigma : \gamma\su\delta$, then we may define its weakening, $\sigma1 : \gamma,x\su\delta,x$,
   by
   \[\sigma1 = \wka\sigma,x  \quad\mbox{where}\quad \wka\sigma = \sigma;\wk
-     \quad\mbox{where}\quad y\grp{\sigma;\theta} = \grp{y\sigma}\theta
+     \quad\mbox{where}\quad y(\sigma;\theta) = (y\sigma)\theta
   \]
   That is, $\sigma;\theta$ denotes pointwise action of $\theta$ on terms in $\sigma$.
+  We may define $\sigma\gamma' : \gamma,\gamma' \su \delta,\gamma'$ by iterating this construct
+  over $\gamma'$
 \end{definition}
 
 \begin{definition}[action of a substitution]
@@ -651,7 +692,7 @@ pass under binders.
     \begin{array}{rlc@{\qquad}rlc}
       a\sigma & = & a & [n]\sigma & = & [n\sigma] \\
       (s.t)\sigma & = & (s\sigma.t\sigma) && \\
-      \grp{\la x t}\sigma & = & \la x \grp{t\grp{\sigma1}} && \medskip\\
+      \grp{\la x t}\sigma & = & \la x \grp{t(\sigma1)} && \medskip\\
       \grp{e\:s}\sigma & = & \grp{e\sigma}\:\grp{s\sigma} & (t:T)\sigma & = & (t\sigma:T\sigma)
     \end{array}
   \]
@@ -662,11 +703,11 @@ pass under binders.
 \begin{definition}[postcomposition by substitution]
   If $\theta : \gamma_0\thin\gamma_1$ and $\sigma : \gamma_1\su\gamma_2$, their
   composition \emph{selects} $\theta$'s domain from $\sigma$.
-  \[\theta;\sigma : \gamma_o\su\gamma_2\qquad x\grp{\theta;\sigma} = \grp{x\theta}\sigma
+  \[\theta;\sigma : \gamma_o\su\gamma_2\qquad x(\theta;\sigma) = \grp{x\theta}\sigma
   \]
   If $\rho : \gamma_0\su\gamma_1$ and $\sigma : \gamma_1\su\gamma_2$, their
   composition makes $\sigma$ act \emph{pointwise} on terms in $\rho$.
-  \[\rho;\sigma : \gamma_o\su\gamma_2\qquad x\grp{\rho;\sigma} = \grp{x\rho}\sigma
+  \[\rho;\sigma : \gamma_o\su\gamma_2\qquad x(\rho;\sigma) = \grp{x\rho}\sigma
   \]
 \end{definition}
 
@@ -674,10 +715,10 @@ pass under binders.
   All four compositions of thinnings and substitions act on terms as the sequence of the
   component actions.
   \[
-    t\grp{\theta;\phi} = \grp{t\theta}\phi \quad\;
-    t\grp{\theta;\sigma} = \grp{t\theta}\sigma \quad\;
-    t\grp{\rho;\phi} = \grp{t\rho}\phi \quad\;
-    t\grp{\rho;\sigma} = \grp{t\rho}\sigma
+    t(\theta;\phi) = \grp{t\theta}\phi \quad\;
+    t(\theta;\sigma) = \grp{t\theta}\sigma \quad\;
+    t(\rho;\phi) = \grp{t\rho}\phi \quad\;
+    t(\rho;\sigma) = \grp{t\rho}\sigma
   \]
 \end{lemma}
 \begin{proof}
@@ -685,7 +726,7 @@ pass under binders.
   establish that weakening distributes $(\cdot;\cdot)1 = (\cdot1;\cdot1)$, which follows from
   the fact that
   \[
-    \wka t\grp{\cdot1} = t\wka\cdot
+    \wka t(\cdot1) = t\wka\cdot
   \]
   for both thinnings and substitutions.
 \end{proof}
@@ -709,6 +750,11 @@ To complete the components for the category of substitutions, we must have the i
   The category and functor laws collate the above results about identity and composition
   of thinnings and substitutions.
 \end{proof}
+
+Note that we may also concatenate substitutions with the same target
+scope: if $\sigma : \gamma \su \delta$ and
+$\sigma' : \gamma'\su\delta$, then
+$\sigma,\sigma' : \gamma,\gamma'\su\delta$.
 
 
 \section{Judging the judgements and ruling the rules}
@@ -1056,8 +1102,9 @@ binding sites for schematic variables; expressions the use sites.
           \end{tabular} }\]
 \end{dogma}
 
+\newcommand{\Pat}[1]{\textbf{Pat}(#1)}
 \begin{definition}[$\gamma$-pattern]
-The formal grammar of patterns is as follows:
+The formal grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
 \[\begin{array}{rrl@{\quad}l}
     p_\gamma, q_\gamma & ::= & a \\
          &   | & (p_\gamma.q_\gamma) \\
@@ -1075,6 +1122,11 @@ Formally, the pattern used for the function type in our example theory is
   \PI \ith {}\ith
 \]
 with two placeholders, the second of which allows dependency on the bound variable.
+
+It is straightforward to define the action of a thinning on a pattern: if
+$\theta : \gamma\thin\gamma'$ then $\cdot\theta : \Pat\gamma\to\Pat\gamma'$.
+The effect of this is to grow the notional scope of the pattern while
+forbidding any of the `extra' variables to occur in the pattern's places.
 
 Informally, of course, we write distinct names in the places: these are the
 binding sites for the schematic variables. We may omit the identity thinning,
@@ -1120,19 +1172,26 @@ from a domain by giving a singleton thinning, $\xi : \emp,\gamma \thin \omega$.
 Let us now say what are the expressions, relative to a domain of schematic variables and
 a scope of term variables.
 
+\newcommand{\Exp}[2]{\textbf{Exp}(#1,#2)}
+\newcommand{\Expo}[2]{\textbf{Exp}^\trg(#1,#2)}
 \begin{definition}[$\omega$-$\gamma$-expression]
-  The $\omega$-$\gamma$-expressions are liberal constructions in the full syntax of
+  The expressions $\Exp\omega\gamma$ are liberal constructions in the full syntax of
   terms, augmented by the liberal constructions $\xi/\sigma$, where
-  $\xi : \emp,\delta \thin \omega$ and $\sigma : \delta\su\gamma$.
+  $\xi : \emp,\delta \thin \omega$ and $\rho : \delta\su\gamma$.
   Expressions in the synthesis rule for an elimination may also contain the
-  essential computation, $\trg$, standing for the target.
+  essential computation, $\trg$, standing for the target. These we classify
+  as $\Expo\omega\gamma$.
 \end{definition}
 
 Informally, just as we write names at the binding sites of schematic variables
 in patterns, we refer to them by names instead of some $\xi$. We may omit the
-initial $\emp,$ of a substitution, and we may omit the $/$ when the substitution is
+initial $\emp,$ of a substitution, and we may omit the $/$ when the substitution, $\rho$ is
 empty. The binding site of a schematic variable determines its scope, so we
 need not say which variables are being substituted.
+
+It is straightforward to extend the action of thinnings $\cdot\theta$ and substitutions
+$\cdot\sigma$ from terms to expressions as we can compute the compositions $\rho;\theta$
+and $\rho;\sigma$.
 
 By inspection, our example theory conforms to Dogma \ref{dogma:mode}, using
 patterns $\U$, $\PI SxT$, $\la t$ and $\trg\:s$ where only patterns are permitted,
@@ -1140,6 +1199,12 @@ and in expression positions, only schematic variables and $T/(s:S)$. We have
 already excluded the mention of free term variables from our rules, but there
 is still the matter of which schematic variables we may use where. Let us now
 be entirely precise.
+
+
+\subsection{What is the domain?}
+
+The following dogma specifies the permitted usage of schematic variables in the
+premises and conclusion of a configurable rule.
 
 \begin{dogma}[\label{dogma:clockwise}clockwise flow]
   Let a rule take the form
@@ -1179,35 +1244,136 @@ scope for that schematic variable map to term variables locally bound in the
 context: informally, we achieve this by artful name capture, as in the
 premise $\cxe xS \chk Tt$ of the rule for $\la xt$.
 
-Let me emphasize a key consequence of Dogma \ref{dogma:clockwise}: subjects of premises
-come only from the subject of a conclusion; a rule establishes trust in \emph{every} part of its
-conclusion's subject; trust, once established, is \emph{never} revisited.
+Let me emphasize a key consequence of Dogma \ref{dogma:clockwise}:
+subjects of premises come \emph{only} from the subject of a
+conclusion; a rule establishes trust in \emph{every} part of its
+conclusion's subject; trust, once established, is \emph{never}
+revisited.
 
 We may readily check that our example rules all conform to Dogma \ref{dogma:clockwise}.
+
+
+\subsection{How to apply a rule}
+
+\newcommand{\mto}{\rightharpoonup}
+
+Dogma \ref{dogma:clockwise} makes it intuitive that rules are applied
+to actual terms by matching patterns to compute environments and
+instantiating expressions with environments. Let us make this intuition precise.
+
+\newcommand{\Env}[1]{\textbf{Env}(#1)}
+\begin{definition}[$\omega$-environment]
+  A given domain $\omega$ determines a notion of environment, $\Env\omega$.
+  We may refer to such environments by metavariable $\Omega$, and define them inductively as follows:
+  \[
+    \Axiom{\emp : \Env\emp} \qquad
+    \Rule{\Omega : \Env\omega\quad t : \Tm{\textbf{liberal}}{\textbf{construction}}\delta}
+         {\Omega,t : \Env{\omega,\delta}}
+  \]
+\end{definition}
+Again, we may use a comma to concatenate whole environments, as well as to extend them with a
+single term.
+
+Pattern matching rests on dependency checking, known colloquially as \emph{thickening},
+as it is the partial inverse of thinning.
+\begin{definition}[thickening]
+  If $\theta : \delta\thin\gamma$ then $\theta\cdot : \Tm ld\gamma \mto \Tm ld\delta$,
+  specified by the assertion
+  \[\theta t = s \;\Leftrightarrow\; t = s\theta
+  \]
+  We may compute $\theta t$ by a failure-propagating structural recursion on $t$. It suffices
+  to consider the cases for abstraction and variables, as all others proceed componentwise.
+  Straightforwardly, $\theta\grp{\la x t} = \la x\grp{(\theta1)t}$. For variables, recall
+  that the variable we write as $x$ is really a singleton thinning $\phi : \emp,x\thin\gamma$:
+  let $(\theta',\phi') = \pb\theta\phi$ and return $\theta'$ if $\phi'=\ith$, as by
+  the definition of a pullback, we have $\theta';\theta = \ith;\phi = \phi$.
+\end{definition}
+
+We may thus characterize pattern matching as a partial function yielding environments.
+
+\newcommand{\match}[2]{\textbf{match}(#1,#2)}
+\begin{definition}[pattern matching]
+  \[\match\cdot\cdot : (p : \Pat{\gamma})\times\Tm{\textbf{liberal}}{\textbf{construction}}\gamma
+    \mto \Env{\dom p}\]
+  \begin{array}{l@{\;=\;}l}
+    \match aa & \emp \\
+    \match{(p.q)}{(s.t)} & \match ps, \match qt \\
+    \match{\la x q}{\la x t} & \match qt \\
+    \match\theta t & \emp,\theta t
+  \end{array}
+\end{definition}
+
+Remember, though, that the patterns in our locally presented rules scope only over the
+\emph{locally} bound variables, by Dogma \ref{dogma:free}. We shall need to match
+terms which contain the free variables that the rules are not allowed to talk about.
+
+\begin{definition}[shifting of domains and patterns]
+  Let $\gamma,\omega$ be the domain obtained by mapping every scope $\delta$ in $\omega$
+  to the concatenation $\gamma,\delta$. Let $\gamma,p$ be the pattern obtained by
+  mapping every placeholder $\theta$ in $p$ to the concatenation $\ith_\gamma,\theta$.
+  For the latter, we obtain
+    \[\gamma,\cdot : \Pat{\gamma'} \to \Pat{\gamma,\gamma'} \]
+\end{definition}
+
+\begin{lemma}[coherence of shifting]
+  \[\dom{\gamma,p} = \gamma,\dom p
+  \]
+\end{lemma}
+\begin{proof}
+  Proceed by structural induction on $p$, using the fact that mapping commutes with
+  concatenation.
+\end{proof}
+
+If $\gamma$ is the scope of free variables and $\gamma'$ the scope of variables
+locally bound in a rule, we may take a pattern $p : \Pat{\gamma'}$ and
+a term $t : \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma,\gamma'}$,
+and compute $\match{\gamma,p}t$, obtaining, if we are lucky, an $\Env{\gamma,\dom p}$.
+
+What happens to expressions? We should be able to instantiate an expression
+$t : \Exp\omega\gamma$ with an environment $\Omega : \Env{\gamma,\omega}$, and obtain a
+$t\Omega : \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma}$. We shall need a little
+room to manoeuvre before we begin.
+
+\begin{lemma}{functoriality of environments}
+  We may extend $\Env{\cdot,\omega}$ to functors from thinnings or substitutions
+  to \textbf{Set}.
+\end{lemma}
+\begin{proof}
+  Suppose $\Omega : \Env{\gamma,\omega}$, $\theta : \gamma\thin\gamma'$ and
+  $\sigma : \gamma\su\gamma'$.
+  We define $\Omega\theta$ and $\Omega\sigma$ to act pointwise on the terms
+  $t$ in $\Omega$ over $\gamma,\delta$ for each $\delta$ in $\omega$.
+  The image of $t$ under $\cdot\theta$ is $t(\theta\delta)$, while for
+  $\cdot\sigma$, we obtain $t(\sigma\delta)$. The functor laws hold because
+  terms are also functors from thinnings and substitutions, and the iterated
+  weakening $\cdot\delta$ is an endofunctor on both thinnings and substitutions.
+\end{proof}
+
+With this in place, we may now push environments under binders.
+
+\begin{definition}[expression instantiation]
+  \[\Rule{t : \Exp\omega\gamma\quad \Omega : \Env{\gamma,\omega}}
+         {t\Omega :  \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma}}
+  \]
+  The operation proceeds by structural recursion on $t$. We propagate $\Omega$
+  componentwise, except when we encounter an abstraction or a schematic variable:
+  \begin{itemize}
+  \item $\grp{\la x t}\Omega = \la x \grp{t\hat\Omega}$
+  \item $\grp{\xi/\rho}\Omega = t(\iota_\gamma,\rho)$ where
+    $\xi : \emp,\delta\thin\omega$, thence
+    $t : \Tm{\textbf{liberal}}{\textbf{construction}}{(\gamma,\delta)}$ is the
+    projection at $\xi$ from $\Omega$.
+  \end{itemize}
+\end{definition}
+
+That is to say, instantiating a schematic variable requires substitution of the variables
+abstracted by the corresponding term in the environment.
+
 
 
 $\U\U\U$
 
 
-I propose to achieve that basic and useful property
-once and for all, by means of two self-denying ordinances.
-
-Firstly, no other rules may be presented in terms of global judgements: all must be
-\emph{locally} presented in terms of $\gamma$-judgements for an arbitrary $\gamma$, and interpreted
-for global judgements by globalisation with respect to an arbitrary shared $\gamma$-context,
-$\Gamma$. Secondly, the only rule which may use type lookup in a premise is the following:
-
-That is the purpose for omitting the global context in typing rules: we obtain
-the stability of judgements with respect to actions on free variables by ensuring
-that the rules talk about only those parts of the syntax which are unaffected
-by those actions.
-
-\begin{dogma}[\label{dogma:free}You do not talk about free variables.]
-No free variable may
-ever appear in any typing rule but \textsc{var}, \textsc{top} and \textsc{pop}.
-All other rules are expressed in terms of $\emp$-judgements, which
-embed into $\gamma$-judgements by $\eth$, as follows.
-\end{dogma}
 
 \begin{definition}[thinning judgements]
   If $J$ is a $\gamma$-judgement and $\theta : \gamma\thin\delta$, then $J\theta$
