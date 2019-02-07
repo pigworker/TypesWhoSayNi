@@ -176,8 +176,8 @@ data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
 
   thunk  : forall {ga}{Ga : Context ga}{n S T}
 
-        -> Ga != (n <: S) -> S == T
-        ------------------------------
+        -> Ga != (n <: S) -> Ga != (S ~ T)
+        -------------------------------------
         -> Ga != (T :> [ n ])
 
 
