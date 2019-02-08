@@ -198,10 +198,10 @@ module _ {l}(A : Meta -> Nat -> Nat -> Set)
   open module POLYOBJACT {M} = ObjAct (o {M})
   open Act
 
-  ThinA : Meta * Nat -> Meta * Nat -> Set
-  ThinA (M , G) (N , D) = (M == N) * A M G D
+  ObjA : Meta * Nat -> Meta * Nat -> Set
+  ObjA (M , G) (N , D) = (M == N) * A M G D
   
-  objAct : Act ThinA
+  objAct : Act ObjA
   trg objAct = l
   hit objAct i (refl , al) = objHit i al
   met objAct x (refl , al) ez = x ?- ez
