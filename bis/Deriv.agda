@@ -13,7 +13,6 @@ Chk Syn : Nat -> Set
 Chk ga = Term ([] , atom NIL) ga lib chk
 Syn ga = Term ([] , atom NIL) ga lib syn
 
-
 data Judgement (ga : Nat) : Set where
   _!-_ : Chk ga -> Judgement (ga -, <>) -> Judgement ga
   type univ : Chk ga -> Judgement ga
@@ -132,6 +131,10 @@ record UniverseRule : Set where
     {uniTru}  : Pat []
     uniPrems  : Premises [] uniInp (atom NIL) uniTru (atom NIL)
 
+record BetaRule : Set where
+  field
+    betaIntro betaType betaElim : Pat []
+    redTerm redType : Term ([] , cons (cons betaIntro betaType) betaElim) [] lib chk
 
 data Context : Nat -> Set where
   [] : Context []
@@ -143,6 +146,28 @@ postulate
   checking    : Bwd CheckingRule
   elimination : Bwd EliminationRule
   universe    : Bwd UniverseRule
+  computation : Bwd BetaRule
+
+
+data _~>_ {ga} : forall {d}(t t' : Term ([] , atom NIL) ga lib d) -> Set where
+
+  car  : forall {s s' t} -> s ~> s' -> (s & t) ~> (s' & t)
+  cdr  : forall {s t t'} -> t ~> t' -> (s & t) ~> (s & t')
+  abst : forall {t t'} -> t ~> t' -> (\\ t) ~> (\\ t')
+  thnk : forall {n e} -> essl n ~> e -> thnk n ~> [ e ]
+  targ : forall {e e' s} -> e ~> e' -> (e $ s) ~> (e' $ s)
+  elim : forall {e s s'} -> s ~> s' -> (e $ s) ~> (e $ s')
+  term : forall {t t' T} -> t ~> t' -> (t :: T) ~> (t' :: T)
+  type : forall {t T T'} -> T ~> T' -> (t :: T) ~> (t :: T')
+  beta : forall {R}(x : R <- computation) -> let open BetaRule R in
+      (ts : Env ([] , atom NIL) (ga ,P betaIntro)) ->
+      (Ts : Env ([] , atom NIL) (ga ,P betaType)) ->
+      (ss : Env ([] , atom NIL) (ga ,P betaElim)) ->
+      (((betaIntro %P ts) :: (betaType %P Ts)) $ (betaElim %P ss))
+        ~>
+      ((redTerm % ([] , cons (cons ts Ts) ss))
+        :: (redType % ([] , cons (cons ts Ts) ss)))
+
 
 data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
 
@@ -195,10 +220,24 @@ data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
         -> Ga != ((t :: T) <: T)
            
 
-  eq     : forall {ga}{Ga : Context ga}{T}
+  eq   : forall {ga}{Ga : Context ga}{T}
 
         -------------------
         -> Ga != (T ~ T)
+
+
+  pre  : forall {ga}{Ga : Context ga}{T T' t}
+
+        -> T ~> T'   -> Ga != (T' :> t)
+        ----------------------------------
+        -> Ga != (T :> t)
+
+
+  post : forall {ga}{Ga : Context ga}{e S S'}
+
+        -> Ga != (e <: S)   -> S ~> S'
+        --------------------------------
+        -> Ga != (e <: S')
 
 
   type : forall {R}(rule : R <- formation) -> let open FormationRule R in

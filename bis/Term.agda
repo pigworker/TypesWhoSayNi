@@ -170,8 +170,8 @@ record Act (A : Meta * Nat -> Meta * Nat -> Set) : Set where
   actThunk (essl n) al = trgLemma trg (actn n al)
   actThunk (t :: T) al = refl
 
-  wkns : forall {p G q D} -> A (p , G) (q , D) -> (X : Nat) ->
-    A (p , (G -+ X)) (q , (D -+ X))
+  wkns : forall {M G N D} -> A (M , G) (N , D) -> (X : Nat) ->
+    A (M , (G -+ X)) (N , (D -+ X))
   wkns al [] = al
   wkns al (X -, <>) = wkn (wkns al X)
 
@@ -181,7 +181,14 @@ record Act (A : Meta * Nat -> Meta * Nat -> Set) : Set where
   acte {p = cons p q}    (cons D E) al = cons (acte D al) (acte E al)
   acte {p = abst q}      (abst E)   al = abst (acte E al)
   acte {p = hole {X} th} (hole t)   al = hole (act t (wkns al X))
-  
+
+  projeActe : forall {Y X}{p : Pat X}(x : Y <P- p){M M' G D}
+    (ts : Env M (G ,P p))(al : A (M , G) (M' , D)) ->
+    proje D x (acte ts al) == act (proje G x ts) (wkns al Y)
+  projeActe hole     (hole t)    al = refl
+  projeActe (car x)  (cons ts _) al = projeActe x ts al
+  projeActe (cdr x)  (cons _ ts) al = projeActe x ts al
+  projeActe (abst x) (abst ts)   al = projeActe x ts al
 
 ------------------------------------------------------------------------------
 -- ACTIONS ON FREE OBJECT VARIABLES
@@ -192,6 +199,9 @@ record ObjAct (trg : Lib)(M : Meta)(A : Nat -> Nat -> Set) : Set where
   field
     objHit : forall {G D}(i : <> <- G)(al : A G D) -> Term M D trg syn
     objWkn : forall {G D}(al : A G D) -> A (G -, <>) (D -, <>)
+  objWkns : forall {G D}(al : A G D) X -> A (G -+ X) (D -+ X)
+  objWkns al [] = al
+  objWkns al (X -, x) = objWkn (objWkns al X)
 
 module _ {l}(A : Meta -> Nat -> Nat -> Set)
             (o : forall {M} -> ObjAct l M (A M)) where
@@ -207,6 +217,12 @@ module _ {l}(A : Meta -> Nat -> Nat -> Set)
   met objAct x (refl , al) ez = x ?- ez
   mee objAct x (refl , al) = essTo l (mets x)
   wkn objAct (refl , al) = refl , objWkn al
+
+  objWknsLemma : forall {M G D}(al : A M G D) X ->
+    wkns objAct (refl , al) X == (refl , objWkns al X)
+  objWknsLemma al [] = refl
+  objWknsLemma al (X -, x) rewrite objWknsLemma al X = refl
+    
 
 
 ------------------------------------------------------------------------------
@@ -234,6 +250,19 @@ module _ where
   _^_ {ess} {chk} t th = actk t (refl , th)
   _^_ {ess} {syn} t th = actn t (refl , th)
   _^_ {lib} {d}   t th = t ^^ (refl , th)
+
+  thinWknsLemma : forall {M}{de de'}(th : de <= de') ga ->
+    objWkns {M = M} OBJTHIN th ga == (th ^+ oi {S = ga})
+  thinWknsLemma th [] = refl
+  thinWknsLemma th (ga -, x) = _su $= thinWknsLemma th ga
+
+
+thinThunkLemma : forall {M ga de}(e : Term M ga lib syn)(th : ga <= de)
+  -> ([ e ] ^ th) == [ e ^ th ]
+thinThunkLemma (essl e) th = refl
+thinThunkLemma (t :: T) th = refl
+
+
 
 
 ------------------------------------------------------------------------------

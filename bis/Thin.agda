@@ -47,6 +47,15 @@ module _ {X : Set} where
   thinr cz (th su) = thinr cz th su
   thinr cz ze      = oe
 
+  thinCatSplit : forall bz {az cz}(th : (az -+ bz) <= cz) ->
+    Sg _ \ dz -> Sg _ \ ez -> Sg (az <= dz) \ th0 -> Sg (bz <= ez) \ th1 ->
+    Sg (cz == (dz -+ ez)) \ { refl -> th == (th0 ^+ th1) }
+  thinCatSplit [] th = _ , _ , th , ze , refl , refl
+  thinCatSplit (bz -, b) (th no) with thinCatSplit (bz -, b) th
+  ... | dz , ez , th0 , th1 , refl , refl = _ , _ , th0 , th1 no , refl , refl
+  thinCatSplit (bz -, b) (th su) with thinCatSplit bz th
+  ... | dz , ez , th0 , th1 , refl , refl = _ , _ , th0 , th1 su , refl , refl
+
   module _ where
     open Cat
     
@@ -121,6 +130,18 @@ module _ {X : Set} where
   moco th0 ph0 (th1 no) (ph1 su) = _no $= moco th0 ph0 th1 ph1
   moco th0 ph0 (th1 su) (ph1 su) = _su $= moco th0 ph0 th1 ph1
   moco th0 ph0 ze ze = refl
+
+  thinlLeft : forall {az bz cz}
+    (th : az <= bz)(ph : bz <= cz) dz ->
+    (th -< thinl ph dz) == thinl (th -< ph) dz
+  thinlLeft th ph dz = 
+    (th -< thinl ph dz)
+      =[ moco th ph ze (oe {xz = dz}) >=
+    ((th -< ph) ^+ (ze -< oe {xz = dz}))
+      =[ ((th -< ph) ^+_) $= oeU _ _ >=
+    thinl (th -< ph) dz
+      [QED]
+
 
   Thick : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) -> Set
   Thick th ph = Sg _ \ ps -> ph == (ps -< th)
