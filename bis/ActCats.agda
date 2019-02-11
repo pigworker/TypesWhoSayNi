@@ -500,6 +500,12 @@ module _ {l}{A : Meta -> Nat -> Nat -> Set}
         =< ata t (refl , wks al de0) (refl , oi ^+ th) ]=
       act t (refl , wks al de0) ^ (oi ^+ th)
       [QED]
+
+    plugActLemma0 : forall {de de'} ->
+      (p : Pat [])(ts : Env M (de ,P p))(al : A M de de') ->
+      (act (p %P ts) (refl , al)) == (p %P acte ts al)
+    plugActLemma0 p ts al
+      rewrite sym (plugActLemma p ts al) | nilFact al = refl
       
     module INSTACT {N : Meta}
         (sbstFact : forall {de de'} de0 ga (al : A N de de')
@@ -601,6 +607,15 @@ module _ {l}{A : Meta -> Nat -> Nat -> Set}
       instActLemmaz [] sg ts al = refl
       instActLemmaz (ez -, e) sg ts al
         rewrite instActLemmaz ez sg ts al | instActLemma e sg ts al = refl
+
+      instActLemma0 : forall {d ga'}
+        (t : Term M [] lib d)
+        (sg : [ N ! fst M ]/ ga')(ts : Env N (ga' ,P snd M)) ->
+        forall {de'}(al : A N ga' de') ->
+        act (t % (sg , ts)) (refl , al) ==
+          (t % (all (\ t -> act t (refl , al)) sg , acte ts al))
+      instActLemma0 t sg ts al
+        rewrite sym (instActLemma t sg ts al) | nilFact al = refl
 
 module _ {M : Meta} where
   open Monoidal (OPEMON {One})
@@ -750,6 +765,9 @@ module _ {M : Meta} where
         [QED])
     M
 
+  plugSbstLemma = plugActLemma
+  plugSbstLemma0 = plugActLemma0
+
   module _ {N : Meta} where
     open ActWeak SBSTWEAK
     open Monoidal (MONSBST {N})
@@ -796,6 +814,6 @@ module _ {M : Meta} where
       all ((_/ lefts de ga (sg >/< idsb {ga}))) idsb :+ ez
         [QED])
 
-    plugSbstLemma = plugActLemma
     instSbstLemma = instActLemma
+    instSbstLemma0 = instActLemma0
   
