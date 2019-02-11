@@ -18,8 +18,15 @@ data Judgement (ga : Nat) : Set where
   type univ : Chk ga -> Judgement ga
   _:>_ : Chk ga -> Chk ga -> Judgement ga
   _<:_ : Syn ga -> Chk ga -> Judgement ga
-  _::_ : <> <- ga -> Chk ga -> Judgement ga
   _~_  : Chk ga -> Chk ga -> Judgement ga
+
+_^J_ : forall {ga de}(J : Judgement ga)(th : ga <= de) -> Judgement de
+(S !- J) ^J th = (S ^ th) !- (J ^J (th su))
+type T   ^J th = type (T ^ th)
+univ T   ^J th = univ (T ^ th)
+(T :> t) ^J th = (T ^ th) :> (t ^ th)
+(e <: S) ^J th = (e ^ th) <: (S ^ th)
+(S ~ T)  ^J th = (S ^ th) ~ (T ^ th)
 
 Subject : Nat -> Pat [] -> Pat [] -> Set
 Subject ga suj suj' = Sg _ \ de -> Remove de suj suj' * de <= ga
@@ -136,10 +143,14 @@ record BetaRule : Set where
     betaIntro betaType betaElim : Pat []
     redTerm redType : Term ([] , cons (cons betaIntro betaType) betaElim) [] lib chk
 
+{-
 data Context : Nat -> Set where
   [] : Context []
   _-,_ : forall {ga} -> Context ga -> Chk ga -> Context (ga -, <>)
+-}
 
+Context : Nat -> Set
+Context ga = All (\ _ -> Term ([] , atom NIL) ga lib chk) ga
 
 postulate
   formation   : Bwd FormationRule
@@ -174,29 +185,15 @@ data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
 
   extend : forall {ga}{Ga : Context ga}{S J}
   
-            -> (Ga -, S) != J
-            --------------------
+            -> all (_^ (oi no)) (Ga -, S) != J
+            -------------------------------------
             -> Ga != (S !- J)
 
 
-  var0    : forall {ga}{Ga : Context ga}{S}
-  
-        ---------------------------------------------
-        -> (Ga -, S) != ((oe su) :: (S ^ (oi no)))
+  var    : forall {ga}{Ga : Context ga}{x}
 
-
-  vars   : forall {ga}{Ga : Context ga}{x S T}
-  
-        -> Ga != (x :: S)
-        --------------------------------------------
-        -> (Ga -, T) != ((x no) :: (S ^ (oi no)))
-
-
-  var    : forall {ga}{Ga : Context ga}{x S}
-
-        -> Ga != (x :: S)
-        ----------------------
-        -> Ga != (# x <: S)
+        ---------------------------------
+        -> Ga != (# x <: project x Ga)
 
 
   thunk  : forall {ga}{Ga : Context ga}{n S T}
@@ -260,7 +257,7 @@ data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
         -> Ga != ((chkInp %P Ts) :> (chkSuj %P ts))
 
 
-  syn  : forall {R}(rule : R <- elimination) -> let open EliminationRule R in
+  elir  : forall {R}(rule : R <- elimination) -> let open EliminationRule R in
          forall {ga}{Ga : Context ga}(e : Term ([] , atom NIL) ga lib syn)
          (Ss : Env ([] , atom NIL) (ga ,P trgType))
          (ss : Env ([] , atom NIL) (ga ,P elimSuj))

@@ -11,6 +11,9 @@ open import Deriv
 open import Thin
 open import ActCats
 
+CxThin : forall {ga de}(th : ga <= de) -> Context ga -> Context de -> Set
+CxThin th Ga De = all (_^ th) Ga == select th De
+
 module _ where
   open BetaRule
   
@@ -52,3 +55,108 @@ module _ where
           | instSbstLemma0 (redTerm R) [] (cons (cons ts Ts) ss) sg
           | instSbstLemma0 (redType R) [] (cons (cons ts Ts) ss) sg
           = beta {R = R} x _ _ _
+
+  open FormationRule
+  open CheckingRule
+  open EliminationRule
+  open UniverseRule
+
+  derThin : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
+            forall {de}{De : Context de}(th : ga <= de) -> CxThin th Ga De ->
+            De != (J ^J th)
+  premsThin : forall {ga}{Ga : Context ga}{gas inp suj0 tru suj1}
+              (Pz : Premises gas inp suj0 tru suj1)
+              (sgs : [ ([] , atom NIL) ! gas ]/ ga)
+              (inps : Env ([] , atom NIL) (ga ,P inp))
+              (sujs0 : Env ([] , atom NIL) (ga ,P suj0)) ->
+              let Jz , trus , sujs1 = premises ga Pz sgs inps sujs0 in
+              All (Ga !=_) Jz ->
+              forall {de}{De : Context de}(th : ga <= de) -> CxThin th Ga De ->
+              let Jz' , trus' , sujs1' = premises de Pz
+                    (all (_^ th) sgs) (inps ^E th) (sujs0 ^E th) in
+              All (De !=_) Jz' * trus' == (trus ^E th) * sujs1' == (sujs1 ^E th)
+  premThin : forall {ga}{gas inp tru suj xi tr' suj'}{Ga : Context (ga -+ xi)}
+    (P : Premise gas inp tru suj xi tr' suj')
+    (sgs : [ ([] , atom NIL) ! gas ]/ ga)
+    (inps : Env ([] , atom NIL) (ga ,P inp))
+    (trus : Env ([] , atom NIL) (ga ,P tru))
+    (sujs0 : Env ([] , atom NIL) (ga ,P suj)) ->
+    let J , trs , sujs1 = premise ga P sgs inps trus sujs0 in
+    Ga != J ->
+    forall {de}{De : Context (de -+ xi)}(th : ga <= de) ->
+    CxThin (th ^+ oi {S = xi}) Ga De ->
+    let J' , trs' , sujs1' = premise de P
+         (all (_^ th) sgs) (inps ^E th) (trus ^E th) (sujs0 ^E th) in
+    (De != J') * trs' == ActWeak.acte THINWEAK trs th * (sujs1' == (sujs1 ^E th))
+    
+  derThin {Ga = Ga}(extend {S = S} d) {De = De} th Th
+    with derThin d {De = all (_^ (oi no)) De -, ((S ^ th) ^ (oi no))} (th su)
+      (_-,_
+        $= (all (_^ (th su)) (all (_^ (oi no)) Ga)
+              =[ icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
+                ((refl ,_) $= (_no $= oiLemma th)) Ga >=
+            all (_^ (oi no)) (all (_^ th) Ga)
+              =[ all (_^ (oi no)) $= Th >=
+            all (_^ (oi no)) (select th De)
+              =< selectAll th (_^ (oi no)) De ]=
+            select th (all (_^ (oi no)) De)
+              [QED])
+        =$= pointCompo THINTHINTHIN THINTHINTHIN _ _ _ _ S
+              ((refl ,_) $= (_no $= oiLemma th)))
+  ... | d' = extend d'
+  derThin {Ga = Ga} (var {x = x}) {De = De} th Th 
+    rewrite sym (top $= selectAll x (_^ th) Ga) | Th
+          | sym (POLYSELECT.funCo th x De) = var
+  derThin (thunk {n = n} d0 d1) th Th
+    rewrite Act.actThunk THIN n (refl , th)
+          = thunk {n = n ^ th} (derThin d0 th Th) (derThin d1 th Th)
+  derThin (unis {n = n} d0 d1) th Th
+    rewrite Act.actThunk THIN n (refl , th)
+          = unis {n = n ^ th} (derThin d0 th Th) (derThin d1 th Th)
+  derThin (rad d0 d1)            th Th = rad (derThin d0 th Th) (derThin d1 th Th)
+  derThin eq                     th Th = eq
+  derThin (pre x d)              th Th = pre (redThin x th) (derThin d th Th)
+  derThin (post d x)             th Th = post (derThin d th Th) (redThin x th)
+  derThin (type {R} rule Ts dz)  th Th
+    rewrite plugThinLemma (typeSuj R) Ts th
+    = let dz' , _ , _ = premsThin (typePrems R) [] (atom NIL) Ts dz th Th in
+      type rule (Ts ^E th) dz'
+  derThin (chk {R} rule Ts ts dz)     th Th
+    rewrite plugThinLemma (chkInp R) Ts th | plugThinLemma (chkSuj R) ts th
+    = let dz' , _ , _ = premsThin (chkPrems R) [] Ts ts dz th Th in 
+      chk rule (Ts ^E th) (ts ^E th) dz'
+  derThin {ga} (elir {R} rule e Ss ss d dz) {de}{De} th Th
+    with elir rule {Ga = De} (e ^ th) (Ss ^E th) (ss ^E th) | derThin d th Th
+  ... | ready | d'
+    with premises ga (elimPrems R) ([] -, e) Ss ss
+       | premises de (elimPrems R) ([] -, (e ^ th)) (Ss ^E th) (ss ^E th)
+       | premsThin (elimPrems R) ([] -, e) Ss ss dz th Th
+  ... | Jz , trus , sujs | Jz' , ._ , ._ | dz' , refl , refl
+    rewrite plugThinLemma (trgType R) Ss th
+          | plugThinLemma (elimSuj R) ss th
+          | instThinLemma (resType R) ([] -, e) trus th
+      = ready d' dz'
+  derThin (unic {R} rule Ts dz)       th Th
+    rewrite plugThinLemma (uniInp R) Ts th
+    = let dz' , _ , _ = premsThin (uniPrems R) [] Ts (atom NIL) dz th Th in
+      unic rule (Ts ^E th) dz'
+  
+  premsThin [] sgs inpz sujs0 [] th Th = [] , refl , refl
+  premsThin {ga} (Pz -, P) sgs inps sujs0 (dz -, d) {de} th Th
+    with premises ga Pz sgs inps sujs0
+       | premises de Pz (all (_^ th) sgs) (inps ^E th) (sujs0 ^E th)
+       | premsThin Pz sgs inps sujs0 dz th Th
+  ... | Jz , trus , sujs1 | Jz' , ._ , ._ | dz' , refl , refl
+    with premise ga P sgs inps trus sujs1
+       | premise de P (all (_^ th) sgs) (inps ^E th) (trus ^E th) (sujs1 ^E th)
+       | premThin P sgs inps trus sujs1 d th Th
+  ... | J , tr , sujs2 | J' , ._ , ._ | d' , refl , refl
+      = (dz' -, d') , refl , refl
+
+  premThin (S !- P) sgs inps trus sujs0 d th Th = {!!}
+  premThin {xi = xi} (type (ps , T , ph)) sgs inps trus sujs0 d th Th
+    with derThin d (th ^+ oi {S = xi}) Th
+  ... | d' = {!!} , {!!} , {!!}
+  premThin (T :> t) sgs inps trus sujs0 d th Th = {!!}
+  premThin (univ T) sgs inps trus sujs0 d th Th = {!!}
+  premThin (tyeq S T) sgs inps trus sujs0 d th Th = {!!}
