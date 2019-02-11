@@ -2,6 +2,7 @@ module Stab where
 
 open import Basics
 open import Eq
+open import Cats
 open import Atom
 open import Bwd
 open import All
@@ -60,6 +61,7 @@ module _ where
   open CheckingRule
   open EliminationRule
   open UniverseRule
+  open Monoidal (OPEMON {One})
 
   derThin : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
             forall {de}{De : Context de}(th : ga <= de) -> CxThin th Ga De ->
@@ -153,25 +155,46 @@ module _ where
   ... | J , tr , sujs2 | J' , ._ , ._ | d' , refl , refl
       = (dz' -, d') , refl , refl
 
-  premThin {xi = xi} (S !- P) sgs inps trus sujs0 (extend d) {De = De} th Th
+  premThin {xi = xi} {Ga = Ga} (S !- P) sgs inps trus sujs0 (extend d) {De = De} th Th
     with premThin P sgs inps trus sujs0 d
           {De = all (_^ (oi no)) De -,
             ((S % (all (_^ th) sgs , cons (inps ^E th) (trus ^E th))) ^ (oi no))} th
-          (_-,_ $= {!!}
+          (_-,_ $= (all (_^ ((th ^+ oi {S = xi}) su)) (all (_^ (oi no)) Ga)
+                     =[ icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
+                         ((refl ,_) $= (_no $= oiLemma _)) Ga >=
+                    all (_^ (oi no)) (all (_^ (th ^+ oi {S = xi})) Ga)
+                     =[ all (_^ (oi no)) $= Th >=
+                    all (_^ (oi no)) (select (th ^+ oi {S = xi}) De)
+                     =< selectAll (th ^+ oi {S = xi}) (_^ (oi no)) De ]=
+                    select (th ^+ oi {S = xi}) (all (_^ (oi no)) De)
+                     [QED])
             =$= (((S % (sgs , cons inps trus)) ^ (oi no)) ^ ((th ^+ oi {S = xi}) su)
-                   =[ {!!} >=
+                   =[ pointCompo THINTHINTHIN THINTHINTHIN _ _ _ _
+                      (S % (sgs , cons inps trus)) ((refl ,_) $= (_no $= oiLemma _)) >=
                  ((S % (sgs , cons inps trus)) ^ (th ^+ oi {S = xi})) ^ (oi no)
                    =[ (_^ (oi no)) $= instThinLemma S sgs (cons inps trus) th >=
                  (S % (all (_^ th) sgs , cons (inps ^E th) (trus ^E th))) ^ (oi no)
                    [QED]))
   ... | d' , q0 , q1
     = extend d' , abst $= q0 , q1
-  premThin {xi = xi} (type (ps , T , ph)) sgs inps trus sujs0 d th Th
-    with derThin d (th ^+ oi {S = xi}) Th
-  ... | d' = {!!}
-  premThin {xi = xi} (T :> t) sgs inps trus sujs0 d th Th
-    with derThin d (th ^+ oi {S = xi}) Th
-  ... | d' = {!!}
+  premThin {ga}{xi = xi} (type (ps , T , ph)) sgs inps trus sujs0 d {de = de} th Th
+    with derThin d (th ^+ oi {S = xi}) Th | removeThin T sujs0 th
+  ... | d' | q0 , q1
+    rewrite q0 | q1
+    | pointCompo THINTHINTHIN THINTHINTHIN
+      (refl , (th ^+ oi {S = ps})) (refl , (oi {S = de} ^+ ph))
+      (refl , (oi {S = ga} ^+ ph)) (refl , (th ^+ oi {S = xi}))
+      (fst (remove ga T sujs0)) ((refl ,_) $= diag th ph)
+    = d' , refl , refl
+  premThin {ga}{xi = xi} (T :> (ps , t , ph)) sgs inps trus sujs0 d {de = de} th Th
+    with derThin d (th ^+ oi {S = xi}) Th | removeThin t sujs0 th
+  ... | d' | q0 , q1
+    rewrite instThinLemma T sgs (cons inps trus) th | q0 | q1
+    | pointCompo THINTHINTHIN THINTHINTHIN
+      (refl , (th ^+ oi {S = ps})) (refl , (oi {S = de} ^+ ph))
+      (refl , (oi {S = ga} ^+ ph)) (refl , (th ^+ oi {S = xi}))
+      (fst (remove ga t sujs0)) ((refl ,_) $= diag th ph)
+    = d' , refl , refl  
   premThin {xi = xi} (univ T) sgs inps trus sujs0 d th Th
     with derThin d (th ^+ oi {S = xi}) Th
   ... | d' rewrite instThinLemma T sgs (cons inps trus) th = d' , refl , refl

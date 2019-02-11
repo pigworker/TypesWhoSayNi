@@ -211,3 +211,16 @@ module _ {X : Set}(MX : Monoid X){_=>_ : X -> X -> Set}(CX : Cat X _=>_) where
         ArrEq _=>_ (M.cocoC S0 S1 S2) (M.cocoC T0 T1 T2)
           (f0 >< (f1 >< f2)) ((f0 >< f1) >< f2)
     -}
+    diag : forall {S S' T T'}(f : S => T)(f' : S' => T') ->
+            (C.coC (f >< C.idC {S'}) (C.idC {T} >< f')) ==
+            (C.coC (C.idC {S} >< f') (f >< C.idC {T'}))
+    diag f f' = 
+      C.coC (f >< C.idC) (C.idC >< f')
+        =[ moco f C.idC C.idC f' >=
+      (C.coC f C.idC) >< (C.coC C.idC f')
+        =[ _><_ $= (_ =[ C.coidC f >= f =< C.idcoC f ]= _ [QED])
+               =$= (_ =[ C.idcoC f' >= f' =< C.coidC f' ]= _ [QED]) >=
+      (C.coC C.idC f) >< (C.coC f' C.idC)
+        =< moco C.idC f' f C.idC ]=
+      C.coC (C.idC >< f') (f >< C.idC)
+        [QED]

@@ -56,12 +56,27 @@ data Premises gas inp suj0 : Pat [] -> Pat [] -> Set where
     -> Premise gas inp tru suj1 [] tr' suj2
     -> Premises gas inp suj0 (cons tru tr') suj2
 
-remove : forall ga {M}{de' de}{suj suj' : Pat de'} -> (x : Remove {de'} de suj suj') ->
+remove : forall ga {M}{de' de}{suj suj' : Pat de'}(x : Remove {de'} de suj suj') ->
   Env M (ga ,P suj) -> Term M (ga -+ de) lib chk * Env M (ga ,P suj')
 remove ga hole (hole t) = t , atom NIL
 remove ga (car x) (cons ss ts) = let s , ss' = remove ga x ss in s , cons ss' ts
 remove ga (cdr x) (cons ss ts) = let t , ts' = remove ga x ts in t , cons ss ts'
 remove ga (abst x) (abst ts) = let t , ts' = remove ga x ts in t , abst ts'
+
+removeThin : forall {ga}{M}{de' de}{suj suj' : Pat de'}(x : Remove {de'} de suj suj')
+  (ts : Env M (ga ,P suj)) ->
+  let t , ss = remove ga x ts in
+  forall {ga'}(th : ga <= ga') ->
+  let t' , ss' = remove ga' x (ActWeak.acte THINWEAK ts th) in
+  t' == (t ^ (th ^+ oi {S = de})) *
+  ss' == (ActWeak.acte THINWEAK ss th)
+removeThin hole (hole t) th = refl , refl
+removeThin (car x) (cons ss ts) th with removeThin x ss th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
+removeThin (cdr x) (cons ss ts) th with removeThin x ts th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
+removeThin (abst x) (abst ts) th with removeThin x ts th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
 
 premise : forall ga {gas inp tru suj de tr' suj'}
   -> Premise gas inp tru suj de tr' suj'
