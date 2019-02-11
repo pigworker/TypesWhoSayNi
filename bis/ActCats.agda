@@ -268,32 +268,6 @@ module _ {M : Meta} where
       ) =$= (#_ $= (_su $= oeU _ _))
   selIdsb ze = refl
 
-{-
-module _ {M : Meta} where
-  open ActIden THINIDEN
-
-  leftIdsb : forall G D ->
-    lefts G D (idsb {G -+ D}{M}) == all (_^ thinl oi D) (idsb {G}{M})
-  leftIdsb G [] = 
-    select oi idsb =[ funId _ >=
-    idsb =< allId _ idaId idsb ]=
-    all (_^ oi {S = G}) idsb [QED]
-  leftIdsb G (D -, <>) = 
-    lefts G D (all (_^ (oi no)) idsb)
-      =[ selectAll (thinl oi D) _ idsb >=
-    all (_^ (oi no)) (lefts G D idsb)
-      =[ all (_^ (oi no)) $= leftIdsb G D >=
-    all (_^ (oi no)) (all (_^ thinl oi D) (idsb {G}))
-      =< allCo _ _ _ (\ t -> 
-        t ^ (thinl oi D no)
-          =< (t ^_) $= (_no $= coidC _) ]=
-        t ^ ((thinl oi D -< oi) no)
-          =< thinco t (thinl oi D) (oi no) ]=
-        (t ^ thinl oi D) ^ (oi no)
-          [QED]) (idsb {G}) ]=
-    all (_^ (thinl oi D no)) (idsb {G})
-      [QED]
--}
 
 module _ {A : Meta -> Nat -> Nat -> Set}{l}(OA : forall {N} -> ObjAct l N (A N)) where
   open module POLYA {N} = ObjAct (OA {N})
@@ -398,197 +372,430 @@ module _ {M : Meta} where
   funCo SBSTFUN sg0 sg1 t = sym (coLib t (refl , sg0) (refl , sg1))
 
 
-module PLUGACT {M N : Meta}{A}(ACTA : Act A)
-  (THINACTA : ActCompo THIN ACTA ACTA)(ACTATHIN : ActCompo ACTA THIN ACTA)
-  (fact : forall {de de'} de0 ga (al : A (M , de) (N , de'))(th : de0 <= ga) ->
-    ActCompo.co THINACTA (refl , (oi ^+ th)) (Act.wkns ACTA al ga) ==
-    ActCompo.co ACTATHIN (Act.wkns ACTA al de0) (refl , (oi ^+ th)))
-  where
-  open Act ACTA
-  open ActCompo
+module _ where
 
-  plugActLemma : forall {ga de de'}
-    (p : Pat ga)(ts : Env M (de ,P p))(al : A (M , de) (N , de')) ->
-    (act (p %P ts) (wkns al ga)) == (p %P acte ts al)
-  plugActLemma (atom a) (atom .a) al = refl
-  plugActLemma (cons p q) (cons ss ts) al =
-    _&_ $= plugActLemma p ss al =$= plugActLemma q ts al
-  plugActLemma (abst p) (abst ts) al = \\_ $= plugActLemma p ts al
-  plugActLemma {ga}{de}{de'}(hole {de0} th) (hole t) al =
-    act (t ^ (oi ^+ th)) (wkns al ga)
-      =[ coLib THINACTA t (refl , oi ^+ th) (wkns al ga) >=
-    act t (co THINACTA (refl , (oi ^+ th)) (wkns al ga))
-      =[ act t $= fact _ _ al th >=
-    act t (co ACTATHIN (wkns al de0) (refl , (oi ^+ th)))
-      =< coLib ACTATHIN t (wkns al de0) (refl , (oi ^+ th)) ]=
-    act t (wkns al de0) ^ (oi ^+ th)
+  open ActWeak
+
+  _>/<_ : forall {M G0 D0 G1 D1} ->
+    [ M ! G0 ]/ D0 -> [ M ! G1 ]/ D1 ->
+    [ M ! (G0 -+ G1) ]/ (D0 -+ D1)
+  _>/<_ {M}{G0}{D0}{G1}{D1} sg0  sg1 =
+    all (_^ thinl oi D1) sg0 :+ all (_^ thinr D0 oi) sg1
+
+  SBSTWEAK : ActWeak _ OBJSBST
+  wks SBSTWEAK {D = D} sg X = sg >/< idsb {X}
+  wks1 SBSTWEAK {D = D} sg X = _-,_
+    $= (all (_^ (oi no)) (all (_^ thinl oi X) sg :+ all (_^ thinr D oi) idsb)
+          =[ allCat _ (all _ sg) (all _ (idsb {X})) >=
+        all (_^ (oi no)) (all (_^ thinl oi X) sg) :+
+        all (_^ (oi no)) (all (_^ thinr D oi) (idsb {X}))
+          =< _:+_
+            $= allCo _ _ _ (\ t -> 
+               t ^ (thinl oi X no)
+                 =< (t ^_) $= (_no $= coidC _) ]=
+               t ^ ((thinl oi X -< oi) no)
+                 =< thinco t _ _ ]=
+               (t ^ thinl oi X) ^ (oi no)
+                 [QED]) sg
+            =$= icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
+              ((refl ,_) $= (_no $= oiLemma _)) (idsb {X}) ]=
+        all (_^ (thinl oi X no)) sg :+
+        all (_^ (thinr D oi su)) (all (_^ (oi no)) idsb)
+          [QED])
+    =$= (#_ $= (_su $= oeU _ _))
+    
+  _/E_ : forall {M}{p : Pat []}{G D} ->
+    Env M (G ,P p) -> [ M ! G ]/ D -> Env M (D ,P p)
+  om /E sg = acte SBSTWEAK om sg
+
+  open Monoidal
+
+  MONSBST : forall {M} -> Monoidal (MonoidBwd One) (SUBSTITUTION {M})
+  _><_ MONSBST = _>/<_
+  moid MONSBST S S' = 
+    all (_^ thinl oi S') (idsb {S}) :+ all (_^ thinr S oi) (idsb {S'})
+      =< _:+_ $= selIdsb (thinl oi S') =$= selIdsb (thinr S oi)  ]=
+    select (thinl oi S') (idsb {S -+ S'}) :+ select (thinr S oi) (idsb {S -+ S'})
+      =< split S S' (idsb {S -+ S'}) ]=
+    idsb {S -+ S'}
       [QED]
+  moco MONSBST {R}{R'}{S}{S'}{T}{T'} rh0 sg0 rh1 sg1 = 
+    all (_/ (rh1 >/< sg1)) (rh0 >/< sg0)
+      =[ allCat (_/ (rh1 >/< sg1)) (all _ rh0) (all _ sg0) >=
+    all (_/ (rh1 >/< sg1)) (all (_^ thinl oi S') rh0) :+
+    all (_/ (rh1 >/< sg1)) (all (_^ thinr S oi) sg0)
+      =[ _:+_ $= icompoLemma THINSBSTSBST SBSTTHINSBST _ _ _ _
+         ((refl ,_) $= (lefts S S' (rh1 >/< sg1)
+               =[ leftis (all _ rh1) (all _ sg1) >=
+               all (_^ thinl oi T') rh1
+                 [QED])) rh0
+             =$= icompoLemma THINSBSTSBST SBSTTHINSBST _ _ _ _
+         ((refl ,_) $= (rights S S' (rh1 >/< sg1)
+               =[ rightis (all _ rh1) (all _ sg1) >=
+              all (_^ thinr T oi) sg1
+                [QED])) sg0 >=
+    all (_/ rh1) rh0 >/< all (_/ sg1) sg0
+      [QED]
+  {-
+  lunitor MONSBST = {!!}
+  runitor MONSBST = {!!}
+  associator MONSBST = {!!}
+  -}
+
+module _ {l}{A : Meta -> Nat -> Nat -> Set}
+            {o : forall {M} -> ObjAct l M (A M)}
+            (st : SbstThen o)(ASS : ObjComp o OBJSBST OBJSBST)
+            (TAA : ObjComp OBJTHIN o o)(ATA : ObjComp o OBJTHIN o)
+            (ACTW : ActWeak _ o) where
   
+  open Act (objAct _ o)
+  open ActWeak ACTW
+  module _ where
+    open SbstThen st
+    open ObjComp compSbst
+    open ActCompo objAComp
+    sas = coLib
+  module _ where
+    open ObjComp ASS
+    open ActCompo objAComp
+    as = coOb
+    ass = coLib
+  module _ where
+    open ObjComp TAA
+    open ActCompo objAComp
+    ta = coOb
+    taa = coLib
+  module _ where
+    open ObjComp ATA
+    open ActCompo objAComp
+    at = coOb
+    ata = coLib
+  ian = Act.actn INST
+  iaz = Act.actz INST
+  
+  module PLUGINSTACT
+    (nilFact : forall {M de de'}(al : A M de de') -> wks al [] == al)
+    (thinFact : forall {M de de'} de0 ga (al : A M de de')(th : de0 <= ga) ->
+      ta (oi ^+ th) (wks al ga) == at (wks al de0) (oi ^+ th))
+    (hitFact : forall {M de de'}(al : A M de de') ga (i : <> <- ga) ->
+      toLib l syn (ObjAct.objHit o (i -< thinr de oi) (wks al ga))
+        == # (i -< thinr de' oi))
+    (M : Meta)
+    where
+  
+    plugActLemma : forall {ga de de'}
+      (p : Pat ga)(ts : Env M (de ,P p))(al : A M de de') ->
+      (act (p %P ts) (refl , wks al ga)) == (p %P acte ts al)
+    plugActLemma (atom a)   (atom .a)    al = refl
+    plugActLemma (cons p q) (cons ss ts) al
+      rewrite plugActLemma p ss al | plugActLemma q ts al = refl
+    plugActLemma {ga} (abst q)   (abst ts)    al
+      rewrite wks1 al ga | plugActLemma q ts al = refl
+    plugActLemma {ga}{de}{de'} (hole {de0} th)  (hole t)     al = 
+      act (t ^ (oi ^+ th)) (refl , wks al ga)
+        =[ taa t (refl , oi ^+ th) (refl , wks al ga) >=
+      act t (refl , ta (oi ^+ th) (wks al ga))
+        =[ act t $= ((refl ,_) $= thinFact de0 ga al th) >=
+      act t (refl , at (wks al de0) (oi ^+ th))
+        =< ata t (refl , wks al de0) (refl , oi ^+ th) ]=
+      act t (refl , wks al de0) ^ (oi ^+ th)
+      [QED]
+      
+    module INSTACT {N : Meta}
+        (sbstFact : forall {de de'} de0 ga (al : A N de de')
+        (ez : All (\ _ -> Term N (de' -+ ga) lib syn) de0) ->
+        as (wks al de0) (all (_^ thinl oi ga) idsb :+ ez) ==
+        (all (\ t -> act t (refl , ta (thinl oi ga) (wks al ga))) idsb :+ ez) ) 
+
+      where
+      instActLemma : forall {d ga ga'}
+        (t : Term M ga lib d)
+        (sg : [ N ! fst M ]/ ga')(ts : Env N (ga' ,P snd M)) ->
+        forall {de'}(al : A N ga' de') ->
+        act (t % (sg , ts)) (refl , wks al ga) ==
+          (t % (all (\ t -> act t (refl , al)) sg , acte ts al))
+      instActLemman : forall {ga ga'}
+        (t : Term M ga ess syn)
+        (sg : [ N ! fst M ]/ ga')(ts : Env N (ga' ,P snd M)) ->
+        forall {de'}(al : A N ga' de') ->
+        act (ian t (_ , refl , sg , ts)) (refl , wks al ga) ==
+          ian t (_ , refl , all (\ t -> act t (refl , al)) sg , acte ts al)
+      instActLemmaz : forall {ga ga' X}
+        (ez : All (\ _ -> Term M ga lib syn) X)
+        (sg : [ N ! fst M ]/ ga')(ts : Env N (ga' ,P snd M)) ->
+        forall {de'}(al : A N ga' de') ->
+        (all (\ t -> act t (refl , wks al ga)) (iaz ez (_ , refl , sg , ts))) ==
+        iaz ez (_ , refl , all (\ t -> act t (refl , al)) sg , acte ts al)
+      instActLemma {syn} (essl n) sg ts al rewrite instActLemman n sg ts al = refl
+      instActLemma {chk} (! a) sg ts al = refl
+      instActLemma {chk} (s & t) sg ts al
+        rewrite instActLemma s sg ts al | instActLemma t sg ts al = refl
+      instActLemma {chk} {ga} (\\ t) sg ts al
+        rewrite wks1 al ga | instActLemma t sg ts al = refl
+      instActLemma {ga = ga} (thnk n) sg ts al
+        rewrite actThunk (ian n (_ , refl , sg , ts)) (refl , wks al ga)
+              | instActLemman n sg ts al
+              = refl
+      instActLemma (t :: T) sg ts al
+        rewrite instActLemma t sg ts al | instActLemma T sg ts al = refl
+      instActLemma {ga = ga} {ga'} (_?-_ {de0} x ez) sg ts {de'} al =
+        act (proje ga' x ts /
+               (all (_^ thinl oi ga) idsb :+ iaz ez (_ , refl , sg , ts)))
+          (refl , wks al ga)
+          =[ sas (proje ga' x ts) _ _ >=
+        proje ga' x ts / all (\ t -> act t (refl , wks al ga))
+               (all (_^ thinl oi ga) idsb :+ iaz ez (_ , refl , sg , ts))
+          =[ (proje ga' x ts /_) $= ( 
+            all (\ t -> act t (refl , wks al ga))
+               (all (_^ thinl oi ga) idsb :+ iaz ez (_ , refl , sg , ts))
+              =[ allCat _ _ (iaz ez _) >=
+            (all (\ t -> act t (refl , wks al ga)) (all (_^ thinl oi ga) idsb) :+
+                all (\ t -> act t (refl , wks al ga)) (iaz ez (_ , refl , sg , ts)))
+              =[ _:+_ $= sym (allCo _ _ _ (\ t -> sym (taa t _ _)) idsb)
+                 =$= instActLemmaz ez sg ts al >=
+            (all (\ t -> act t (refl , ta (thinl oi ga) (wks al ga))) idsb :+
+              iaz ez (_ , refl , all (\ t -> act t (refl , al)) sg , acte ts al))
+              =< sbstFact de0 ga al _ ]=
+            (as (wks al de0)
+             (all (_^ thinl oi ga) idsb :+
+              iaz ez (de' , refl , all (\ t -> act t (refl , al)) sg , acte ts al)))
+              [QED]
+          ) >=
+        proje ga' x ts /
+          (as (wks al de0)
+           (all (_^ thinl oi ga) idsb
+            :+ iaz ez (de' , refl , all (\ t -> act t (refl , al)) sg , acte ts al)))
+          =< ass (proje ga' x ts) _ _ ]=
+        act (proje ga' x ts) (refl , wks al de0) /
+           (all (_^ thinl oi ga) idsb
+            :+ iaz ez (de' , refl , all (\ t -> act t (refl , al)) sg , acte ts al))
+          =< (_/ _) $= projeActe x ts al  ]=
+        proje de' x (acte ts al) /
+           (all (_^ thinl oi ga) idsb
+            :+ iaz ez
+            (de' , refl , all (\ t -> act t (refl , al)) sg , acte ts al))
+             [QED]
+      instActLemman {ga} (elim e s) sg ts al
+        rewrite toLibLemma trg syn
+                  (elim (act (e % (sg , ts)) (refl , wks al ga))
+                        (act (s % (sg , ts)) (refl , wks al ga)))
+              | instActLemma e sg ts al | instActLemma s sg ts al = refl
+      instActLemman {ga}{ga'} (vari i) sg ts {de'} al = hitFact al ga i
+      instActLemman {ga}{ga'} (mets x) sg ts {de'} al = 
+        act (project x sg ^ thinl (oi {S = ga'}) ga) (refl , wks al ga)
+          =[ taa (project x sg) _ _ >=
+        act (project x sg) (refl , ta (thinl oi ga) (wks al ga))
+          =[ act (project x sg) $= ((refl ,_) $= (
+             ta (thinl oi ga) (wks al ga)
+               =[ thinFact [] ga al oe >=
+             at (wks al []) (thinl oi ga)
+               =[ at $= nilFact al =$ _ >=
+             at al (thinl oi ga)
+               [QED])) >=
+        act (project x sg) (refl , at al (thinl oi ga))
+          =< ata (project x sg) _ _ ]=
+        act (project x sg) (refl , al) ^ thinl (oi {S = de'}) ga
+          =< (_^ thinl (oi {S = de'}) ga) $= (top $= selectAll x _ sg) ]=
+        project x (all (\ t -> act t (refl , al)) sg) ^ thinl (oi {S = de'}) ga
+          [QED]
+      instActLemmaz [] sg ts al = refl
+      instActLemmaz (ez -, e) sg ts al
+        rewrite instActLemmaz ez sg ts al | instActLemma e sg ts al = refl
+
 module _ {M : Meta} where
+  open Monoidal (OPEMON {One})
 
-  open ObjAct (OBJTHIN {M})
-  open Act THIN
-  open ActCompo THINTHINTHIN
-
-  thinWknsFact : {de de' de0 ga : Bwd One}
-      (ph : de <= de')
-      (th : de0 <= ga) ->
-      ((oi ^+ th) -< objWkns ph ga)
-      ==
-      (objWkns ph de0 -< (oi ^+ th))
-  thinWknsFact ph (th no) = _no $= thinWknsFact ph th
-  thinWknsFact ph (th su) = _su $= thinWknsFact ph th
-  thinWknsFact ph ze      = oiLemma ph
-
-  open PLUGACT {M}{M} THIN THINTHINTHIN THINTHINTHIN
-    (\ { de0 ga (refl , ph) th -> 
-      co (refl , (oi ^+ th)) (wkns (refl , ph) ga)
-        =[ co (refl , (oi ^+ th)) $= objWknsLemma _ OBJTHIN ph ga >=
-      (refl , ((oi ^+ th) -< objWkns ph ga))
-        =[ (refl ,_) $= thinWknsFact ph th >=
-      (refl , objWkns ph de0 -< (oi ^+ th))
-        =< co $= objWknsLemma _ OBJTHIN ph de0 =$ (refl , (oi ^+ th)) ]=
-      co (wkns (refl , ph) de0) (refl , (oi ^+ th))
-        [QED] })
+  open PLUGINSTACT SBSTTHENTHIN OBJTHINSBSTSBST OBJTHINTHINTHIN OBJTHINTHINTHIN
+    THINWEAK
+    (\ _ -> refl)
+    (\ de0 ga ph th -> 
+      (oi ^+ th) -< (ph ^+ oi {S = ga})
+           =[ moco oi th ph oi >=
+      ((oi -< ph) ^+ (th -< oi))
+           =[ _^+_ $= oiLemma ph =$= sym (oiLemma th) >=
+      ((ph -< oi) ^+ (oi -< th))
+           =< moco ph oi oi th ]=
+      (ph ^+ oi {S = de0}) -< (oi ^+ th)
+        [QED])
+    (\ {M}{de}{de'} th ga i -> #_ $= (
+      ((i -< thinr de oi) -< (th ^+ oi {S = ga}))
+        =< cocoC i (thinr de oi) (th ^+ oi {S = ga}) ]=
+      (i -< (thinr de oi -< (th ^+ oi {S = ga})))
+        =[ (i -<_) $= (
+          thinr de oi -< (th ^+ oi {S = ga})
+            =[ thinrLemma oi th (oi {S = ga}) >=
+          thinr de' (oi -< oi)
+            =[ thinr de' $= idcoC (oi {S = ga}) >=
+          thinr de' oi
+            [QED]) >=
+      (i -< thinr de' oi)
+        [QED]))
+    M
 
   plugThinLemma = plugActLemma
 
-module _ {M N : Meta} where
+  module _ {N : Meta} where
+    open INSTACT {N} (\ {de}{de'} de0 ga th ez -> 
+      select (th ^+ oi {S = de0}) (all (_^ thinl oi ga) idsb :+ ez)
+        =[ selCat th (oi {S = de0}) (all _ idsb) ez >=
+      select th (all (_^ thinl oi ga) idsb) :+ select oi ez
+        =[ _:+_ $= (
+            select th (all (_^ thinl oi ga) idsb)
+              =< select th $= selIdsb (thinl oi ga) ]=
+            select th (select (thinl oi ga) idsb)
+              =< funCo (thinl oi ga) th idsb ]=
+            select (th -< thinl oi ga) idsb
+              =[ select $=(
+                   (th -< thinl oi ga)
+                     =[ moco th ze oi oe >=
+                   (th -< oi) ^+ (ze -< oe {xz = ga})
+                     =< _^+_ $= oiLemma th =$= oeU _ _ ]=
+                   (oi -< th) ^+ (oe -< oi {S = ga})
+                     =< moco oi oe th (oi {S = ga}) ]=
+                   (thinl oi ga -< (th ^+ oi {S = ga}))
+                     [QED]
+               )=$ idsb >=
+            select (thinl oi ga -< (th ^+ oi {S = ga})) idsb
+              =[ selIdsb (thinl oi ga -< (th ^+ oi {S = ga})) >=
+            all (_^ (thinl oi ga -< (th ^+ oi {S = ga}))) idsb
+              [QED])
+          =$= funId ez >=
+      all (_^ (thinl oi ga -< (th ^+ oi {S = ga}))) idsb :+ ez
+        [QED])
+
+    instThinLemma = instActLemma
+
+module _ {M : Meta} where
+  open Monoidal (OPEMON {One})
+
+  open PLUGINSTACT SBSTTHENSBST OBJSBSTSBSTSBST OBJTHINSBSTSBST OBJSBSTTHINSBST
+    SBSTWEAK
+    (allId _ (ActIden.idaId THINIDEN))
+    (\ {M}{de}{de'} de0 ga sg th -> 
+      select (oi ^+ th)
+        (all (_^ thinl oi ga) sg :+ all (_^ thinr de' (oi {S = ga})) idsb)
+        =[ selCat oi th (all _ sg) (all _ idsb) >=
+      (select oi (all (_^ thinl oi ga) sg) :+
+       select th (all (_^ thinr de' (oi {S = ga})) idsb))
+        =[ _:+_ $= funId _ =$= (
+            select th (all (_^ thinr de' (oi {S = ga})) idsb)
+              =< select th $= selIdsb (thinr de' (oi {S = ga})) ]=
+            select th (select (thinr de' (oi {S = ga})) idsb)
+              =< funCo (thinr de' (oi {S = ga})) th idsb ]=
+            select (th -< thinr de' (oi {S = ga})) idsb
+              =[ select $= (
+                (th -< thinr de' (oi {S = ga}))
+                  =[ thinrAmmel th (oi {S = ga}) >=
+                thinr de' (th -< oi)
+                  =[ thinr de' $= coidC th >=
+                thinr de' th
+                  [QED]) =$ idsb >=
+            select (thinr de' th) idsb
+              [QED]) >=
+      (all (_^ thinl oi ga) sg :+ select (thinr de' th) idsb)
+        =[ (all (_^ thinl oi ga) sg :+_) $= selIdsb (thinr de' th) >=
+      (all (_^ (thinl oi ga)) sg :+ all (_^ (thinr de' th)) idsb)
+        =[ _:+_ $= allCo _ _ _ (\ t ->
+                   t ^ thinl oi ga
+                     =[ (t ^_) $= (
+                        thinl oi ga
+                          =< _^+_ $= idcoC oi =$= oeU (oe -< th) _ ]=
+                        (oi -< oi) ^+ (oe -< th)
+                          =< moco oi oe oi th ]=
+                        thinl oi de0 -< (oi ^+ th)
+                          [QED]) >=
+                   t ^ (thinl oi de0 -< (oi ^+ th))
+                     =< thinco t _ _ ]=
+                   ((t ^ thinl oi de0) ^ (oi ^+ th))
+                     [QED]) sg
+               =$= allCo _ _ _ (\ t ->
+                  t ^ thinr de' th
+                    =[ (t ^_) $= (
+                       thinr de' th
+                         =< thinr de' $= idcoC th ]=
+                       thinr de' (oi -< th)
+                         =< thinrLemma oi oi th ]=
+                       thinr de' oi -< (oi ^+ th)
+                         [QED]) >=
+                  t ^ (thinr de' oi -< (oi ^+ th))
+                    =< thinco t _ _ ]=
+                  (t ^ (thinr de' oi)) ^ (oi ^+ th)
+                    [QED]) idsb >=
+      (all (_^ (oi ^+ th)) (all (_^ thinl oi de0) sg) :+
+       all (_^ (oi ^+ th)) (all (_^ thinr de' (oi {S = de0})) idsb))
+        =< allCat _ (all _ sg) (all _ idsb) ]=
+      all (_^ (oi ^+ th)) (all (_^ thinl oi de0) sg :+ all (_^ thinr de' oi) idsb)
+        [QED])
+    (\ {M}{de}{de'} sg ga i -> 
+      project (i -< thinr de oi)
+        (all (_^ thinl oi ga) sg :+ all (_^ thinr de' (oi {S = ga})) idsb)
+        =[ project $= (
+             i -< thinr de oi
+               =[ thinrAmmel i oi >=
+             thinr de (i -< oi)
+               =[ thinr de $= coidC i >=
+             thinr de i
+               [QED])
+            =$ (all (_^ thinl oi ga) sg :+ all (_^ thinr de' (oi {S = ga})) idsb) >=
+      project (thinr de i)
+        (all (_^ thinl oi ga) sg :+ all (_^ thinr de' (oi {S = ga})) idsb)
+        =[ top $= selRight i (all _ sg) (all _ idsb) >=
+      project i (all (_^ thinr de' oi) idsb)
+        =< project i $= selIdsb (thinr de' oi) ]=
+      project i (select (thinr de' oi) idsb)
+        =< top $= funCo (thinr de' oi) i idsb ]=
+      project (i -< thinr de' oi) idsb
+        =[ idsbHit (i -< thinr de' oi) >=
+      # (i -< thinr de' oi)
+        [QED])
+    M
+
+  module _ {N : Meta} where
+    open ActWeak SBSTWEAK
+    open Monoidal (MONSBST {N})
+    open INSTACT {N} (
+     \ {de}{de'} de0 ga sg ez -> 
+      all (_/ (all (_^ thinl oi ga) idsb :+ ez)) (sg >/< idsb {de0})
+        =[ allCat (_/ (all (_^ thinl oi ga) idsb :+ ez))
+            (all _ sg) (all _ (idsb {de0})) >=
+      all (_/ (all (_^ thinl oi ga) idsb :+ ez)) (all (_^ thinl oi de0) sg) :+
+      all (_/ (all (_^ thinl oi ga) idsb :+ ez)) (all (_^ thinr de' oi) (idsb {de0}))
+        =[ _:+_
+          $=  (all (_/ (all (_^ thinl oi ga) idsb :+ ez)) (all (_^ thinl oi de0) sg)
+                =< allCo _ _ _ (\ t ->
+                   t ^ thinl oi ga
+                     =< (_^ thinl oi ga) $= ActIden.idaId SBSTIDEN t ]=
+                   (t / idsb) ^ thinl oi ga
+                     =[ ActCompo.coLib SBSTTHINSBST t _ _ >=
+                   t / all (_^ thinl oi ga) idsb
+                     =< (t /_) $= leftis (all _ idsb) ez ]=
+                   t / lefts de' de0 (all (_^ thinl oi ga) idsb :+ ez)
+                     =< ActCompo.coLib THINSBSTSBST t _ _ ]=
+                   (t ^ thinl oi de0) / (all (_^ thinl oi ga) idsb :+ ez)
+                     [QED]) sg  ]=
+               all (_^ thinl oi ga) sg [QED])
+          =$= (all (_/ (all (_^ thinl oi ga) idsb :+ ez))
+                (all (_^ thinr de' oi) (idsb {de0}))
+                 =< all (_/ _) $= selIdsb (thinr de' oi) ]=
+               all (_/ (all (_^ thinl oi ga) idsb :+ ez))
+                 (select (thinr de' oi) (idsb {de' -+ de0}))
+                 =< selectAll (thinr de' oi) (_/ _) (idsb {de' -+ de0}) ]=
+               rights de' de0 (all (_/ (all (_^ thinl oi ga) idsb :+ ez)) idsb)
+                 =[ rights de' de0 $= Cat.idcoC SUBSTITUTION _ >=
+               rights de' de0 (all (_^ thinl oi ga) idsb :+ ez)
+                 =[ rightis (all _ idsb) ez >=
+               ez [QED]) >=
+      all (_^ thinl oi ga) sg :+ ez
+        =< (_:+ ez) $= (
+          all ((_/ lefts de ga (sg >/< idsb {ga}))) idsb
+            =[ Cat.idcoC SUBSTITUTION _ >=
+          lefts de ga (sg >/< idsb {ga})
+            =[ leftis (all _ sg) (all _ (idsb {ga})) >=
+          all (_^ thinl oi ga) sg
+            [QED]) ]=
+      all ((_/ lefts de ga (sg >/< idsb {ga}))) idsb :+ ez
+        [QED])
+
+    plugSbstLemma = plugActLemma
+    instSbstLemma = instActLemma
   
-  open ObjAct (OBJTHIN {N})
-  open Act THIN
-
-  instThinLemma : forall {d ga ga'}
-    (t : Term M ga lib d) ->
-    Pi (Inst (M , ga) (N , ga')) \
-      { (de , refl , sg , ts) -> 
-      forall {de'}(th : de <= de') ->
-    ((t % (sg , ts)) ^ objWkns th ga) ==
-      (t % (all (_^ th) sg , acte ts (refl , th))) }
-  instThinLemman : forall {ga ga'}
-    (t : Term M ga ess syn) ->
-    Pi (Inst (M , ga) (N , ga')) \
-      { (de , refl , sg , ts) -> 
-      forall {de'}(th : de <= de') ->
-    ((Act.actn INST t (_ , refl , sg , ts)) ^ objWkns th ga) ==
-      (Act.actn INST t (_ , refl , all (_^ th) sg , acte ts (refl , th))) }
-  instThinLemmaz : forall {ga ga'}{X : Nat}
-    (ez : All (\ _ -> Term M ga lib syn) X) ->
-    Pi (Inst (M , ga) (N , ga')) \
-      { (de , refl , sg , ts) -> 
-      forall {de'}(th : de <= de') ->
-    (all (_^ (th ^+ oi {S = ga})) (Act.actz INST ez (de , refl , sg , ts))) ==
-     Act.actz INST ez (de' , refl , all (_^ th) sg , acte ts (refl , th)) }
-  instThinLemma {syn} (essl n) (de , refl , sg , ts) th
-    rewrite instThinLemman n (de , refl , sg , ts) th = refl
-  instThinLemma (! a) (de , refl , sg , ts) th = refl
-  instThinLemma (s & t) (de , refl , sg , ts) th
-    rewrite instThinLemma s (de , refl , sg , ts) th
-          | instThinLemma t (de , refl , sg , ts) th
-          = refl
-  instThinLemma (\\ t) (de , refl , sg , ts) th
-    rewrite instThinLemma t (de , refl , sg , ts) th = refl
-  instThinLemma {ga = ga} (thnk n) (de , refl , sg , ts) th
-    rewrite thinThunkLemma (Act.actn INST n (de , refl , sg , ts)) (objWkns th ga)
-          | instThinLemman n (de , refl , sg , ts) th
-          = refl
-  instThinLemma (t :: T) (de , refl , sg , ts) th
-    rewrite instThinLemma t (de , refl , sg , ts) th
-          | instThinLemma T (de , refl , sg , ts) th
-          = refl
-  instThinLemma {ga = ga} (_?-_ {D} x ez) (de , refl , sg , ts) {de'} th
-    rewrite projeActe x ts (refl , th)
-          | objWknsLemma _ OBJTHIN {M = N} th D
-          | thinWknsLemma {N} th ga
-          | thinWknsLemma {N} th D
-    = pointCompo SBSTTHINSBST THINSBSTSBST _ _ _ _ (proje de x ts)
-       ((refl ,_) $= (
-         all (_^ (th ^+ oi {S = ga}))
-           (lefts de ga idsb :+ Act.actz INST ez (de , refl , sg , ts))
-           =[ allCat _ {yz = D} _ _ >=
-         all (_^ (th ^+ oi {S = ga})) (lefts de ga idsb) :+
-         all (_^ (th ^+ oi {S = ga})) (Act.actz INST ez (de , refl , sg , ts))
-           =[ _:+_
-             $=
-             (all (_^ (th ^+ oi {S = ga})) (lefts de ga idsb)
-                =< selectAll (thinl oi ga) _ _ ]=
-              select (thinl oi ga) (all (_^ (th ^+ oi {S = ga})) idsb)
-                =< select (thinl oi ga) $= selIdsb (th ^+ oi {S = ga}) ]=
-              select (thinl oi ga) (select (th ^+ oi {S = ga}) idsb)
-                =< funCo (th ^+ oi {S = ga}) (thinl oi ga) idsb ]=
-              select (thinl oi ga -< (th ^+ oi {S = ga})) idsb
-                =[ select
-                   $= (thinl oi ga -< (th ^+ oi {S = ga})
-                         =[ moco oi th oe (oi {S = ga}) >=
-                       (oi -< th) ^+ (oe -< oi {S = ga})
-                         =[ _^+_ $= idcoC th =$= oeU _ _ >=
-                       thinl th ga [QED]) =$ idsb >=
-              select (thinl th ga) idsb
-                =[ select $= (
-                  thinl th ga =< thinl $= coidC _ =$ ga ]=
-                  thinl (th -< oi) ga =< thinlLeft th oi ga ]=
-                  (th -< thinl oi ga) [QED]) =$ idsb >=
-              select (th -< thinl oi ga) idsb
-                =[ funCo (thinl oi ga) th idsb >=
-              select th (lefts de' ga idsb)
-                [QED])
-             =$=
-              (all (_^ (th ^+ oi {S = ga}))
-                (Act.actz INST ez (de , refl , sg , ts))
-                =[ instThinLemmaz ez (de , refl , sg , ts) th >=
-               Act.actz INST ez (_ , refl , all (_^ th) sg , acte ts (refl , th))
-                =< funId _ ]=
-               select oi
-                (Act.actz INST ez (_ , refl , all (_^ th) sg , acte ts (refl , th)))
-                 [QED]) >=
-         select th (lefts de' ga idsb) :+
-         select oi (Act.actz INST ez (_ , refl , all (_^ th) sg , acte ts (refl , th)))
-           =< selCat th oi _ _ ]=
-         select (th ^+ oi {S = D})
-           (lefts de' ga idsb :+
-            Act.actz INST ez (_ , refl , all (_^ th) sg , acte ts (refl , th)))
-           [QED]
-         ))
-  instThinLemman {ga = ga} (vari i) (de , refl , sg , ts) {de'} th =  #_ $= (
-    ((i -< thinr de oi) -< objWkns th ga)
-      =[ (_ -<_) $= thinWknsLemma th ga >=
-    ((i -< thinr de oi) -< (th ^+ oi {S = ga}))
-      =< cocoC i (thinr de oi) (th ^+ oi {S = ga}) ]=
-    (i -< (thinr de oi -< (th ^+ oi {S = ga})))
-      =[ (i -<_) $= ( (thinr de oi -< (th ^+ oi {S = ga}))
-                        =[ thinrLemma oi th oi >=
-                       thinr de' (oi -< oi)
-                        =[ thinr de' $= idcoC oi >=
-                       thinr de' oi
-                         [QED]) >= 
-    (i -< thinr de' oi)
-      [QED])
-  instThinLemman (elim e s) (de , refl , sg , ts) th
-    rewrite instThinLemma e (de , refl , sg , ts) th
-          | instThinLemma s (de , refl , sg , ts) th
-          = refl
-  instThinLemman {ga = ga} (mets x) (de , refl , sg , ts) th =
-    ((project x sg ^ thinl oi ga) ^ objWkns th ga)
-      =[ pointCompo THINTHINTHIN THINTHINTHIN _ _ _ _ (project x sg)
-        ((refl ,_) $= (
-           (thinl oi ga -< objWkns th ga)
-              =[ (thinl oi ga -<_) $= thinWknsLemma th ga >=
-           (thinl oi ga -< (th ^+ oi {S = ga}))
-              =[ moco oi th oe (oi {S = ga}) >=
-           ((oi -< th) ^+ (oe -< oi {S = ga}))
-              =[ _^+_ $= oiLemma th =$= oeU _ _ >=
-           thinl (th -< oi) ga
-              =< thinlLeft th oi ga ]=
-           (th -< thinl oi ga)
-              [QED])) >=
-    ((project x sg ^ th) ^ thinl oi ga)
-      =< (_^ thinl oi ga) $= (top $= selectAll x (_^ th) sg) ]=
-    (project x (all (_^ th) sg) ^ thinl oi ga)
-      [QED]
-  instThinLemmaz [] (de , refl , sg , ts) th = refl
-  instThinLemmaz {ga = ga} (ez -, e) (de , refl , sg , ts) th
-    rewrite instThinLemmaz ez (de , refl , sg , ts) th
-          | sym (thinWknsLemma {N} th ga)
-          | instThinLemma e (de , refl , sg , ts) th
-          = refl
-

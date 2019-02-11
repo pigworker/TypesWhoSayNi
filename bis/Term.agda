@@ -170,25 +170,7 @@ record Act (A : Meta * Nat -> Meta * Nat -> Set) : Set where
   actThunk (essl n) al = trgLemma trg (actn n al)
   actThunk (t :: T) al = refl
 
-  wkns : forall {M G N D} -> A (M , G) (N , D) -> (X : Nat) ->
-    A (M , (G -+ X)) (N , (D -+ X))
-  wkns al [] = al
-  wkns al (X -, <>) = wkn (wkns al X)
 
-  acte : forall {X}{p : Pat X}{M M' G D} ->
-         Env M (G ,P p) -> A (M , G) (M' , D) -> Env M' (D ,P p)
-  acte {p = atom a}      (atom .a)  al = atom a
-  acte {p = cons p q}    (cons D E) al = cons (acte D al) (acte E al)
-  acte {p = abst q}      (abst E)   al = abst (acte E al)
-  acte {p = hole {X} th} (hole t)   al = hole (act t (wkns al X))
-
-  projeActe : forall {Y X}{p : Pat X}(x : Y <P- p){M M' G D}
-    (ts : Env M (G ,P p))(al : A (M , G) (M' , D)) ->
-    proje D x (acte ts al) == act (proje G x ts) (wkns al Y)
-  projeActe hole     (hole t)    al = refl
-  projeActe (car x)  (cons ts _) al = projeActe x ts al
-  projeActe (cdr x)  (cons _ ts) al = projeActe x ts al
-  projeActe (abst x) (abst ts)   al = projeActe x ts al
 
 ------------------------------------------------------------------------------
 -- ACTIONS ON FREE OBJECT VARIABLES
@@ -218,11 +200,27 @@ module _ {l}(A : Meta -> Nat -> Nat -> Set)
   mee objAct x (refl , al) = essTo l (mets x)
   wkn objAct (refl , al) = refl , objWkn al
 
-  objWknsLemma : forall {M G D}(al : A M G D) X ->
-    wkns objAct (refl , al) X == (refl , objWkns al X)
-  objWknsLemma al [] = refl
-  objWknsLemma al (X -, x) rewrite objWknsLemma al X = refl
-    
+  record ActWeak : Set where
+    field
+      wks : forall {M G D} -> A M G D ->
+            forall X         -> A M (G -+ X) (D -+ X)
+      wks1 : forall {M G D}(al : A M G D) X ->
+        objWkn (wks al X) == wks al (X -, <>)
+
+    acte : forall {X}{p : Pat X}{M G D} ->
+           Env M (G ,P p) -> A M G D -> Env M (D ,P p)
+    acte {p = atom a}      (atom .a)  al = atom a
+    acte {p = cons p q}    (cons D E) al = cons (acte D al) (acte E al)
+    acte {p = abst q}      (abst E)   al = abst (acte E al)
+    acte {p = hole {X} th} (hole t)   al = hole (act objAct t (refl , wks al X))
+
+    projeActe : forall {Y X}{p : Pat X}(x : Y <P- p){M G D}
+      (ts : Env M (G ,P p))(al : A M G D) ->
+      proje D x (acte ts al) == act objAct (proje G x ts) (refl , wks al Y)
+    projeActe hole     (hole t)    al = refl
+    projeActe (car x)  (cons ts _) al = projeActe x ts al
+    projeActe (cdr x)  (cons _ ts) al = projeActe x ts al
+    projeActe (abst x) (abst ts)   al = projeActe x ts al
 
 
 ------------------------------------------------------------------------------
@@ -231,6 +229,7 @@ module _ {l}(A : Meta -> Nat -> Nat -> Set)
 
 module _ where
   open ObjAct
+  open ActWeak
   
   OBJTHIN : forall {N} -> ObjAct ess N _<=_
   objHit OBJTHIN i th = vari (i -< th)
@@ -242,27 +241,19 @@ module _ where
   open Cat (OPE {Nat})
 
   _^^_ = act
-  _^E_ : forall {M}{p : Pat []}{G D} ->
-    Env M (G ,P p) -> G <= D -> Env M (D ,P p)
-  om ^E th = acte om (refl , th)
 
   _^_ : forall {l d M G D}(t : Term M G l d)(th : G <= D) -> Term M D l d
   _^_ {ess} {chk} t th = actk t (refl , th)
   _^_ {ess} {syn} t th = actn t (refl , th)
   _^_ {lib} {d}   t th = t ^^ (refl , th)
 
-  thinWknsLemma : forall {M}{de de'}(th : de <= de') ga ->
-    objWkns {M = M} OBJTHIN th ga == (th ^+ oi {S = ga})
-  thinWknsLemma th [] = refl
-  thinWknsLemma th (ga -, x) = _su $= thinWknsLemma th ga
+  THINWEAK : ActWeak _ OBJTHIN
+  wks THINWEAK th X = th ^+ oi {S = X}
+  wks1 THINWEAK th X = refl
 
-
-thinThunkLemma : forall {M ga de}(e : Term M ga lib syn)(th : ga <= de)
-  -> ([ e ] ^ th) == [ e ^ th ]
-thinThunkLemma (essl e) th = refl
-thinThunkLemma (t :: T) th = refl
-
-
+  _^E_ : forall {M}{p : Pat []}{G D} ->
+    Env M (G ,P p) -> G <= D -> Env M (D ,P p)
+  om ^E th = acte THINWEAK om th
 
 
 ------------------------------------------------------------------------------
@@ -271,6 +262,7 @@ thinThunkLemma (t :: T) th = refl
 
 module _ where
   open ObjAct
+  open ActWeak
 
   [_!_]/_ : Meta -> Nat ->  Nat -> Set
   [ M ! G ]/ D = All (\ _ -> Term M D lib syn) G
@@ -290,9 +282,6 @@ module _ where
   open Act SBST
   
   _//_ = act
-  _/E_ : forall {M}{p : Pat []}{G D} ->
-    Env M (G ,P p) -> [ M ! G ]/ D -> Env M (D ,P p)
-  om /E sg = acte om (refl , sg)
 
   _/_ : forall {l d M G D}(t : Term M G l d)(sg : [ M ! G ]/ D) -> Term M D lib d
   _/_ {ess} {chk} t sg = essl (actk t (refl , sg))
@@ -315,7 +304,7 @@ module _ where
   trg INST = lib
   hit INST i (G , refl , _) = # (i -< thinr G oi)
   met INST {G = X} x (G , refl , _ , ts) ez =
-    proje G x ts / (select (thinl oi X) idsb :+ ez)
+    proje G x ts / (all (_^ thinl oi X) idsb :+ ez)
   mee INST {G = X} x (G , refl , sg , _) = project x sg ^ thinl oi X
   wkn INST (G , refl , sgts) = G , refl , sgts
 
@@ -334,5 +323,4 @@ _%P_ : forall {D G M} ->
 atom a   %P atom .a    = ! a
 cons p q %P cons ss ts = (p %P ss) & (q %P ts)
 abst q   %P abst ts    = \\ (q %P ts)
-hole th  %P hole t     = t ^ (oi ^+ th)
-
+hole th  %P hole t = t ^ (oi ^+ th)

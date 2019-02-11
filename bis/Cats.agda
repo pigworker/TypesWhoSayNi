@@ -179,3 +179,35 @@ module _ where
   funCo (TRI f g h q) f01 f12 x = q x
   funCo (TRI f g h q) f12 id3 x = refl
   funCo (TRI f g h q) f02 id3 x = refl
+
+
+ArrEq : forall {X : Set}(R : X -> X -> Set){x0 x1 y0 y1 : X} ->
+  x0 == x1 -> y0 == y1 -> R x0 y0 -> R x1 y1 -> Set
+ArrEq R refl refl f g = f == g
+
+module _ {X : Set}(MX : Monoid X){_=>_ : X -> X -> Set}(CX : Cat X _=>_) where
+
+  module M = Cat MX
+  module C = Cat CX
+
+  record Monoidal : Set where
+    field
+      _><_ : forall {S S' T T'} ->
+        S => T -> S' => T' -> (M.coC S S') => (M.coC T T')
+      moid : forall S S' ->
+        (C.idC {S} >< C.idC {S'}) == C.idC {M.coC S S'}
+      moco : forall {R R' S S' T T'}
+        (f0 : R => S)(g0 : R' => S')
+        (f1 : S => T)(g1 : S' => T') ->
+        C.coC (f0 >< g0) (f1 >< g1) ==
+        (C.coC f0 f1) >< (C.coC g0 g1)
+    {- proving these things is hard: do we use them?
+      lunitor : forall {S T}(f : S => T) ->
+        ArrEq _=>_ (M.idcoC S) (M.idcoC T) (C.idC {M.idC} >< f) f
+      runitor : forall {S T}(f : S => T) ->
+        ArrEq _=>_ (M.coidC S) (M.coidC T) (f >< C.idC {M.idC}) f
+      associator : forall {S0 S1 S2 T0 T1 T2}
+        (f0 : S0 => T0)(f1 : S1 => T1)(f2 : S2 => T2) ->
+        ArrEq _=>_ (M.cocoC S0 S1 S2) (M.cocoC T0 T1 T2)
+          (f0 >< (f1 >< f2)) ((f0 >< f1) >< f2)
+    -}

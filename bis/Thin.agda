@@ -58,6 +58,8 @@ module _ {X : Set} where
 
   module _ where
     open Cat
+    open Monoidal
+    module BWD = Cat (MonoidBwd X)
     
     OPE : Cat (Bwd X) _<=_
     idC OPE {[]}      = ze
@@ -80,6 +82,36 @@ module _ {X : Set} where
 
     oi   = idC OPE
     _-<_ = coC OPE
+
+    OPEMON : Monoidal (MonoidBwd X) OPE
+    _><_ OPEMON = _^+_
+    moid OPEMON xz [] = refl
+    moid OPEMON xz (yz -, x) = _su $= moid OPEMON xz yz
+    moco OPEMON th0 ph0 th1 (ph1 no) = _no $= moco OPEMON th0 ph0 th1 ph1
+    moco OPEMON th0 (ph0 no) th1 (ph1 su) = _no $= moco OPEMON th0 ph0 th1 ph1
+    moco OPEMON th0 (ph0 su) th1 (ph1 su) = _su $= moco OPEMON th0 ph0 th1 ph1
+    moco OPEMON th0 ze th1 ze = refl
+    {-
+    lunitor OPEMON {S} {.(T -, _)} (_no {yz = T} f)
+      with [] -+ S | [] -+ T | BWD.idcoC S | BWD.idcoC T | ze ^+ f | lunitor OPEMON f
+    ... | S' | T' | refl | refl | .f | refl = refl
+    lunitor OPEMON (_su {S} {T} f)
+      with [] -+ S | [] -+ T | BWD.idcoC S | BWD.idcoC T | ze ^+ f | lunitor OPEMON f
+    ... | S' | T' | refl | refl | .f | refl = refl
+    lunitor OPEMON ze = refl
+    runitor OPEMON f = refl
+    associator OPEMON {S0} {S1} {S2} {T0} {T1} f0 f1 (_no {yz = T2} f2)
+      with (S0 -+ S1) -+ S2 | BWD.cocoC S0 S1 S2
+         | (T0 -+ T1) -+ T2 | BWD.cocoC T0 T1 T2
+         | (f0 ^+ f1) ^+ f2 | associator OPEMON f0 f1 f2
+    ... | ._ | refl | ._ | refl | ._ | refl = refl
+    associator OPEMON {S0} {S1} {T0 = T0} {T1} f0 f1 (_su {S2} {T2} f2)
+      with (S0 -+ S1) -+ S2 | BWD.cocoC S0 S1 S2
+         | (T0 -+ T1) -+ T2 | BWD.cocoC T0 T1 T2
+         | (f0 ^+ f1) ^+ f2 | associator OPEMON f0 f1 f2
+    ... | ._ | refl | ._ | refl | ._ | refl = refl
+    associator OPEMON f0 f1 ze = refl
+    -}
 
   data Tri : forall {iz jz kz}(th : iz <= jz)(ph : jz <= kz)(ps : iz <= kz) -> Set where
     _no : forall {iz jz kz k}{th : iz <= jz}{ph : jz <= kz}{ps : iz <= kz} ->
@@ -122,6 +154,14 @@ module _ {X : Set} where
   thinrLemma (th su) ph (ps su) = _su $= thinrLemma th ph ps
   thinrLemma ze ph ze = oeU _ _
 
+  thinrAmmel : forall {az bz cz dz}
+    (th : az <= bz)(ph : bz <= cz) -> (th -< thinr dz ph) == thinr dz (th -< ph)
+  thinrAmmel th (ph no) = _no $= thinrAmmel th ph
+  thinrAmmel (th no) (ph su) = _no $= thinrAmmel th ph
+  thinrAmmel (th su) (ph su) = _su $= thinrAmmel th ph
+  thinrAmmel ze ze = oeU _ _
+
+{-
   moco : forall {az bz cz dz ez fz}
            (th0 : az <= bz)(ph0 : bz <= cz)
            (th1 : dz <= ez)(ph1 : ez <= fz) ->
@@ -141,6 +181,7 @@ module _ {X : Set} where
       =[ ((th -< ph) ^+_) $= oeU _ _ >=
     thinl (th -< ph) dz
       [QED]
+-}
 
 
   Thick : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) -> Set
