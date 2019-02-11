@@ -153,10 +153,30 @@ module _ where
   ... | J , tr , sujs2 | J' , ._ , ._ | d' , refl , refl
       = (dz' -, d') , refl , refl
 
-  premThin (S !- P) sgs inps trus sujs0 d th Th = {!!}
+  premThin {xi = xi} (S !- P) sgs inps trus sujs0 (extend d) {De = De} th Th
+    with premThin P sgs inps trus sujs0 d
+          {De = all (_^ (oi no)) De -,
+            ((S % (all (_^ th) sgs , cons (inps ^E th) (trus ^E th))) ^ (oi no))} th
+          (_-,_ $= {!!}
+            =$= (((S % (sgs , cons inps trus)) ^ (oi no)) ^ ((th ^+ oi {S = xi}) su)
+                   =[ {!!} >=
+                 ((S % (sgs , cons inps trus)) ^ (th ^+ oi {S = xi})) ^ (oi no)
+                   =[ (_^ (oi no)) $= instThinLemma S sgs (cons inps trus) th >=
+                 (S % (all (_^ th) sgs , cons (inps ^E th) (trus ^E th))) ^ (oi no)
+                   [QED]))
+  ... | d' , q0 , q1
+    = extend d' , abst $= q0 , q1
   premThin {xi = xi} (type (ps , T , ph)) sgs inps trus sujs0 d th Th
     with derThin d (th ^+ oi {S = xi}) Th
-  ... | d' = {!!} , {!!} , {!!}
-  premThin (T :> t) sgs inps trus sujs0 d th Th = {!!}
-  premThin (univ T) sgs inps trus sujs0 d th Th = {!!}
-  premThin (tyeq S T) sgs inps trus sujs0 d th Th = {!!}
+  ... | d' = {!!}
+  premThin {xi = xi} (T :> t) sgs inps trus sujs0 d th Th
+    with derThin d (th ^+ oi {S = xi}) Th
+  ... | d' = {!!}
+  premThin {xi = xi} (univ T) sgs inps trus sujs0 d th Th
+    with derThin d (th ^+ oi {S = xi}) Th
+  ... | d' rewrite instThinLemma T sgs (cons inps trus) th = d' , refl , refl
+  premThin {xi = xi} (tyeq S T) sgs inps trus sujs0 d th Th
+    with derThin d (th ^+ oi {S = xi}) Th
+  ... | d' rewrite instThinLemma S sgs (cons inps trus) th
+                 | instThinLemma T sgs (cons inps trus) th
+      = d' , refl , refl
