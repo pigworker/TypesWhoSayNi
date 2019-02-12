@@ -12,6 +12,64 @@ open import Deriv
 open import Thin
 open import ActCats
 
+diagSgTh : forall {M ga de}(sg : [ M ! ga ]/ de){ps xi}
+           (ph : ps <= xi) ->
+           all (_^ (oi ^+ ph)) (sg >/< idsb {ps}) ==
+           select (oi ^+ ph) (sg >/< idsb {xi})
+diagSgTh {M}{ga}{de} sg {ps}{xi} ph = 
+  all (_^ (oi ^+ ph)) (sg >/< idsb {ps})
+    =[ allCat (_^ (oi ^+ ph)) (all _ sg) (all _ idsb) >=
+  all (_^ (oi ^+ ph)) (all (_^ thinl oi ps) sg) :+
+  all (_^ (oi ^+ ph)) (all (_^ thinr de oi) (idsb {ps}))
+    =[ _:+_ $= (all (_^ (oi ^+ ph)) (all (_^ thinl oi ps) sg)
+                 =< allCo _ _ _ (\ t -> 
+                    t ^ thinl oi xi
+                      =< (t ^_) $= ((thinl oi ps -< (oi ^+ ph))
+                                      =[ Monoidal.moco OPEMON oi oe oi ph >=
+                                     (oi -< oi) ^+ (oe -< ph)
+                                      =[ _^+_ $= POLYTHIN.idcoC _
+                                             =$= oeU (oe -< ph) oe >=
+                                     thinl oi xi
+                                      [QED]) ]=
+                    t ^ (thinl oi ps -< (oi ^+ ph))
+                      =< thinco t _ _ ]=
+                    (t ^ thinl oi ps) ^ (oi ^+ ph)
+                      [QED]) sg ]=
+               all (_^ thinl oi xi) sg
+                 =< POLYSELECT.funId _ ]=
+               select oi (all (_^ thinl oi xi) sg)
+                 [QED])
+           =$= (all (_^ (oi ^+ ph)) (all (_^ thinr de oi) (idsb {ps}))
+                 =< allCo _ _ _ (\ t -> 
+                     t ^ (ph -< thinr de oi)
+                       =[ (t ^_) $= (ph -< thinr de oi
+                                      =[ thinrAmmel ph oi >=
+                                     thinr de (ph -< oi)
+                                      =< thinr de $= oiLemma ph ]=
+                                     thinr de (oi -< ph)
+                                      =< thinrLemma oi oi ph ]=
+                                     thinr de oi -< (oi ^+ ph)
+                                      [QED]) >=
+                     t ^ (thinr de oi -< (oi ^+ ph))
+                       =< thinco t _ _ ]=
+                     (t ^ thinr de oi) ^ (oi ^+ ph)
+                       [QED]
+                    ) idsb ]=
+                all (_^ (ph -< thinr de oi)) idsb
+                 =< selIdsb (ph -< thinr de oi) ]=
+                select (ph -< thinr de oi) (idsb {de -+ xi})
+                 =[ POLYSELECT.funCo (thinr de (oi {S = xi})) ph idsb >=
+                select ph (select (thinr de oi) (idsb {de -+ xi}))
+                 =[ select ph $= selIdsb (thinr de oi) >=
+                select ph (all (_^ thinr de oi) (idsb {xi}))
+                  [QED]) >=
+  select oi (all (_^ thinl oi xi) sg) :+
+    select ph (all (_^ thinr de oi) (idsb {xi}))
+    =< selCat oi ph (all _ sg) (all _ idsb) ]=
+  select (oi ^+ ph) (sg >/< idsb {xi})
+    [QED]
+
+
 CxThin : forall {ga de}(th : ga <= de) -> Context ga -> Context de -> Set
 CxThin th Ga De = all (_^ th) Ga == select th De
 
@@ -220,6 +278,30 @@ CxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
          (Ga : Context ga)(De : Context de) -> Set
 CxSbst {ga} sg Ga De = (i : <> <- ga) -> De != (project i sg <: (project i Ga / sg))
 
+ruCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+           (Ga : Context ga)(De : Context de) ->
+           CxSbst sg Ga De -> CxSbst (sg >/< idsb {[]}) Ga De
+ruCxSbst sg Ga De eSs rewrite sbstRunitor sg = eSs
+
+wkru : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de) xi ->
+  wksb (sg >/< idsb {xi}) == (sg >/< idsb {xi -, <>})
+wkru {ga}{de} sg xi = _-,_
+   $= (all (_^ (oi no)) (all (_^ thinl oi xi) sg :+ all (_^ thinr de oi) idsb)
+        =[ allCat (_^ (oi no)) (all _ sg) (all _ idsb) >=
+      all (_^ (oi no)) (all (_^ thinl oi xi) sg)
+                                        :+ all (_^ (oi no)) (all (_^ thinr de oi) idsb)
+        =< _:+_ $= allCo _ _ _ (\ t -> t ^ (thinl oi xi no)
+                                         =< (t ^_) $= (_no $= POLYTHIN.coidC _) ]=
+                                        t ^ ((thinl oi xi -< oi) no)
+                                         =< thinco t _ _ ]=
+                                        (t ^ thinl oi xi) ^ (oi no)
+                                          [QED]) sg
+                =$= icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
+                    ((refl ,_) $= (_no $= oiLemma _)) idsb ]=
+      all (_^ (thinl oi xi no)) sg :+ all (_^ (thinr de oi su)) (all (_^ (oi no)) idsb)
+        [QED])
+  =$= (#_ $= (_su $= oeU _ _))
+
 exCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
            (Ga : Context ga)(De : Context de)(eSs : CxSbst sg Ga De)
            (e : Syn (de -, <>))(S : Chk ga) ->
@@ -250,20 +332,119 @@ univ T   /J sg = univ (T / sg)
 
 
 module _ where
+  open FormationRule
+  open CheckingRule
+  open EliminationRule
+  open UniverseRule
+  open Monoidal (OPEMON {One})
 
   derSbst : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
             forall {de}{De : Context de}
             sg -> CxSbst sg Ga De ->
             De != (J /J sg)
-  derSbst (extend d) sg eSs = {!!}
-  derSbst (var {x = x}) sg eSs = {!eSs x!}
-  derSbst (thunk d0 d1) sg eSs = {!!}
-  derSbst (unis d0 d1) sg eSs = {!!}
-  derSbst (rad d0 d1) sg eSs = {!!}
-  derSbst eq sg eSs = {!!}
-  derSbst (pre x d) sg eSs = {!!}
-  derSbst (post d x) sg eSs = {!!}
-  derSbst (type rule ts dz) sg eSs = {!!}
-  derSbst (chk rule Ts ts dz) sg eSs = {!!}
-  derSbst (elir rule e Ss ss d dz) sg eSs = {!!}
-  derSbst (unic rule Ts dz) sg eSs = {!!}
+  premsSbst : forall {ga}{Ga : Context ga}{gas inp suj0 tru suj1}
+              (Pz : Premises gas inp suj0 tru suj1)
+              (sgs : [ ([] , atom NIL) ! gas ]/ ga)
+              (inps : Env ([] , atom NIL) (ga ,P inp))
+              (sujs0 : Env ([] , atom NIL) (ga ,P suj0)) ->
+              let Jz , trus , sujs1 = premises ga Pz sgs inps sujs0 in
+              All (Ga !=_) Jz ->
+              forall {de}{De : Context de} sg -> CxSbst sg Ga De ->
+              let Jz' , trus' , sujs1' = premises de Pz
+                    (all (_/ sg) sgs) (inps /E sg) (sujs0 /E sg) in
+              All (De !=_) Jz' * trus' == (trus /E sg) * sujs1' == (sujs1 /E sg)
+  premSbst : forall {ga}{gas inp tru suj xi tr' suj'}{Ga : Context (ga -+ xi)}
+    (P : Premise gas inp tru suj xi tr' suj')
+    (sgs : [ ([] , atom NIL) ! gas ]/ ga)
+    (inps : Env ([] , atom NIL) (ga ,P inp))
+    (trus : Env ([] , atom NIL) (ga ,P tru))
+    (sujs0 : Env ([] , atom NIL) (ga ,P suj)) ->
+    let J , trs , sujs1 = premise ga P sgs inps trus sujs0 in
+    Ga != J ->
+    forall {de}{De : Context (de -+ xi)}(sg : [ [] , atom NIL ! ga ]/ de) ->
+    CxSbst (sg >/< idsb {xi}) Ga De ->
+    let J' , trs' , sujs1' = premise de P
+         (all (_/ sg) sgs) (inps /E sg) (trus /E sg) (sujs0 /E sg) in
+    (De != J') * trs' == ActWeak.acte SBSTWEAK trs sg * (sujs1' == (sujs1 /E sg))
+            
+  derSbst (extend {S = S} d) sg eSs with
+    exCxSbst sg _ _ eSs (# (oe su)) S var
+  ... | eSse rewrite theUsualShoogle S sg (# (oe su))
+      = extend (derSbst d (wksb sg) eSse)
+  derSbst (var {x = x}) sg eSs = eSs x
+  derSbst (thunk {n = n} d0 d1) sg eSs rewrite Act.actThunk SBST n (refl , sg)
+    = thunk {n = n / sg} (derSbst d0 sg eSs) (derSbst d1 sg eSs)
+  derSbst (unis {n = n} d0 d1) sg eSs rewrite Act.actThunk SBST n (refl , sg)
+    = unis {n = n / sg} (derSbst d0 sg eSs) (derSbst d1 sg eSs)
+  derSbst (rad d0 d1) sg eSs = rad (derSbst d0 sg eSs) (derSbst d1 sg eSs)
+  derSbst eq sg eSs = eq
+  derSbst (pre x d) sg eSs = pre (redSbst x sg) (derSbst d sg eSs)
+  derSbst (post d x) sg eSs = post (derSbst d sg eSs) (redSbst x sg)
+  derSbst (type {R} rule Ts dz) sg eSs
+    rewrite plugSbstLemma0 (typeSuj R) Ts sg
+    = let dz' , _ , _ = premsSbst (typePrems R) [] (atom NIL) Ts dz sg eSs in
+      type rule (Ts /E sg) dz'
+  derSbst (chk {R} rule Ts ts dz) sg eSs
+    rewrite plugSbstLemma0 (chkInp R) Ts sg | plugSbstLemma0 (chkSuj R) ts sg
+    = let dz' , _ , _ = premsSbst (chkPrems R) [] Ts ts dz sg eSs in 
+      chk rule (Ts /E sg) (ts /E sg) dz'
+  derSbst {ga} (elir {R} rule e Ss ss d dz) {de}{De} sg eSs
+    with elir rule {Ga = De} (e / sg) (Ss /E sg) (ss /E sg) | derSbst d sg eSs
+  ... | ready | d'
+    with premises ga (elimPrems R) ([] -, e) Ss ss
+       | premises de (elimPrems R) ([] -, (e / sg)) (Ss /E sg) (ss /E sg)
+       | premsSbst (elimPrems R) ([] -, e) Ss ss dz sg eSs
+  ... | Jz , trus , sujs | Jz' , ._ , ._ | dz' , refl , refl
+        rewrite plugSbstLemma0 (trgType R) Ss sg
+          | plugSbstLemma0 (elimSuj R) ss sg
+          | instSbstLemma0 (resType R) ([] -, e) trus sg
+          = ready d' dz'
+  derSbst (unic {R} rule Ts dz) sg eSs
+    rewrite plugSbstLemma0 (uniInp R) Ts sg
+    = let dz' , _ , _ = premsSbst (uniPrems R) [] Ts (atom NIL) dz sg eSs in
+      unic rule (Ts /E sg) dz'
+  premsSbst [] sgs inps sujs0 dz sg eSs = [] , refl , refl
+  premsSbst {ga} (Pz -, P) sgs inps sujs0 (dz -, d) {de} sg eSs
+    with premises ga Pz sgs inps sujs0
+       | premises de Pz (all (_/ sg) sgs) (inps /E sg) (sujs0 /E sg)
+       | premsSbst Pz sgs inps sujs0 dz sg eSs
+  ... | Jz , trus , sujs1 | Jz' , ._ , ._ | dz' , refl , refl
+    with premise ga P sgs inps trus sujs1
+       | premise de P (all (_/ sg) sgs) (inps /E sg) (trus /E sg) (sujs1 /E sg)
+       | premSbst P sgs inps trus sujs1 d sg (ruCxSbst _ _ _ eSs)
+  ... | J , tr , sujs2 | J' , ._ , ._ | d' , refl , refl
+      = (dz' -, d') , refl , refl
+  premSbst {xi = xi} {Ga = Ga} (S !- P) sgs inps trus sujs0 (extend d) {De = De} sg eSs
+    with exCxSbst (sg >/< idsb {xi}) _ _ eSs (# (oe su)) (S % (sgs , cons inps trus)) var
+  ... | eSs'
+      rewrite theUsualShoogle (S % (sgs , cons inps trus)) (sg >/< idsb {xi}) (# (oe su))
+            | instSbstLemma S sgs (cons inps trus) sg
+            | wkru sg xi
+      = let d' , q0 , q1 = premSbst P sgs inps trus sujs0 d sg eSs'
+        in  extend d' , abst $= q0 , q1
+  premSbst {ga}{xi = xi} (type (ps , T , ph)) sgs inps trus sujs0 d {de} sg eSs
+    with derSbst d (sg >/< idsb {xi}) eSs | removeSbst T sujs0 sg
+  ... | d' | q0 , q1
+    rewrite q0 | q1
+    | pointCompo SBSTTHINSBST THINSBSTSBST
+      (refl , (sg >/< idsb {ps})) (refl , (oi {S = de} ^+ ph))
+      (refl , (oi {S = ga} ^+ ph)) (refl , (sg >/< idsb {xi}))
+      (fst (remove ga T sujs0)) ((refl ,_) $= diagSgTh sg ph )
+    = d' , refl , refl
+  premSbst {ga}{xi = xi} (T :> (ps , t , ph)) sgs inps trus sujs0 d {de} sg eSs
+    with derSbst d (sg >/< idsb {xi}) eSs | removeSbst t sujs0 sg
+  ... | d' | q0 , q1
+    rewrite instSbstLemma T sgs (cons inps trus) sg | q0 | q1
+    | pointCompo SBSTTHINSBST THINSBSTSBST
+      (refl , (sg >/< idsb {ps})) (refl , (oi {S = de} ^+ ph))
+      (refl , (oi {S = ga} ^+ ph)) (refl , (sg >/< idsb {xi}))
+      (fst (remove ga t sujs0)) ((refl ,_) $= diagSgTh sg ph)
+    = d' , refl , refl
+  premSbst {xi = xi} (univ T) sgs inps trus sujs0 d sg eSs
+    with derSbst d (sg >/< idsb {xi}) eSs 
+  ... | d' rewrite instSbstLemma T sgs (cons inps trus) sg =  d' , refl , refl
+  premSbst {xi = xi} (tyeq S T) sgs inps trus sujs0 d sg eSs
+    with derSbst d (sg >/< idsb {xi}) eSs 
+  ... | d' rewrite instSbstLemma S sgs (cons inps trus) sg
+                 | instSbstLemma T sgs (cons inps trus) sg = d' , refl , refl
+

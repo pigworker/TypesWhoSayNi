@@ -8,6 +8,7 @@ open import Atom
 open import Pat
 open import Term
 open import All
+open import ActCats
 
 Chk Syn : Nat -> Set
 Chk ga = Term ([] , atom NIL) ga lib chk
@@ -76,6 +77,21 @@ removeThin (car x) (cons ss ts) th with removeThin x ss th
 removeThin (cdr x) (cons ss ts) th with removeThin x ts th
 ... | q0 , q1 rewrite q0 | q1 = refl , refl
 removeThin (abst x) (abst ts) th with removeThin x ts th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
+
+removeSbst : forall {ga}{M}{de' de}{suj suj' : Pat de'}(x : Remove {de'} de suj suj')
+  (ts : Env M (ga ,P suj)) ->
+  let t , ss = remove ga x ts in
+  forall {ga'}(sg : [ M ! ga ]/ ga') ->
+  let t' , ss' = remove ga' x (ActWeak.acte SBSTWEAK ts sg) in
+  t' == (t / (sg >/< idsb {de})) *
+  ss' == (ActWeak.acte SBSTWEAK ss sg)
+removeSbst hole (hole t) th = refl , refl
+removeSbst (car x) (cons ss ts) th with removeSbst x ss th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
+removeSbst (cdr x) (cons ss ts) th with removeSbst x ts th
+... | q0 , q1 rewrite q0 | q1 = refl , refl
+removeSbst (abst x) (abst ts) th with removeSbst x ts th
 ... | q0 , q1 rewrite q0 | q1 = refl , refl
 
 premise : forall ga {gas inp tru suj de tr' suj'}

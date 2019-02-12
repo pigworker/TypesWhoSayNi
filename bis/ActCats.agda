@@ -441,6 +441,10 @@ module _ where
   runitor MONSBST = {!!}
   associator MONSBST = {!!}
   -}
+  sbstRunitor : forall {M ga de}(sg : [ M ! ga ]/ de) -> (sg >/< idsb {[]}) == sg
+  sbstRunitor {M}{ga}{de} sg = allId _ (ActIden.idaId THINIDEN) sg
+
+
 
 module _ {l}{A : Meta -> Nat -> Nat -> Set}
             {o : forall {M} -> ObjAct l M (A M)}
