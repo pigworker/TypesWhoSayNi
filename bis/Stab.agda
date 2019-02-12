@@ -238,3 +238,32 @@ exCxSbst sg Ga De eSs e S eS (i no)
         | selectAll i (_^ (oi no)) Ga
         | theUsualShoogle (project i Ga) sg e = d
 exCxSbst sg Ga De eSs e S eS (i su) = eS
+
+_/J_ : forall {ga}(J : Judgement ga){de}(sg : [ [] , atom NIL ! ga ]/ de) ->
+       Judgement de
+(S !- J) /J sg = (S / sg) !- (J /J wksb sg)
+type T   /J sg = type (T / sg)
+univ T   /J sg = univ (T / sg)
+(T :> t) /J sg = (T / sg) :> (t / sg)
+(e <: S) /J sg = (e / sg) <: (S / sg)
+(S ~ T)  /J sg = (S / sg) ~ (T / sg)
+
+
+module _ where
+
+  derSbst : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
+            forall {de}{De : Context de}
+            sg -> CxSbst sg Ga De ->
+            De != (J /J sg)
+  derSbst (extend d) sg eSs = {!!}
+  derSbst (var {x = x}) sg eSs = {!eSs x!}
+  derSbst (thunk d0 d1) sg eSs = {!!}
+  derSbst (unis d0 d1) sg eSs = {!!}
+  derSbst (rad d0 d1) sg eSs = {!!}
+  derSbst eq sg eSs = {!!}
+  derSbst (pre x d) sg eSs = {!!}
+  derSbst (post d x) sg eSs = {!!}
+  derSbst (type rule ts dz) sg eSs = {!!}
+  derSbst (chk rule Ts ts dz) sg eSs = {!!}
+  derSbst (elir rule e Ss ss d dz) sg eSs = {!!}
+  derSbst (unic rule Ts dz) sg eSs = {!!}
