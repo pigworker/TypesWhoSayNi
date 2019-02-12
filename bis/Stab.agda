@@ -203,3 +203,38 @@ module _ where
   ... | d' rewrite instThinLemma S sgs (cons inps trus) th
                  | instThinLemma T sgs (cons inps trus) th
       = d' , refl , refl
+
+theUsualShoogle :
+  forall {M d ga de}(t : Term M ga lib d)
+    (sg : [ M ! ga ]/ de)(e : Term M (de -, <>) lib syn)->
+    (t ^ (oi no)) / (all (_^ (oi no)) sg -, e) ==
+    (t / sg) ^ (oi no)
+theUsualShoogle t sg e = 
+  (t ^ (oi no)) / (all (_^ (oi no)) sg -, e)
+    =[ pointCompo THINSBSTSBST SBSTTHINSBST _ _ _ _ t
+       ((refl ,_) $= POLYSELECT.funId _) >=
+  (t / sg) ^ (oi no)
+    [QED]
+
+CxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+         (Ga : Context ga)(De : Context de) -> Set
+CxSbst {ga} sg Ga De = (i : <> <- ga) -> De != (project i sg <: (project i Ga / sg))
+
+exCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+           (Ga : Context ga)(De : Context de)(eSs : CxSbst sg Ga De)
+           (e : Syn (de -, <>))(S : Chk ga) ->
+           let sg' = (all (_^ (oi no)) sg -, e)
+               Ga' = (all (_^ (oi no)) (Ga -, S))
+               S' = (S ^ (oi no)) / sg'
+               De' = all (_^ (oi no)) De -, S' in
+           De' != (e <: S') ->
+           CxSbst sg' Ga'  De'
+exCxSbst sg Ga De eSs e S eS (i no)
+  with derThin (eSs i)
+    {De = all (_^ (oi no)) De -, ((S ^ (oi no)) / (all (_^ (oi no)) sg -, e))}
+    (oi no) (sym (POLYSELECT.funId _))
+... | d
+  rewrite selectAll i (_^ (oi no)) sg
+        | selectAll i (_^ (oi no)) Ga
+        | theUsualShoogle (project i Ga) sg e = d
+exCxSbst sg Ga De eSs e S eS (i su) = eS
