@@ -382,6 +382,29 @@ will be the key condition for subject reduction --- unsurprisingly
 necessary, but remarkably sufficient for any protocol-compliant
 system of rules.
 
+In what follows, I shall adopt a mathematical style, identifying and
+numbering specific Definitions, Lemmas and Theorems, but introducing a
+new keyword --- \emph{Dogma}. A dogma is a \emph{religious} truth,
+rather than a \emph{Platonic} truth: it is made true by human
+endeavour, rather than by nature. A dogma is a design choice --- a
+prejudice, if you like. However, the prejudice should be judicial:
+every dogma should be motivated by some anticipated benefit. Moreover,
+every numbered Dogma will have a `Proof', its exegesis, in the form of a
+forward pointer to the Definition that ensures the Dogma is
+followed. Let us begin.
+
+\begin{dogma}[generic syntax]
+  One syntax is sufficient to encode the types and terms of all the
+  systems that we shall seek to explain. It is not expected that
+  being syntactically well formed is the same thing as being
+  meaningful. It is enough to explain what it is to be a classifier,
+  i.e., a \emph{type}, and what it is to be classified.
+\end{dogma}
+\begin{proof}
+  The generic syntax is given in Definition \ref{def:syntax}. The
+  means to manage classification --- the notion of typing judgement ---
+  is given in Definition \ref{def:judgement}.
+\end{proof}
 
 
 \section{Sufficient syntax}
@@ -415,7 +438,7 @@ considered an atom and pronounced `nil'.
 
 
 \newcommand{\Tm}[3]{\mathbf{Term}\:#1\:#2\:#3}
-\begin{definition}[constructions and computations, essential and liberal]
+\begin{definition}[constructions and computations, essential and liberal\label{def:syntax}]
 The object-level syntax is specified,
 written as a subscript, and
 is divided into four distinct mutually defined grammatical classes,
@@ -494,9 +517,18 @@ The \emph{liberal} computations extend the neutral computations with
 type annotation which gives the information needed to check both the
 canonical form it annotates and the eliminator it is `reacting' with.
 Radicals are permitted only in eliminations, and these are
-the only eliminations which compute. That is, there is no computation
+the only eliminations which compute. That is\ldots
+
+\begin{dogma}[typed computation]
+  There is no computation
 step which proceeds uninformed by the type at which computation is
 happening.
+\end{dogma}
+\begin{proof}
+  Definition \ref{def:reduction} will ensure that reduction is the
+  no more than the contextual closure of whatever may happen to
+  eliminated radicals.
+\end{proof}
 
 Thunks and radicals form the connection between constructions and
 computations, but you will notice that the syntax carefully precludes
@@ -565,6 +597,19 @@ all radicals are inert because of some free variable. We must resist
 the clear temptation to elide type annotations on neutral terms
 during reduction as the property of being neutral is not stable under
 substitution.
+
+\begin{remark}[run-time type erasure]
+  The fact that computation is formally conducted in the presence of
+  types is motivated by clarity of metatheory, rather than by
+  pragmatic considerations of efficient closed-term execution.
+  That said, one can achieve a sensible notion of type erasure by
+  ensuring that the target term and eliminator of an eliminated
+  radical determine the reduction rule applicable, and that type
+  information therein is used only to determine type information in
+  the reduct. By inspection, this is the case for our examples.
+\end{remark}
+
+
 
 
 \subsection{Thinnings and substitutions}
@@ -825,7 +870,7 @@ postconditions in braces to the right.
 \newcommand{\cxl}[2]{#1\;:\;#2}
 \newcommand{\Pre}[1]{\textbf{Pre}(#1)}
 \newcommand{\Post}[1]{\textbf{Post}(#1)}
-\begin{definition}[$\gamma$-judgement]
+\begin{definition}[$\gamma$-judgement\label{def:judgement}]
   The judgements, $J_\gamma$, in scope $\gamma$ are given inductively as follows:
   \[\begin{array}{r@{\quad}c@{\quad}l@{\quad}l}
       \Pre{J_\gamma} & J_\gamma& \Post{J_\gamma} & \mbox{purpose} \\
@@ -1057,10 +1102,10 @@ the \emph{subject reduction} property, and we shall attend to it in
 due course. In the meantime, let us establish what is common to all
 the reduction systems under this setup.
 
-\begin{definition}[contextual closure of reduction]
+\begin{definition}[contextual closure of reduction\label{def:reduction}]
   \[
-    \Rule{e\leadsto_\beta e'}
-         {e\leadsto e'}
+    \Rule{\ra tT\:s\leadsto_\beta \ra{t'}{T'}}
+         {\ra tT\:s\leadsto \ra{t'}{T'}}
 \]
 \[
   \Rule{s\leadsto s'}
