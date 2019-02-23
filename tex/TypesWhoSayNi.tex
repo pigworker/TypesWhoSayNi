@@ -14,6 +14,8 @@
 \newtheorem{dogma}[theorem]{Dogma}
 \newtheorem{example}[theorem]{Example}
 
+\newcommand{\bsl}{\texttt{\symbol{92}}}
+\newcommand{\fsl}{\texttt{/}}
 \newcommand{\A}{\texttt}
 \newcommand{\V}{\mathit}
 \newcommand{\ab}{\,\texttt{->}\;}
@@ -28,14 +30,20 @@
 \newcommand{\SC}[1]{\langle\mathit{#1}\rangle}
 \newcommand{\GS}[2]{\langle#1\textrm{-}\mathit{#2}\rangle}
 
+\newcommand{\dt}{\texttt{.}}
+\newcommand{\cn}[2]{\Pa{#1 \dt #2}}
+
 \newcommand{\hb}{\texttt{:}}
 \newcommand{\ra}[2]{\Pa{#1 \hb #2}}
 \newcommand{\grp}[1]{\{ #1 \}}
+\newcommand{\Ne}{\underline}
+\newcommand{\Set}{\textbf{Set}}
+\newcommand{\op}[1]{#1^{\mbox{\tiny op}}}
 
 \newcommand{\ths}{}
 
 \begin{document}
-\title[Journal of Functional Programming]{The types who say $\backslash$ni}
+\title[Journal of Functional Programming]{The types who say `ni'}
 \author[C. McBride]{CONOR MCBRIDE\\
   University of Strathclyde\\
   \email{conor.mcbride@strath.ac.uk}}
@@ -44,8 +52,23 @@
 \section{Introduction}
 
 This paper is about my religion. It introduces a discipline for
-constructing and validating bidirectional type systems, illustrated
-with a nontrivial running example --- a bidirectional reconstruction
+constructing and validating bidirectional dependent type systems, where the
+usual type \emph{synthesis} judgement, $t : T$, is partly replaced
+(specifically for introduction forms) by the \emph{checking}
+judgement, $T \ni t$, while elimination forms continue to have
+their types extracted, $e \in S$. Bidirectional typing (or `local
+type inference') has been with us for some
+time~\cite{DBLP:journals/toplas/PierceT00}. It has been something of
+a secret weapon for implementing dependent type
+systems~\cite{DBLP:journals/corr/abs-1202-4905}: it is
+overdue to put the metatheory on a solid footing. The
+literature offers diverse conventions for labelling colons with
+arrows, but I exploit the asymmetry of $\ni$ and $\in$ ({\tt \bsl ni}
+and {\tt \bsl in} in \LaTeX, respectively) to ensure the
+left-to-right progress of \emph{time}. The types who say `ni' come
+before, and they know the terms they will accept.
+
+I illustrate the approach with a nontrivial running example --- a bidirectional reconstruction
 of Per Martin-L\"of's small and beautiful, but notoriously
 inconsistent dependent type theory from
 1971~\cite{martinloef:atheoryoftypes}. Crucially, the fact that the
@@ -65,7 +88,7 @@ justify. Every self-respecting religion pinches the parts it likes
 from other religions, so I will choose \textsc{Lisp} s-expressions~\cite{MCCARTHY60}
 as the generic syntax, but tighten up the treatment of variable
 binding with methods of de Bruijn~\cite{deBruijn:dummies},
-distinguishing variables from atoms and naming them only in the
+distinguishing variables from atoms and naming the former only in the
 interests of informal civility. One should not expect things
 expressible in this syntax to make sense: rather we should design
 ways to make sense of some of them. We get out what we put
@@ -85,7 +108,7 @@ By way of motivating an alternative approach, let us briefly examine the current
 situation. What are the problematic consequences of type synthesis?
 What are the obstacles to adopting a mixture of type checking and type
 synthesis? What makes subject reduction hard to prove? The ways in
-which we address these questions give us keys to their answers.
+which we address these questions give us keys to some answers.
 
 
 \subsection{Which types must we write?}
@@ -122,17 +145,21 @@ generic variable, there is no choice about how to abstract that
 variable to yield a function type. In practice, one can place a
 metavariable in the context as $x$'s type and hope to collect
 constraints on it from the way $x$ is used, but one cannot expect
-that those constraints will yield a clear solution.
+that those constraints will yield a clear solution every time.
 
 The situation is, if anything, worse in the case of pairs. While the
-type, $S$, of the first component, $s$, is clearly obtainable by synthesis, the
-type, $T[s/x]$, of the second component, $t$, yields but one instance of the
-pattern of dependency expressed by the pair type, from which we must
-abstract some $T[x]$. Substitution is not uniquely invertible. More
-concretely, the pair $(3, [0,1,2])$ of a number and a length-indexed list
-can be given any pair type where the length is computed by a function on
-the natural numbers which maps $3$ to $3$: there are a great many such
-functions. There is no choice but to give this function explicitly.
+type, $S$, of the first component, $s$, is clearly obtainable by
+synthesis, the type, $T[s/x]$, of the second component, $t$, yields
+but one instance of the pattern of dependency expressed by the pair
+type, from which we must abstract some $T[x]$. Substitution is not
+uniquely invertible. More concretely, the pair $(3, [0,1,2])$ of a
+number and a length-indexed list can be given any pair type where the
+length is computed by a function on the natural numbers which maps $3$
+to $3$: there are a great many such functions. There is no choice but
+to give this function explicitly. Moreover, once we can compute types
+from data, there is no reason to believe that the second component is
+even a length-indexed list at all, when the first is any number other
+than 3.
 
 We can construct the real rules from the fantasy rules, determining
 which annotations are mandated by magical misapprehensions. That is to
@@ -239,7 +266,7 @@ substitution --- instantiating free variables can cause inert terms to compute,
 perhaps for ever.
 
 The effective remedy is to ensure that computation has a small-step presentation
-which is stable under substitution. We must ensure that our syntax is capable of
+which \emph{is} stable under substitution. We must ensure that our syntax is capable of
 expressing $\beta$-redexes, and to that end, let us introduce type
 annotations which mediate between introduction and elimination forms, ensuring
 that we have enough information to validate them. In what follows, we shall do
@@ -311,7 +338,7 @@ be checked mechanically. That is, for the theories in this class, subject
 reduction is had for the asking.
 
 In order to obtain this result I shall need to develop disciplines for
-specifying type theories which, by design, avoids pitfalls like those
+specifying type theories which, by design, avoid pitfalls like those
 outlined above.  In some cases, these disciplines will merely make
 explicit what is, in any case, standard practice. In other cases, I
 deviate from the approach usually found in the presentation of type
@@ -350,7 +377,7 @@ respect to this syntax. Redexes, too, will be characterized in terms
 of patterns: for any canonical type, we shall be able to compute its
 set of non-overlapping redexes which must be given reducts to ensure
 progress, yielding a rewriting system which is confluent by
-construction. That each reduct have the same type as its redex
+construction. That each reduct has the same type as its redex
 will be the key condition for subject reduction --- unsurprisingly
 necessary, but remarkably sufficient for any protocol-compliant
 system of rules.
@@ -359,7 +386,7 @@ system of rules.
 
 \section{Sufficient syntax}
 
-\newcommand{\la}[1]{\backslash #1\:}
+\newcommand{\la}[1]{\bsl #1\:}
 
 Formally, I work with a generic de Bruijn-style nameless syntax, with syntactic
 categories indexed by their scope. The embedding of one scope into another
@@ -373,12 +400,12 @@ which gives the length of the sequence. I refer to scopes by
 metavariables $\gamma$ and $\delta$, with $\emp$ denoting the empty
 scope. A \emph{variable} is an identifier $x_i$ selected from
 a scope, serving as the human face of its index $i$. I specify grammars
-relative to an explicit scope, $\gamma$ and write $x_\gamma$ to
+relative to an explicit scope, $\gamma$, and write $x_\gamma$ to
 mean `a variable from $\gamma$'.
 
 Unlike variables, \emph{atoms} ($a$, $A$) really are named global
 constants which play the role of tags --- their purpose is not
-to stand for things but to be told apart. The symbol $()$ is
+to stand for things but to be told apart. The symbol $\Pa{}$ is
 considered an atom and pronounced `nil'.
 
 \newcommand{\lib}{\textbf{lib}}
@@ -387,7 +414,7 @@ considered an atom and pronounced `nil'.
 \newcommand{\comp}{\textbf{comp}}
 
 
-\newcommand{\Tm}[3]{\mathbf{Term}(#1,#2,#3)}
+\newcommand{\Tm}[3]{\mathbf{Term}\:#1\:#2\:#3}
 \begin{definition}[constructions and computations, essential and liberal]
 The object-level syntax is specified,
 written as a subscript, and
@@ -400,12 +427,12 @@ arranged as four quadrants thus:
     \cons{truction} & k_\gamma, K_\gamma & s_\gamma, t_\gamma, S_\gamma, T_\gamma \\
     & \;\begin{array}[t]{rl}
           ::= & a \\
-          | & (s_\gamma.t_\gamma) \\
+          | & \cn{s_\gamma}{t_\gamma} \\
           | & \la xt_{\gamma,x}
         \end{array}
     & \;\begin{array}[t]{rl}
           ::= & k_\gamma \\
-          | & [n_\gamma]
+          | & \Ne{n_\gamma}
         \end{array}
     \\
     \hline
@@ -416,27 +443,31 @@ arranged as four quadrants thus:
         \end{array}
     & \;\begin{array}[t]{rl}
           ::= & n_\gamma \\
-          | & (t_\gamma:T_\gamma) 
+          | & \ra{t_\gamma}{T_\gamma}
         \end{array}
     \\
   \end{array}\]
-Let us write $\Tm ld\gamma$ for the set of terms in the quadrant given by $l$
-and $d$ with scope $\gamma$.
+Let us write $\Tm ld\gamma$ for the set of terms in the quadrant given
+by \emph{liberality} $l$
+and \emph{direction} $d$ with scope $\gamma$.
 \end{definition}
 
-\newcommand{\PI}[3]{(\Uppi\:#1\;\la{#2}{#3})}
+\newcommand{\PI}[3]{\Pa{\Uppi\:#1\;\la{#2}{#3}}} 
+\newcommand{\SG}[3]{\Pa{\Upsigma\:#1\;\la{#2}{#3}}} 
 The meaningfulness of \emph{constructions} will always be
 \emph{checked}, relative to some prior expectation. The
 \emph{essential} constructions give us the raw materials for
 canonical values, and they will always be invariant under computation.
-Let us adopt the \textsc{Lisp} convention that matching parentheses
-preceded by a dot may be deleted, along with the dot, which is
+I use teletype parentheses, $\Pa\ldots$ as `\textsc{Lisp} brackets' to leave
+$(\ldots)$ free for their usual mathematical purpose of resolving ambiguity.
+Let us further adopt the \textsc{Lisp} convention that
+$\dt\Pa{\mathit{stuff}}$ may be abbreviated as $\mathit{stuff}$, which is
 conveniently prejudicial to right-nested, nil-terminated lists. Our
 constructions will often be such lists, with an atom at the head.
 For example, dependent function types in $\gamma$ will be constructions of form
 \[\PI {S}x{T}\quad
   \mbox{which abbreviates}\quad
-  (\Uppi.(S.(\la x T.())))
+  \cn\Uppi{\cn S{\cn{\la x T}{\Pa{}}}}
 \]
 where $\Uppi$ is a particular atom, $S$ is a $\gamma$-construction and
 $T$ is a $\gamma,x$-construction. It is not my habit to notate
@@ -445,12 +476,12 @@ makes that much clear. Formally, working de Bruijn style, there is no reason
 to name the variable bound by an abstraction, but humans seem to appreciate it.
 
 The \emph{liberal} constructions extend the canonical constructions
-with \emph{thunks} --- essential computations which have not yet achieved canonical
+with \emph{thunks}, $\Ne n$ --- essential computations which have not yet achieved canonical
 form, either because they have not yet reduced, or because a variable
 is impeding reduction.
 
 Meanwhile, the \emph{computations} will always admit a type synthesis
-process. The \emph{essential} constructions comprise variables (whose
+process. The \emph{essential} computations comprise variables (whose
 type will be assigned by a context) and eliminations, overloading the
 application syntax --- the \emph{target} computation $e$ to the left is being
 eliminated, and its synthesizable
@@ -462,8 +493,7 @@ The \emph{liberal} computations extend the neutral computations with
 \emph{radicals}, in the chemical sense, being canonical forms with a
 type annotation which gives the information needed to check both the
 canonical form it annotates and the eliminator it is `reacting' with.
-If we exclude radicals from this syntax, we obtain the \emph{normal
-  forms}. Radicals are permitted only in eliminations, and these are
+Radicals are permitted only in eliminations, and these are
 the only eliminations which compute. That is, there is no computation
 step which proceeds uninformed by the type at which computation is
 happening.
@@ -475,7 +505,7 @@ further needs no type annotation. We may extend thunking to liberal
 computations as a `smart constructor' which deletes the annotations
 of radicals.
 \[
-  [(t:T)] = t
+  \Ne{\ra tT} = t
 \]
 Observe also that we may now lift
 \emph{all} the term formers to act on liberal components, yielding
@@ -483,35 +513,69 @@ liberal results, for everything apart from thunks admits
 liberal substructures. In particular, it becomes reasonable to
 substitute a liberal computation for a variable, in either a
 construction or a computation, yielding a liberal construction or
-computation, respectively. I write $t/e$ for such a substitution
-in a construction, when it is clear from context which variable in
-$t$ is being substituted.
+computation, respectively. I write $t\fsl e$ for such a substitution
+in a construction, and ensure that it is always clear from context
+which variable in $t$ is being substituted --- the forward slash
+of substitution answers the backslash of abstraction.
 
-With this apparatus in place, we may, for example, reformulate the traditional
-$\beta$-rule for functions as a rewriting rule on liberal
-computations, thus:
+\newcommand{\U}{\ensuremath{\star}}
+
+\begin{example}[Martin-L\"of's 1971 theory: syntax and $\beta$-reduction]
+  Let $\Uppi$ and $\U$ be atoms. The canonical types are given as
+  $\U$ and $\PI SxT$, with the former being the type of all types
+  and the latter being the type of abstractions, $\la xt$. The
+  $\beta$-rule is
 \[
-  (\la xt : \PI SxT)\:s \leadsto (t/(s:S):T/(s:S))
+  \ra{\la xt}{\PI SxT}\:s \leadsto \ra{t\fsl\ra sS}{T\fsl\ra sS}
 \]
-This rule substitutes a radical
+\end{example}
+
+Note that the $\beta$-rule substitutes a radical
 for the bound variable, creating potential redexes wherever that
 variable is eliminated. Moreover, the whole reduct will be radical. The type
 annotations thus mark the active computation sites and are discarded
-whenever computation concludes.
+whenever computation concludes, in general.
+
+\begin{dogma}[$\beta$-rules]
+  All $\beta$-rules have form
+  \[\ra tT\:s \leadsto \ra{t'}{T'}
+  \]
+  Further, each of $t$, $T$ and $s$ may demand only essential
+  construction structure.
+\end{dogma}
+
+\newcommand{\car}{\texttt{car}} 
+\newcommand{\cdr}{\texttt{cdr}} 
+Were we to add pair types, with atoms $\car$ and $\cdr$ as the
+eliminators, we could have:
+\[\ra{\cn st}{\SG SxT}\:\car \leadsto \ra sS \qquad
+  \ra{\cn st}{\SG SxT}\:\cdr \leadsto \ra t{T\fsl\ra sS}
+\]
+
+By adopting this uniform presentation of computation, we have already
+taken a major step towards establishing \emph{confluence} of
+$\beta$-reduction: if one $\beta$-redex contains another, the inner
+redex will always be copied zero or more times whenever the outer redex
+contracts. Critical pairs can arise only if the same term is a redex
+for two different $\beta$-rules.
 
 The $\beta$-normal forms are characterized by replacing
-$(t_\gamma:T_\gamma)$ in the grammar by $(n_\gamma:T_\gamma)$, ensuring that
+$\ra{t_\gamma}{T_\gamma}$ in the grammar by $\ra{n_\gamma}{T_\gamma}$, ensuring that
 all radicals are inert because of some free variable. We must resist
 the clear temptation to elide type annotations on neutral terms
 during reduction as the property of being neutral is not stable under
 substitution.
 
 
-\subsection{The category of thinnings acts functorially on syntax}
+\subsection{Thinnings and substitutions}
 
 \newcommand{\thin}{\sqsubseteq}
 \newcommand{\ith}{\mathbf{1}}
 \newcommand{\eth}{\mathbf{0}}
+\newcommand{\sel}[2]{#1!#2}
+
+To keep a tight grip in our formal account of \emph{scope}, let us
+develop the apparatus which explains when one scope embeds in another.
 
 \begin{definition}[thinning]
 A thinning is an order preserving embedding between scopes
@@ -522,156 +586,105 @@ The thinnings are generated by
 \[
   \Axiom{\emp:\emp\thin\emp} \qquad
   \Rule{\theta : \gamma \thin \delta}
-       {\theta0 : \gamma \thin \delta,x} \qquad
+       {\theta,0 : \gamma \thin \delta,x} \qquad
   \Rule{\theta : \gamma \thin \delta}
-       {\theta1 : \gamma,x \thin \delta,x} \qquad
+       {\theta,1 : \gamma,x \thin \delta,x} \qquad
 \]
 \end{definition}
 
-That is, thinnings arise in the manner of Pascal's triangle: there are $\left(\begin{array}{@{}c@{}}m \\ n\end{array}\right)$ thinnings from $n$ to $m$,
-which is not surprising, as they correspond to selections.
-
-A thinning is given as a bit vector the length of its target scope with its source scope being the `population count', i.e., number of 1s, in the vector.
-Thinnings form a well known category: the \emph{semi-simplicial} category, often notated $\Delta_+$.
+That is, thinnings arise in the manner of Pascal's triangle: there are
+$\left(\begin{array}{@{}c@{}}m \\ n\end{array}\right)$ thinnings from
+$n$ to $m$, which is not surprising, as they correspond to
+selections. A thinning is, in effect, given as a bit vector the length
+of its target scope with its source scope being the `population
+count', i.e., number of 1s, in the vector.
 
 \begin{definition}[identity thinning]
 The identity thinning $\ith_\gamma : \gamma \thin \gamma$ is given by
 \[
-  \ith_\emp = \emp \qquad \ith_{\gamma,x} = \ith_\gamma1
+  \ith_\emp = \emp \qquad \ith_{\gamma,x} = \ith_\gamma,1
 \]
 \end{definition}
 Informally, we may just write $\ith$. The empty thinning, $\eth$ is generated analogously, repeating
 0 to the appropriate length.
 
 \begin{definition}[composition of thinnings]
-  If $\theta:\gamma\thin \gamma'$ and $\phi:\gamma'\thin\gamma''$, then $\theta;\phi : \gamma\thin\gamma''$
+  If $\theta:\gamma_0\thin \gamma_1$ and $\phi:\gamma_1\thin\gamma_2$, then $\theta\phi : \gamma_0\thin\gamma_2$
   defined as follows:
   \[
-    \emp;\emp = \emp \qquad
-    \theta;\phi0 = (\theta;\phi)0 \qquad
-    \theta b;\phi1 = (\theta;\phi)b
+    \emp\emp = \emp \qquad
+    \theta(\phi,0) = \theta\phi,0 \qquad
+    (\theta,b)(\phi,1) = \theta\phi,b
   \]
 \end{definition}
+Note that I adopt the \emph{diagrammatic} convention for composition,
+written just as juxtaposition. When we see $\theta\phi$, we should
+remember that they meet in the middle, with $\theta$'s source on
+the left and $\phi$'s target on the right.
 
-\newcommand{\wk}{\uparrow}
-\newcommand{\wka}{\hat}
-\begin{definition}[weakening]
-  The thinning $\iota0 : \gamma\thin\gamma,x$ which adds one new local variable is written
-  $\wk$, and we denote its action on a thing by $\wka\cdot$. In particular, the weakening
-  of a thinning, $\wka\theta$ is given by $\theta;\wk$.
-\end{definition}
-
-\begin{lemma}[category of thinnings]
-  We have the usual categorical laws:
-  \[
-    \ith;\theta = \theta = \theta;\ith \qquad
-    (\theta;\phi);\psi = \theta;(\phi;\psi)
-    \]
-\end{lemma}
-\begin{proof}
-  Functional induction on the (graph of) composition readily establishes these results.
-\end{proof}
-
-\begin{lemma}[functoriality of scope extension]
-  The actions $\cdot,x$ on scopes and $\cdot1$ on thinnings is functorial:
-  \[
-    \ith_\gamma1 = \ith_{\gamma,x}\qquad (\theta;\phi)1 = (\theta1;\phi1)
-    \]
-\end{lemma}
-\begin{proof}
-  This holds by definition.
-\end{proof}
-
-\begin{remark}[thinnings as an integer monoid]
-  In another life, I teach undergraduates about computer hardware. Consequently, I recognize the identity thinning as the two's complement representation of $-1$.
-  Effectively, we may regard the integers as the infinite right-to-left bit vectors which eventually stabilise as all 0 (for non-negative integers) or all 1 (for negative integers). Thinning composition induces a monoid on the integers whose neutral element is $-1$. The details are left to the curious reader.
-\end{remark}
-
-Meanwhile, thinnings form a monoidal category by concatenation
-$\gamma,\delta$ of scopes and $\theta,\phi$ of thinnings.
-If $\theta : \gamma\thin\gamma'$, we may write $\theta\delta$ for
-the concatentation $\theta,\ith_\delta : \gamma,\delta \thin \gamma',\delta$.
+You will not be surprised to learn that thinnings have categorical
+structure, to be established formally in section \ref{sec:thincat}.
+For the moment, though, let us establish the minimum machinery
+necessary to proceed with our analysis of type systems.
 
 The formal truth is that a `variable' $x_\gamma$ is a thinning
 in some $x \thin \gamma$, i.e., from the singleton scope to $\gamma$. Noting that $\gamma$ occurs
-positively in the grammar, we obtain that each of our four syntactic
-quadrants is a functor from thinnings to \textbf{Set}.
+positively in the grammar, we obtain an action of thinnings on our syntax.
 
 \begin{definition}[action of a thinning]
-  If $\theta:\gamma\thin \delta$, it has a quadrant-preserving action, $\cdot\theta:\Tm ld\gamma\to\Tm ld\delta$
+  If $\theta:\gamma\thin \delta$, it has a quadrant-preserving action,
+  $\cdot\theta:\Tm ld\gamma\to\Tm ld\delta$,
+  which reduces to composition at variables.
   \[
-    \begin{array}{rlc@{\qquad}rlc}
-      a\theta & = & a & [n]\theta & = & [n\theta] \\
-      (s.t)\theta & = & (s\theta.t\theta) && \\
-      \grp{\la x t}\theta & = & \la x \grp{t(\theta1)} && \medskip\\
-      x\theta & = & x;\theta & (t:T)\theta & = & (t\theta:T\theta) \\
-      \grp{e\:s}\theta & = & \grp{e\theta}\:\grp{s\theta} && \\
+    \begin{array}{rcl@{\qquad}rcl}
+      a\theta & = & a & \Ne n\theta & = & \Ne{n\theta} \\
+      \cn st\theta & = & \cn{s\theta}{t\theta} && \\
+      (\la x t)\theta & = & \la x t(\theta,1) && \medskip\\
+      (e\:s)\theta & = & e\theta\:s\theta & \ra tT\theta & = & \ra{t\theta}{T\theta} \\
     \end{array}
     \]
+  \end{definition}
+
+I write the action postfix as a reminder that the scope of $t\theta$
+is the target scope of $\theta$.
+
+By contrast, thinnings act \emph{contravariantly} on vectors of any kind.
+Viewed left-to-right, thinnings represent the injection of one scope
+into a larger scope. Viewed right-to-left, thinnings represent the
+\emph{selection} of a subset.
+
+\begin{definition}[selection]
+  If $X$ is a set, let $X^\delta$ be the set of vectors with one
+  component in $X$ for each variable in $\delta$. If
+  $\theta:\gamma\thin\delta$ and $\vec x:X^\gamma$,
+  then let $\sel\theta{\vec x} : X^\gamma$ be defined thus:
+  \[
+    \sel\emp\emp=\emp \qquad
+    \sel{(\theta,0)}{(\vec x,x)} = \sel\theta{\vec x} \qquad
+    \sel{(\theta,1)}{(\vec x,x)} = (\sel\theta{\vec x}),x
+  \]
 \end{definition}
 
-Note that when disambiguating terms, I am careful to use a form of bracketing, $\grp{\cdot}$,
-which is not part of the syntax of terms, but happy to use ordinary parentheses to disambiguate
-other things, such as thinnings.
+I write the $\sel\theta\cdot$ action prefix as a reminder that the
+length of the $\sel\theta{\vec x}$ is given by the source scope
+of $\theta$.
 
-\begin{lemma}[functoriality of the thinning action]
- The thinning action extends $\Tm ld\cdot$ to a functor from $\Delta_+$ to $\textbf{Set}$.
-\end{lemma}
-\begin{proof}
-  We must show that $m\ith = m$ and that $m(\theta;\phi) = m\theta\phi$ for any term $m$ in any quadrant.
-  This is established straightforwardly by induction on $m$, relying on the functoriality of scope extension
-  to pass under an abstraction.
-\end{proof}
-
-Before we leave the category of thinnings, let me establish one more property which
-will prove crucial to my treatment of patterns.
-
-\newcommand{\pb}[2]{\textbf{pullback}(#1,#2)}
-\begin{lemma}[$\Delta_+$ has pullbacks]
-  If $\theta_i : \gamma_i\thin\gamma$ for $i=0,1$, then there exists a scope $\delta$ and
-  thinnings $\phi_i : \delta\thin\gamma_i$ for $i=0,1$ such that
-  $phi_0;\theta_0 = \phi_1;\theta_1$ with the universal property that
-  for any $\delta'$ and $\phi'_i : \delta'\thin\gamma_i$ such that
-  $phi'_0;\theta_0 = \phi'_1;\theta_1$, we have some $\psi : \delta'\thin\delta$ such that
-  $\phi'_i = \psi;\phi_i$ for $i=0,1$. We define $\pb{\theta_0}{\theta_1} = (\phi_0,\phi_1)$,
-  leaving $\delta$ implicit.
-\end{lemma}
-\begin{proof}
-  We shall see that $\delta$ is the part of $\gamma$ selected by \emph{both} $\theta_i$,
-  which needs must embed in both $\gamma_i$. More formally, we compute pullbacks thus:
-  \[\begin{array}{l@{\;=\;}r@{,\,}ll}
-    \pb{\emp}{\emp} & (\emp&\emp) & \\
-    \pb{\theta_00}{\theta_10} & (\phi_0&\phi_1)
-      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\                                     
-    \pb{\theta_00}{\theta_11} & (\phi_0&\phi_10)
-      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
-    \pb{\theta_01}{\theta_10} & (\phi_00&\phi_1)
-      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
-    \pb{\theta_01}{\theta_11} & (\phi_01&\phi_11)
-      & \mbox{where}\;(\phi_0,\phi_1) = \pb{\theta_0}{\theta_1} \\
-    \end{array}\]
-  The proof of the universal property is a straightforward induction on the call graph
-  of $\pb\cdot\cdot$.
-\end{proof}
-
-
-
-\subsection{The category of substitutions acts functorially on syntax}
-
-Let us turn now to the matter of \emph{substitutions}, which act simultaneously on all variables
+In particular, we shall need \emph{substitutions}, which act simultaneously on all variables
 in a scope. Let us take $\sigma$ and $\rho$ as metavariables for substitutions.
 
 \newcommand{\su}{\Rightarrow}
 \begin{definition}[substitution]
   Let $\gamma\su\delta$ be the set of substitutions from $\gamma$ variables to $\delta$ terms,
-  i.e., mappings \[\sigma : (x\thin\gamma) \to \Tm\lib\comp\delta\]
-  Let us write $x\sigma$ for the image of some $x$. We may write $\emp$ for the trivial
+  i.e., vectors \[\sigma : (\Tm\lib\comp\delta)^\gamma\]
+  Whenever $\theta : \gamma'\thin\gamma$, we have $\sel\theta\sigma$
+  for the substitution in $\gamma'\su\delta$ given by selecting from
+  $\sigma$ only the images corresponding to variables chosen by
+  $\theta$. In particular, $\sel x\sigma$ is the image of some variable
+  (i.e., singleton thinning)
+  $x$. 
+  We may write $\emp$ for the trivial
   substitution from the empty scope. If $\sigma : \gamma \su \delta$
-  and $e : \Tm\lib\comp\delta$, then we say
-  \[\sigma,e : \gamma,x \su \delta\qquad x(\sigma,e) = e\qquad
-    y(\sigma,e) = y\sigma\;\mbox{if}\;x\neq y\]
-  Formally, a substitution is a vector of terms, acting on de Bruijn indices by
-  projection.
+  and $e : \Tm\lib\comp\delta$, then we have $\sigma,e : \gamma,x$.
 \end{definition}
 
 Note that as variables are computations, so must be their images, but that we shall permit
@@ -680,99 +693,93 @@ We shall establish that substitutions form a category in due
 course. Let us first see how they operate. Before we can give their action on terms, we say how they
 pass under binders.
 
-\begin{definition}[weakening of substitutions]
-  If $\sigma : \gamma\su\delta$, then we may define its weakening, $\sigma1 : \gamma,x\su\delta,x$,
-  by
-  \[\sigma1 = \wka\sigma,x  \quad\mbox{where}\quad \wka\sigma = \sigma;\wk
-     \quad\mbox{where}\quad y(\sigma;\theta) = (y\sigma)\theta
-  \]
-  That is, $\sigma;\theta$ denotes pointwise action of $\theta$ on terms in $\sigma$.
-  We may define $\sigma\gamma' : \gamma,\gamma' \su \delta,\gamma'$ by iterating this construct
-  over $\gamma'$
+\newcommand{\wk}{\uparrow}
+\newcommand{\wka}{\hat}
+\begin{definition}[weakening]
+  The thinning $\ith,0 : \gamma\thin\gamma,x$ which adds one new local variable is written
+  $\wk$, and we denote its action on a thing by $\wka\cdot$. In particular, the weakening
+  of a thinning, $\wka\theta$ is given by $\theta\wk$.
 \end{definition}
+
+\begin{definition}[action of a thinning on a substitution]
+  If $\sigma:\gamma\su\delta$ and $\theta:\delta\thin\delta'$, we
+  write $\sigma\theta:\gamma\su\delta'$ for the pointwise action of
+  $\theta$ on the computations in $\sigma$. In particular,
+  \[
+    \wka\sigma = \sigma\wk : \gamma\su\delta,x
+    \]
+\end{definition}
+
+We now have all we need to make substitutions act on our syntax.
 
 \begin{definition}[action of a substitution]
   If $\sigma:\gamma\su \delta$, it has a liberalising action,
-  $\cdot\sigma:\Tm ld\gamma\to\Tm\lib d\delta$, extending its action on variables
-  to terms.
+  $\cdot\sigma:\Tm ld\gamma\to\Tm\lib d\delta$, which is projection
+  at variables.
   \[
     \begin{array}{rlc@{\qquad}rlc}
-      a\sigma & = & a & [n]\sigma & = & [n\sigma] \\
-      (s.t)\sigma & = & (s\sigma.t\sigma) && \\
-      \grp{\la x t}\sigma & = & \la x \grp{t(\sigma1)} && \medskip\\
-      \grp{e\:s}\sigma & = & \grp{e\sigma}\:\grp{s\sigma} & (t:T)\sigma & = & (t\sigma:T\sigma)
+      a\sigma & = & a & \Ne n\sigma & = & \Ne{n\sigma} \\
+      \cn st\sigma & = & \cn{s\sigma}{t\sigma} && \\
+      (\la x t)\sigma & = & \la x t(\wka\sigma,x) && \medskip\\
+      x\sigma & = & \sel x\sigma    & \ra tT\sigma & = & \ra{t\sigma}{T\sigma} \\
+      (e\:s)\sigma & = & e\sigma\:s\sigma
     \end{array}
   \]
-  Note that if $x\sigma = (t:T)$, then $[x]\sigma = [(t:T)] = t$, as the smart $[\cdot]$ strips
-  the type annotation.
+  Note that if $\sel x\sigma = \ra tT$, then $\Ne x\sigma = \Ne{\ra tT} =
+  t$, as the smart $\Ne\cdot$ strips the type annotation.
 \end{definition}
 
-\begin{definition}[postcomposition by substitution]
-  If $\theta : \gamma_0\thin\gamma_1$ and $\sigma : \gamma_1\su\gamma_2$, their
-  composition \emph{selects} $\theta$'s domain from $\sigma$.
-  \[\theta;\sigma : \gamma_o\su\gamma_2\qquad x(\theta;\sigma) = \grp{x\theta}\sigma
-  \]
-  If $\rho : \gamma_0\su\gamma_1$ and $\sigma : \gamma_1\su\gamma_2$, their
-  composition makes $\sigma$ act \emph{pointwise} on terms in $\rho$.
-  \[\rho;\sigma : \gamma_o\su\gamma_2\qquad x(\rho;\sigma) = \grp{x\rho}\sigma
-  \]
-\end{definition}
+Substitutions also have categorical structure, as we shall see in
+section \label{sec:sbstcat}. For now, let us establish the operations.
 
-\begin{lemma}[action of compositions]
-  All four compositions of thinnings and substitions act on terms as the sequence of the
-  component actions.
-  \[
-    t(\theta;\phi) = \grp{t\theta}\phi \quad\;
-    t(\theta;\sigma) = \grp{t\theta}\sigma \quad\;
-    t(\rho;\phi) = \grp{t\rho}\phi \quad\;
-    t(\rho;\sigma) = \grp{t\rho}\sigma
-  \]
-\end{lemma}
-\begin{proof}
-  Structural induction on terms establishes this property. To pass under binders, we must
-  establish that weakening distributes $(\cdot;\cdot)1 = (\cdot1;\cdot1)$, which follows from
-  the fact that
-  \[
-    \wka t(\cdot1) = t\wka\cdot
-  \]
-  for both thinnings and substitutions.
-\end{proof}
-
-To complete the components for the category of substitutions, we must have the identity.
 \newcommand{\isu}{\iota}
 \begin{definition}[identity substitution]
   The identity substitution $\isu_\gamma : \gamma\su\gamma$ is given by
-  \[\isu_\emp = \emp \qquad \isu_{\gamma,x} = \isu_\gamma1
+  \[\isu_\emp = \emp \qquad \isu_{\gamma,x} = \wka\isu_\gamma,x
   \]
-  A straightforward induction shows that $x\isu = x$.
+  A straightforward induction shows that $\sel x\isu = x$.
 \end{definition}
 
-\begin{lemma}[category of substitutions]
-  Substitutions $\sigma : \gamma\su\delta$ are the arrows of a category with identity $\isu$
-  and composition $;$. Moreover, scope extension, $\cdot,x$ is an endofunctor acting
-  on arrows as $\cdot1$, and action on terms makes $\Tm\lib d\cdot$ a functor
-  from substitutions to \textbf{Set}.
-\end{lemma}
-\begin{proof}
-  The category and functor laws collate the above results about identity and composition
-  of thinnings and substitutions.
-\end{proof}
+\begin{definition}[composition of substitutions]
+  If $\rho : \gamma_0\su\gamma_1$ and $\sigma : \gamma_1\su\gamma_2$, their
+  composition, $\rho\sigma$ makes $\sigma$ act \emph{pointwise} on terms in $\rho$.
+  \[\rho\sigma : \gamma_o\su\gamma_2\qquad \sel x{(\rho\sigma)} =
+    (\sel x\rho)\sigma
+  \]
+\end{definition}
 
-Note that we may also concatenate substitutions with the same target
-scope: if $\sigma : \gamma \su \delta$ and
-$\sigma' : \gamma'\su\delta$, then
-$\sigma,\sigma' : \gamma,\gamma'\su\delta$.
+We have established the \emph{definitions} of thinnings and
+substitutions, with their actions on terms. Let us acknowledge the
+debt outstanding to establish their \emph{structure}, but resist the
+temptation to dive into detail now. Let us instead zoom out and
+develop more of the ideas behind bidirectional type systems.
 
 
-\section{Judging the judgements and ruling the rules}
 
-A type theory is presented as a system of rules, each of which has
-zero or more premises and one conclusion, all of which are \emph{judgements}.
+\section{Judging the judgements}
+
+Typing \emph{judgements} make statements about the terms of our
+theories. The acceptable \emph{derivations} of judgements are defined
+inductively, by means of \emph{rules}, each of which has zero or
+more \emph{premises} and one \emph{conclusion} ---
+\emph{formal judgements} which give rise to actual judgements by
+instantiation of their \emph{schematic variables}.
+
+We should be clear about the distinction between the actual judgements
+derived in the process of checking the actual types of actual terms,
+and the formal judgements which we write when we specify the typing
+rules. We should hope to gain useful results about the derivability
+of actual judgements by taking care with the language we use for
+formal judgements. This section's primary concern is with actual
+judgements, but we should hope to learn some lessons informing
+the treatment of formal judgements in the next section.
+
 
 \subsection{The judgement forms}
 
-The judgement forms are specified as sequences of \emph{punctuation} and \emph{places}.
-A judgement is written by putting \emph{formulae} which stand for sets of terms into the
+The judgement forms are specified as sequences of \emph{punctuation}
+and \emph{places}. An \emph{actual} judgement has terms in its places.
+A formal judgement has \emph{formulae} which stand for sets of terms into the
 \emph{places}. Each place in a judgement form is assigned a \emph{mode}.
 
 \begin{definition}[mode]
@@ -800,12 +807,14 @@ that a rule justifies the preconditions for its premises and the postcondition
 for its conclusion, given the preconditions for its conclusion and the postconditions
 for its premises.
 
-Without further ado, let me specify the judgement forms I propose. Judgements
-exist in some scope, $\gamma$, and I shall be careful to give scopes to their
-places. I shall draw a box around the subjects, of which there will be at
-most one, and ensure that inputs stand left of the box, with outputs to the right.
-I write preconditions in braces to the left of the judgement form, with post
-conditions in braces to the right.
+Without further ado, let me specify the judgement forms I
+propose. Actual judgements have some scope, $\gamma$, and I shall be
+careful to give scopes to their places, determining the scopes of the
+terms we may put into them. I shall draw a box around the
+subjects, of which there will be at most one, and ensure that inputs
+stand left of the box, with outputs to the right.  I write
+preconditions in braces to the left of the judgement form, with
+postconditions in braces to the right.
 
 \newcommand{\bx}[1]{\framebox{\ensuremath{#1}}}
 \newcommand{\ty}[1]{\textsc{type}\;#1}
@@ -835,7 +844,9 @@ conditions in braces to the right.
                                                                              \smallskip\\
       \{\ty{S_\gamma},\cxe x{S_\gamma} \Pre{J'_{\gamma,x}}\} & \cxe x{S_\gamma} J'_{\gamma,x}
            & \{\cxe x{S_\gamma}\Post{J'_{\gamma,x}}\} & \mbox{context extension} 
-  \end{array}\]
+    \end{array}\]
+  We may extend the postfix action of thinnings and substitutions to
+  judgements, writing $J\theta$ and $J\sigma$, respectively.
 \end{definition}
 
 We may check that a construction is a valid type, which means that it
@@ -865,19 +876,40 @@ variable, but they are not explicit about the global context in which they apply
 
 Free variables exist, so we must have contexts to explain them.
 
-\begin{definition}[$\gamma$-context, context validity, global judgements]
-  Let us say when $\Gamma$ is a syntactically well formed $\gamma$-context, and when it is,
-  moreover, \emph{valid}. If so, we may write $\Gamma\vdash J_\gamma$ to assert
+\begin{definition}[$\gamma$-context, actions on contexts, global
+  judgements, context validity]
+  A $\gamma$-context, $\Gamma$ is a vector, mapping variables in $\gamma$ to
+  liberal constructions over $\gamma$:
+  \[
+    \Gamma : (\Tm\lib\cons\gamma)^\gamma
+    \]
+  Informally, we write it as a sequence of type assignments,
+  $x_1:S_1,\ldots,x_n:S_n$. We may write $\theta\Gamma$ for selections
+  from $\Gamma$, thence $x\Gamma$ for projections from
+  $\Gamma$. Meanwhile, thinnings and substitutions act pointwise as
+  $\Gamma\theta$ and $\Gamma\sigma$ respectively. In particular, $\wka\Gamma = \Gamma\wk$.
+  Given such a $\Gamma$, we may write $\Gamma\vdash J_\gamma$ to assert
   the \emph{global judgement} that a particular $\gamma$-judgement holds in $\Gamma$.
-  A rule expressed in terms of global judgements is \emph{globally presented}.
+  A rule expressed in terms of global judgements is \emph{globally
+    presented}.
+  Context \emph{validity} is defined inductively, as follows:
   \begin{itemize}
-  \item The only $\emp$-context is $\emp$, and it is valid.
-  \item If $\Gamma$ is a $\gamma$-context, then $\Gamma,x\!:\!S_\gamma$ is a $\gamma,x$ context,
-    valid whenever $\Gamma$ is valid and $\Gamma\vdash\ty S_\gamma$.
+  \item $\emp$ is a valid $\emp$-context.
+  \item If $\Gamma$ is a valid $\gamma$-context and $\Gamma\vdash\ty
+    S_\gamma$, then $\wka\Gamma,x\!:\!S_\gamma$ is a valid $\gamma,x$ context.
   \end{itemize}
 \end{definition}
 
-It may seem peculiar that context validity is not presented as a
+At least two things may strike you as peculiar.
+\begin{itemize}
+\item The property that the types of later variables may depend only on
+  earlier variables is not encoded in the \emph{syntax} of contexts,
+  but only in their \emph{validity}. The consequence of this
+  nonstandard choice is that the selective action of thinning makes
+  syntactic sense, and in particular, the projection $x\Gamma$ from a
+  $\gamma$-context yields a term in $\gamma$, which is exactly what we
+  need when we \emph{use} the context.
+\item Context validity is not presented as a
 judgement. This, also, is purposeful: it prevents the
 \emph{re}validation of the context by typing rules. I thus depart from
 standard practice of taking the validity of the empty context as the
@@ -887,42 +919,28 @@ rules, we may consider context validity to be entirely the responsibility
 of the client: garbage in, garbage out! The precondition for the context
 extension judgement form does exactly the work required to ensure that the
 extended context is valid if the original context is.
+\end{itemize}
 
-There is but one rule to derive context extension judgements, and it must
-be globally presented.
-\begin{definition}[context extension]
+There are but two globally presented rules:
+\begin{definition}[context extension, type lookup]
   \[\textsc{extend}\;
     \Rule{\Gamma,\cxe xS J}
     {\Gamma\vdash \cxe xS J}
+    \qquad
+    \textsc{lookup}\;\Axiom{\Gamma\vdash x\in x\Gamma}
   \]
 \end{definition}
-The client invoking the above rule must ensure that $\Gamma$ is valid and that
+The client invoking the \textsc{extend} rule must ensure that $\Gamma$ is valid and that
 $\Gamma\vdash\ty S$, which is sufficient to ensure the validity of the context
-in the premise.
-
-Meanwhile, we have two globally presented rules for looking up the type of
-a variable in a context.
-\begin{definition}[type lookup]
-  \[
-    \textsc{top}\;
-    \Axiom{\Gamma,\cxe xS \cxl x{\wka S}} \qquad
-    \textsc{pop}\;
-    \Rule{\Gamma\vdash \cxl xS}
-         {\Gamma,\cxe yT \cxl x{\wka S}}\;x\neq y
-  \]
-\end{definition}
-The side condition in the latter is for human consumption only: formally, it is clear
-which context entry a de Bruijn index indicates. Note, however, that we incur a proof
-obligation in respect of these rules. In each case, we are promised (by the client
-in the former, by the server of the premise in the latter), that $\Gamma\vdash\ty S$,
-but the postcondition for type lookup judgements requires us to show that
-$\Gamma,\cxe yT \ty{\wka S}$. To have any chance of that, we need type construction to be
-stable under thinning in general, to say nothing of substitution.
+in the premise. Meanwhile, the client invoking the $\textsc{lookup}$
+rule must again ensure that $\Gamma$ is valid, which will allow the
+server to guarantee that $\Gamma\vdash \ty{x\Gamma}$, provided we can
+ensure that type construction is stable under thinning.
 
 We shall develop the technical apparatus to achieve stability with respect to actions
-on free variables shortly, but for now, let me give the high-level idea. If you do not talk
-about free variables, you cannot assert anything which can be falsified by an action on
-free variables.
+on free variables shortly, but for now, let me give the high-level idea. If you never talk
+about free variables, the truths you tell will be preserved by
+operations which act only on free variables.
 
 \begin{dogma}[locally presented rules]
   Only context extension and type lookup are globally presented. Rules for all other
@@ -943,12 +961,15 @@ its local presentation.
 However, apart from this rule, access to the global context is absolutely forbidden.
 
 \begin{dogma}[\label{dogma:free}no context access]
-  The rules \textsc{top}, \textsc{pop} and \textsc{var} are the only rules which may
-  use the type lookup judgement, in either premises or conclusion.
-  All other locally presented rules must have $\emp$-judgements for their premises
-  and conclusions, referring only to schematic variables and term variables which
+  The \textsc{var} rule is the only rule which may
+  use the type lookup judgement.
+  All other rules must be locally presented, referring only to
+  schematic variables and term variables which
   are bound locally within judgements, either by abstraction or by context extension.
 \end{dogma}
+
+When we examine more formally the formulae which may appear in typing
+rules, let us do so in accordance with this dogma.
 
 Intuitively, it is clear that variable lookup is stable under
 thinning. Inserting more free variables does not preclude access to
@@ -960,7 +981,7 @@ can be realised, let us stop talking about free variables before we say
 something we have cause to regret.
 
 
-\subsection{Change of direction and type equality}
+\subsection{Change of direction, type equality and reduction}
 
 The configurable parts of a type theory in this setting are the rules
 which police constructions, whether they represent types, values or
@@ -1005,7 +1026,73 @@ we could relax the requirement to the demand that $S$ be a \emph{subtype} of $T$
 That might be one way to arrange for a Russell-style cumulative hierarchy of
 universes. Let us leave those possibilities for the future.
 
-We have now dealt with all the generic parts of bidirectional type systems.
+We have not yet treated the possibility of
+\emph{reduction} in types, without which our notion of type equality
+is overly restrictive. Calculemus!
+
+\begin{definition}{type reduction, pre-checking and post-synthesis}
+\[
+  \textsc{pre}\;
+  \Rule{T\leadsto T' \quad \chk{T'}t}
+  {\chk Tt}
+  \qquad
+  \textsc{post}\;
+  \Rule{\syn eS\quad S\leadsto S'}
+  {\syn eS}
+\]
+\end{definition}
+
+The above rules allow us to compute a type to a canonical form before
+checking a construction, or after the synthesis of a target type, so
+that we can check an elimination. Moreover, either side of the
+\textsc{thunk} rule, which insists on exact type equality, we may
+compute synthesized and checked types to a common reduct.
+
+Reduction is generated by the contextual closure of the $\beta$-rules.
+It is not a judgement, but merely a scope-respecting binary relation
+on liberal constructions and computations, needing no context. Even
+so, it should be given a precondition-postcondition specification,
+making clear which judgements are preserved by reduction: that will be
+the \emph{subject reduction} property, and we shall attend to it in
+due course. In the meantime, let us establish what is common to all
+the reduction systems under this setup.
+
+\begin{definition}[contextual closure of reduction]
+\[
+  \Rule{s\leadsto s'}
+  {\cn st\leadsto\cn{s'}t} \qquad
+  \Rule{t\leadsto t'}
+  {\cn st\leadsto\cn s{t'}} \qquad
+  \Rule{t\leadsto t'}
+  {\la xt\leadsto\la xt'} \qquad
+  \Rule{n\leadsto e}
+  {\Ne n \leadsto \Ne e}
+\]
+\[\Rule{e\leadsto e'}
+  {e\:s\leadsto e'\:s} \qquad
+  \Rule{s\leadsto s'}
+  {e\:s\leadsto e\:s'} \qquad
+  \Rule{t\leadsto t'}
+  {\ra tT \leadsto \ra{t'}T} \qquad
+  \Rule{T\leadsto T'}
+  {\ra tT \leadsto \ra t{T'}} \qquad
+  \]
+\end{definition}
+
+The fact that these rules offer no base case should not cause alarm:
+it is for individual systems to identify specific radical eliminations
+$\ra tT\:s$ as redexes. More particularly, if every well typed radical
+elimination is a redex in at least one way, we shall guarantee
+\emph{progress}, and if every well typed radical elimination is a
+redex in at most one way, we shall guarantee \emph{confluence}.
+Subject reduction amounts to showing that the assumptions which must
+hold for a redex to be well typed are sufficient to show that the
+redex has the same type. If we are systematic about how to frame
+these requirements in terms of the typing rules, we shall have these
+properties by construction.
+
+We now have all the \emph{generic} rules for bidirectional type
+systems, in the sense of this paper.
 Before we turn to the machinery which allows us to specify individual type
 theories by classifying the constructions which occur in them, let us establish
 a concrete running example from which to generalise.
@@ -1016,7 +1103,6 @@ a concrete running example from which to generalise.
 I take Martin-L\"of's 1971 type theory~\cite{martinloef:atheoryoftypes} as
 the exemplary system for two reasons. Firstly, it is small:
 
-\newcommand{\U}{\star}
 \newcommand{\trg}{\bullet}
 \begin{definition}[bidirectional type-in-type]
 \[\begin{array}{c}
@@ -1031,9 +1117,12 @@ the exemplary system for two reasons. Firstly, it is small:
   \Rule{\cxe xS \chk Tt}
   {\chk {\PI SxT}{\la x t}}
   \qquad\qquad
-  \Rule{\trg\in\PI SxT\quad \chk Ss}
-       {\trg\:s\in T/(s:S)}
+  \Rule{e\in\PI SxT\quad \chk Ss}
+       {e\:s\in T\fsl\ra sS}
 \end{array}\]
+\[
+  \Axiom{\ra{\la xt}{\PI SxT}\:s \leadsto \ra{t\fsl\ra sS}{T\fsl\ra sS}}
+\]
 \end{definition}
 
 Secondly, it is inconsistent: it is famously possible to construct a term
@@ -1041,28 +1130,17 @@ which does not $\beta$-normalize. We shall not be able to appeal to normalizatio
 in our efforts to establish any of its other metatheoretic properties, such as
 subject reduction.
 
-In addition to $()$, we have two atoms, $\U$ and $\Uppi$, which tag our canonical
+In addition to $\Pa$, we have two atoms, $\U$ and $\Uppi$, which tag our canonical
 types --- the universe and function spaces, respectively. We further assert that
 $\U$ may stand as a type of types, which allows types to be computations for which
 the type $\U$ may be synthesized. The inconsistency arises from the rule which
 makes any type, including $\U$ itself, checkably an inhabitant of $\U$. A
 function type $\PI SxT$ tells us how to check an abstraction, which we need not
-tag with a constructor. The $\trg$ symbol in the synthesis rule for application
-is a schematic variable: its peculiar name is because of a special property which
-will shortly become clear. When we can synthesize a function type for the target
+tag with a constructor. When we can synthesize a function type for the target
 of an elimination, that tells us to interpret the entire eliminator as the function's
 argument and check that it inhabits the function's domain.
 
-Of course, this is not quite the whole story. We shall need to equip our theory
-with the possibility to \emph{compute} in types, with a reduction system involving
-the $\beta$-rule
-\[
-  (\la xt : \PI SxT)\:s \leadsto (t/(s:S):T/(s:S))
-\]
-but let us address that requirement later, when we have developed the precise
-language in which to talk about reductions.
-
-For now, let us focus on checking and synthesizing types. We can see that
+Let us look more closely at the rules for checking and synthesizing types. We can see that
 rules for judgements $\ty T$ and $\chk Tt$ trade only in essential constructions,
 with premises checking components of the conclusion's subject. Meanwhile, the synthesis
 rule makes no syntactic analysis of its target, requiring only a particular construction
@@ -1070,17 +1148,114 @@ for its synthesized type, in order to check the construction of the eliminator
 and deliver the synthesized type of the whole.
 
 The typing rules do not talk about free variables. The only schematic variable
-which stands for a computation is the $\trg$ in the application rule, and it is used in a
+which stands for a computation is the $e$ in the application rule, and it is used in a
 very particular pattern.
 
 \begin{dogma}[targets of eliminations]
   We are free to write synthesis rules only for eliminations. These rules must
-  name the target $\trg$ but not analyse its syntactic structure. The first premise
-  of an elimination rule must synthesize the type of $\trg$.
+  name the target but not analyse its syntactic structure. The first premise
+  of an elimination rule must synthesize the type of the target.
 \end{dogma}
 
 That is, the only real choices we make, even in the synthesis rules, are how to
-analyse constructions.
+analyse constructions. It is in the light of that observation that we
+should ask `What are the redexes?'. The only elimination rule demands
+the type $\PI sxT$ for its target, $e$. Na\"\i{}vely ignoring pre- and post-computation
+for the moment, the only way $e$ can be a radical is if $\PI sxT$ is a
+type, and if the canonical term thus annotated is checked at that
+type, which means it must be $\la xt$. Working backwards from the type
+formation, we learn what must be true about $S$ and $T$; working
+backwards from type checking, we learn what must be true of $t$;
+working backwards from the elimination rule, we learn what must be
+true of $s$, and what must be the type component of the radical
+reduct. We must have
+\[
+  \ty S \qquad \cxe xS\ty T\qquad \cxe xS T\ni t \qquad S\ni s
+\]
+and we must deliver exactly one $\beta$-rule, of the form
+\[
+  \ra{\la xt}{\PI SxT}\:s \leadsto \ra{\;\;?\;\;}{T\fsl\ra sS}
+\]
+Our assumptions certainly justify
+\[
+  \ra sS \in S \qquad \cxe xS \ra tT \in T
+\]
+so that if we can ensure stability under substitution, we shall have
+\[
+   \ra{t\fsl\ra sS}{T\fsl\ra sS} \in T\fsl\ra sS
+\]
+which rather suggests that we take $?=t\fsl\ra sS$. Showing that
+$\ty T\fsl\ra sS$ is necessary, even to discharge the postcondition
+for the elimination rule. The obligation that is peculiar to the
+$\beta$-rule is to complete the radical by showing $T\fsl\ra sS\ni
+t\fsl\ra sS$.
+
+It is instructive to consider what would happen, were we to extend
+our theory with dependent pairs. We should add
+\[\begin{array}{c}
+  \Rule{\ty S\quad \cxe xS \ty T}
+  {\ty \SG SxT}\qquad\qquad
+  \Rule{S\ni s\quad T\fsl\ra sS\ni t}
+  {\SG SxT\ni\cn st}\\
+  \Rule{e\in \SG SxT}
+       {e\:\car\in S}\qquad
+  \Rule{e\in \SG SxT}
+       {e\:\cdr\in T\fsl e\:\car}\qquad
+\end{array}  \]
+Take note that the type of the second projection, $e\:\cdr$, depends
+on the value of the first, $e\:\car$. That is enough to show that
+we shall need schematic variables for at least one computation --- the
+target of an elimination --- even though our other schematic variables
+all stand for constructions. That the type of a function application
+does not depend on the function is a lucky break which we should not
+take for granted!
+
+Now, for the $\beta$-rules, we may play the same game of `working
+backwards' to find the assumptions underpinning the existence of
+redexes. What is that game, exactly? We are \emph{unifying} the
+type checked in an introduction rule with the target's type in
+an \emph{elimination} rule, in order to obtain \emph{all} possible
+radical eliminations. In this case, we find
+\[\begin{array}{lcl}
+  \ra{\cn st}{\SG SxT}\:\car&\leadsto& \ra{\;\;?_\car\;\;}S \\
+  \ra{\cn st}{\SG SxT}\:\cdr&\leadsto& \ra{\;\;?_\cdr\;\;}{T\fsl\ra{\cn st}{\SG SxT}\:\car}
+\end{array}\]
+How do we know we have found them \emph{all}?
+\begin{dogma}[unification]
+We must ensure that
+the language for writing types checked in introduction rules and
+for target types analysed in elimination rules has not only decidable
+unification, but also \emph{most general} unifiers.
+\end{dogma}
+
+Returning to the problem of finding our reducts, we know
+\[
+  \ty S \qquad \cxe xS\ty T \qquad S\ni s\qquad T\fsl\ra sS\ni t
+  \]
+so we may certainly take $?_\car = s$. But may we take $?_\cdr = t$,
+as one might hope? In order to do so, we must immediately precompute with
+the $\beta$-rule for $e\:car$, yielding
+\[
+  \Rule{T\fsl\ra{\cn st}{\SG SxT}\:\car\leadsto T\fsl\ra sS\quad T\fsl\ra sS\ni t}
+       {T\fsl\ra{\cn st}{\SG SxT}\:\car\ni t}
+  \]
+
+That is to say, the justification of some $\beta$-rules depends on the
+deployment of others. We now have a balance to strike, if we want a
+machine to check our systems of rules: on the one hand, reduction may
+be nonterminating; on the other, some reduction is necessary. How much
+reduction is judicious? Let us ponder that anon.
+
+
+\section{Ruling the rules}
+
+We have so far been thinking about the judgement forms for our type
+systems and the actual derivations we can make of actual judgements
+about actual terms. In doing so, we have identified some informal
+disciplines to which we should like the typing rules to adhere. It is
+time to make these disciplines precise and enforce them when we write
+the formal judgements that comprise the premises and conclusion of
+each of the typing rules under our control.
 
 
 \subsection{How rules talk about constructions: patterns and expressions}
@@ -1107,7 +1282,96 @@ binding sites for schematic variables; expressions the use sites.
             \textbf{premise}  & expression & schematic variable & pattern \\
      \textbf{conclusion} & pattern & pattern & expression \\
           \end{tabular} }\]
+  Moreover, the type given in a context extension for a premise is an expression.
 \end{dogma}
+
+Informally, we have already learned quite a lot about the difference
+between patterns and expressions. For example, we know that
+substitution in schematic variables, such as our commonly occurring
+$T\fsl\ra sS$, makes sense only in \emph{expressions} because we
+can compute substitutions but not invert them. You may readily check
+that the substitutions used in our rules so far occur only in
+expression positions. Moreover, we have learned that the language of
+patterns must be sufficently weak as to sustain a computable notion of
+most general unifier: we can have no such hope for expressions.
+
+Let us now design the language of patterns, then consider how to
+manage the business of binding schematic variables for use in
+expressions.
+
+
+\subsection{There are some questions it is better not to ask}
+
+It is the job of a formal pattern to ask questions about an actual
+term. `What is a sensible question?' is a sensible meta-question.
+For example, `Are you the free variable $x$?' is a \emph{dangerous}
+question, because the answer is `Yes.' for the free variable $x$, but
+perhaps not for some substitution instance of $x$. As Dogma
+\ref{dogma:free} indicates, our rules should not ask such questions if
+we want typing derivations to be stable under substitution.
+
+We shall have some language of patterns ($p,q$) which come equipped with a
+notion of $p$-environment ($\pi,\chi$) mapping schematic variables in
+$p$ to actual terms, such that any actual term `matching' the pattern
+$p$ is given by the action, $p\pi$, for some $p$-environment $\pi$. The grammar of
+possible $p$s will be some restriction of the grammar of actual terms.
+We had better ensure that environments can be acted on by thinnings,
+$\pi\theta$, and by substitutions, $\pi\sigma$. Moreover, we must
+guarantee that
+\[
+  (p\pi)\theta = p(\pi\theta)\qquad
+  (p\pi)\sigma = p(\pi\sigma)
+\]
+
+The latter should remind us to ask whether there are any syntactic
+constructs, other than free variables, which are \emph{not} preserved
+by substitution, and in our setup, we should remember that
+\[
+  \Ne x\fsl\ra tT = t
+\]
+from which we deduce that `Are you a thunk?' is also a dangerous
+question for a pattern to ask.
+
+\begin{remark}[the $\upsilon$ alternative]
+  In previous work, I have proposed to permit terms of form $\Ne{\ra
+    tT}$ and hence to allow structural substitution for thunks, at the
+  cost of adopting the additional reduction rule,
+  \[
+    \Ne{\ra tT} \leadsto_\upsilon t
+  \]
+  where $\upsilon$ is the grunt of satisfaction at the complete
+  elimination of a cut. However, such a rearrangement does not
+  affect the sensible notion of pattern, because of the following
+  consideration.
+\end{remark}
+
+\begin{dogma}[stability of pattern matching under reduction]
+  Consider pattern $p$. If $t=p\pi$ for some $p$-environment, $\pi$,
+  and $t\leadsto t'$, then there must exist some $\pi'$ such that
+  $t'=p\pi'$ and $\pi\leadsto\pi'$, where the latter is the
+  extension of reduction to environments which allows reduction in exactly
+  one term therein.
+\end{dogma}
+
+Why should we adopt such a dogma? Given that we may precompute types
+before checking them by pattern matching and postcompute synthesized
+types before analysing them, again by pattern matching, it would be
+awkward, to say the least, if positive matches were transient. It is
+one thing to say that some computation must be done before a match is
+achieved, but quite another to say that some computation must be
+avoided to ensure that a match is sustained --- `blink and you'll
+miss it'. There are two properties which are reliably stabilised
+by computation:
+\begin{itemize}
+\item being an \emph{essential} construction (or `canonical form')
+\item \emph{independence} of a variable
+\end{itemize}
+
+Independence of free variables is not stable under substitution,
+but independence of \emph{bound} variables is unproblematic, as they
+are unaffected by substitution. Accordingly, we have found a class
+of syntactic questions which a pattern may reasonably ask. Let us
+define their grammar.
 
 \newcommand{\Pat}[1]{\textbf{Pat}(#1)}
 \begin{definition}[$\gamma$-pattern]
@@ -1149,6 +1413,350 @@ listing the permitted variables. We could also have written:
 \]
 Meanwhile, the pattern $\PI{S\huth{}}x{T\!\huth{}}$ matches only function types which
 happen to be non-dependent.
+
+\section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
+
+Thinnings form a well known category: the \emph{semi-simplicial} category, often notated $\Delta_+$.
+
+
+More generally, we may have left and right injections.
+\newcommand{\thinl}[2]{#1 \triangleleft #2}
+\newcommand{\thinr}[2]{#1 \triangleright #2}
+\begin{definition}[injections to a concatenation]
+  We take
+  \[
+    \thinl\gamma\delta = \ith_\gamma,\eth_\delta :
+    \gamma\thin\gamma,\delta \qquad
+    \thinr\gamma\delta = \eth_\gamma,\ith_\delta :
+    \delta\thin\gamma,\delta
+    \]
+\end{definition}
+
+\begin{lemma}[category of thinnings]
+  We have the usual categorical laws:
+  \[
+    \ith\theta = \theta = \theta\ith \qquad
+    (\theta\phi)\psi = \theta(\phi\psi)
+    \]
+\end{lemma}
+\begin{proof}
+  Functional induction on the (graph of) composition readily establishes these results.
+\end{proof}
+
+\begin{lemma}[monoidal structure of thinnings]
+  Concatenation of bit vectors, $\theta,\phi$, induces monoidal
+  structure on $\Delta_+$ with respect to the monoid of concatenation
+  on scopes. That is, if $\theta:\gamma\thin\delta$ and
+  $\phi:\gamma'\thin\delta'$, then $\theta\otimes\phi :
+  \gamma,\gamma'\thin\delta,\delta'$
+  is given by $\theta,\phi$, satisfying
+  \[
+    \ith\otimes\ith = \ith \qquad
+    (\theta\theta')\otimes(\phi\phi') =
+     (\theta\otimes\phi)(\theta'\otimes\phi')
+   \]
+   such that
+   \[
+     \ith\otimes\theta = \theta = \theta\otimes\ith\qquad
+     (\theta_0\otimes\theta_1)\otimes\theta_2 = \theta_0\otimes(\theta_1\otimes\theta_2)
+   \]
+\end{lemma}
+\begin{proof}
+  These equations are readily shown by functional induction on
+  concatenation of thinnings.
+\end{proof}
+
+\begin{lemma}[functoriality of scope extension]
+  The actions $\cdot,x$ on scopes and $\cdot\otimes1$ on thinnings is functorial:
+  \[
+    \ith_\gamma,1 = \ith_{\gamma,x}\qquad \theta\phi,1 = (\theta,1)(\phi,1)
+    \]
+\end{lemma}
+\begin{proof}
+  This holds by definition.
+\end{proof}
+
+\begin{remark}[thinnings as an integer monoid]
+  In another life, I teach undergraduates about computer hardware. Consequently, I recognize the identity thinning as the two's complement representation of $-1$.
+  Effectively, we may regard the integers as the infinite right-to-left bit vectors which eventually stabilise as all 0 (for non-negative integers) or all 1 (for negative integers). Thinning composition induces a monoid on the integers whose neutral element is $-1$. The details are left to the curious reader.
+\end{remark}
+
+\begin{lemma}[natural selection]
+  If $X$ is a set, let $X^\delta$ be the set of vectors with one
+  component in $X$ for each variable in $\delta$. $X^\cdot$ extends
+  to a functor from $\op{\Delta_+}$ to \Set.
+  Specifically, if $\theta:\gamma\thin\delta$ and $\vec x:X^\gamma$,
+  then $\sel\theta{\vec x} : X^\gamma$, defined thus:
+  \[
+    \sel\emp\emp=\emp \qquad
+    \sel{(\theta,0)}{(\vec x,x)} = \sel\theta{\vec x} \qquad
+    \sel{(\theta,1)}{(\vec x,x)} = (\sel\theta{\vec x}),x
+  \]
+  Moreover $\sel\theta\cdot$ is a natural transformation from
+  $\cdot^\gamma$ to $\cdot^\delta$.
+\end{lemma}
+\begin{proof}
+  We require
+  \[
+    \sel\ith{\vec x} = \vec x \qquad
+    \sel{(\theta\phi)}{\vec x} = \sel\theta{(\sel\phi{\vec x})} \qquad
+    \sel{\theta}{(\vec x f^\delta)} = (\sel\theta{\vec x})f^\gamma
+  \]
+  where postfix $\cdot f^\cdot$ is the pointwise mapping of $f:X\to Y$ across a vector.
+  All are readily established by functional induction.
+\end{proof}
+
+Selection by our injections allows us to take prefixes and suffixes of
+vectors. In particular, we can cut a vector in two, then stick it back
+together.
+
+\begin{lemma}[left-to-right concatenation]
+  If $\vec x : X^{\gamma,\delta}$, then
+  \[
+    \sel{(\thinl\gamma\delta)}{\vec x}, \sel{(\thinr\gamma\delta)}{\vec x}
+    = \vec x
+  \]
+\end{lemma}
+\begin{proof}
+  This follows by functional induction on concatenation of scopes.
+\end{proof}
+
+
+\begin{lemma}[functoriality of the thinning action]
+ The thinning action extends $\Tm ld\cdot$ to a functor from $\Delta_+$ to $\Set$.
+\end{lemma}
+\begin{proof}
+  We must show that $m\ith = m$ and that $m(\theta\phi) = (m\theta)\phi$ for any term $m$ in any quadrant.
+  This is established straightforwardly by induction on $m$, relying on the functoriality of scope extension
+  to pass under an abstraction.
+\end{proof}
+
+Before we leave the category of thinnings, let me establish two more properties which
+will prove crucial to my treatment of \emph{patterns}.
+
+\newcommand{\pb}[2]{#1 \sqcap #2}
+\newcommand{\cp}[2]{#1 \sqcup #2}
+\begin{lemma}[$\Delta_+$ has pullbacks]
+  If $\theta_i : \gamma_i\thin\gamma$ for $i=0,1$, then there exists a
+  scope $\delta$, a thinning $\theta : \delta\thin\gamma$, and
+  thinnings $\phi_i : \delta\thin\gamma_i$ such that
+  $\phi_i\theta_i = \theta$  for $i=0,1$ with the universal property that
+  for any $\phi:\delta'\thin\gamma$ and $\phi'_i : \delta'\thin\gamma_i$ such that
+  $\phi=\phi'_0\theta_0$, we have some $\theta' : \delta'\thin\delta$
+  such that
+  $\phi=\theta'\theta$ and
+  $\phi'_i = \theta'\phi_i$ for $i=0,1$. We define
+  $\pb{\theta_0}{\theta_1} = \phi_0 | \theta | \phi_1$,
+  leaving $\delta$ implicit.
+\end{lemma}
+\begin{proof}
+  We shall see that $\theta$ is the pointwise conjunction of the $\theta_i$,
+  which needs must embed in both $\gamma_i$. More formally, we compute pullbacks thus:
+  \[\begin{array}{c@{\;\;=\;\;}r@{|}c@{|}ll}
+    \pb{\emp}{\emp} & \emp&\emp&\emp & \\
+    \pb{(\theta_0,0)}{(\theta_1,0)} & \phi_0&\theta,0&\phi_1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \pb{\theta_0}{\theta_1} \\                                     
+    \pb{(\theta_0,0)}{(\theta_1,1)} & \phi_0&\theta,0&\phi_1,0
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \pb{\theta_0}{\theta_1} \\
+    \pb{(\theta_0,1)}{(\theta_1,0)} & \phi_0,0&\theta,0&\phi_1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \pb{\theta_0}{\theta_1} \\
+    \pb{(\theta_0,1)}{(\theta_1,1)} & \phi_0,1&\theta,1&\phi_1,1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \pb{\theta_0}{\theta_1} \\
+    \end{array}\]
+  The universal property holds by straightforward induction on the call graph
+  of $\pb\cdot\cdot$.
+\end{proof}
+
+\begin{remark}[pullback by selection]
+  If we view $\theta_i : \gamma_i\thin\gamma$ for $i=0,1$ as bit
+  vectors of length $\gamma$, it
+  becomes reasonable to compute $\sel{\theta_0}{\theta_1} :
+  \delta\thin\gamma_0$
+  and $\sel{\theta_1}{\theta_0} : \delta\thin\gamma_1$. These are,
+  respectively, $\phi_0$ and $\phi_1$ whenever
+  $\pb{\theta_0}{\theta_1} = \phi_0 | \theta | \phi_1$.
+\end{remark}
+
+\begin{lemma}[$\Delta_+/\gamma$ has coproducts]
+  If $\theta_i : \gamma_i\thin\gamma$ for $i=0,1$, then there exists a
+  scope $\delta$, a thinning $\theta : \delta\thin\gamma$, and
+  thinnings $\phi_i : \gamma_i\thin\delta$ such that
+  $\phi_i\theta = \theta_i$  for $i=0,1$ with the universal property that
+  for any $\phi:\delta'\thin\gamma$ and $\phi'_i : \gamma_i\thin\delta'$ such that
+  $\theta_i = \phi'_i\phi$, we have some $\theta' :
+  \delta\thin\delta'$ such that
+  $\theta=\theta'\phi$ and
+  $\phi'_i = \theta'\phi_i$ for $i=0,1$. We define
+  $\cp{\theta_0}{\theta_1} = \phi_0 | \theta | \phi_1$,
+  leaving $\delta$ implicit.
+\end{lemma}
+\begin{proof}
+  We shall see that $\theta$ is the pointwise disjunction of the $\theta_i$,
+  which needs must both $\gamma_i$ embed in. More formally, we compute
+  coproducts in the slice thus:
+  \[\begin{array}{c@{\;\;=\;\;}r@{|}c@{|}ll}
+    \cp{\emp}{\emp} & \emp&\emp&\emp & \\
+    \cp{(\theta_0,0)}{(\theta_1,0)} & \phi_0&\theta,0&\phi_1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \cp{\theta_0}{\theta_1} \\                                     
+    \cp{(\theta_0,0)}{(\theta_1,1)} & \phi_0,0&\theta,1&\phi_1,1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \cp{\theta_0}{\theta_1} \\
+    \cp{(\theta_0,1)}{(\theta_1,0)} & \phi_0,1&\theta,1&\phi_1,0
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \cp{\theta_0}{\theta_1} \\
+    \cp{(\theta_0,1)}{(\theta_1,1)} & \phi_0,1&\theta,1&\phi_1,1
+      & \mbox{where}\;\phi_0|\theta|\phi_1 = \cp{\theta_0}{\theta_1} \\
+    \end{array}\]
+  The universal property holds by straightforward induction on the call graph
+  of $\cp\cdot\cdot$.
+\end{proof}
+
+A direct consequence of the latter is that we can compute the
+\emph{support} of a term --- the smallest scope in which it is
+represented.
+\newcommand{\supp}[1]{\lfloor #1 \rfloor}
+\begin{lemma}[support]
+  For any $t:\Tm ld\gamma$, there exist $\theta:\delta\thin\gamma$ and
+  $s:\Tm ld\delta$ such that $t = s\theta$, with the universal
+  property that whenever $t=s'\theta'$, there is some $\phi$ such that
+  $\theta=\phi\theta'$. We may define $\supp t = s|\theta$
+\end{lemma}
+\begin{proof}
+  Let us consider four cases. Firstly, the support of an atom is
+  trivial.
+  \[
+    \supp a = a|\eth
+  \]
+  Secondly, for pairing (or radicals, or
+  eliminations), we compute the pointwise disjunction of the supports of the components.
+  \[
+    \supp{\cn st} = \cn{s'\phi_0}{t'\phi_1}|\theta\;\mbox{where}\quad
+    \;s',\theta_0=\supp s\; t',\theta_t=\supp t\;
+    =\supp\phi_0|\theta|\phi_1 = \cp{\theta_0}{\theta_1} \\
+  \]
+  Thirdly, variables have singleton support.
+  \[
+    \supp x = 1|x
+  \]
+  Fourthly, the support of an abstraction requires us to separate the
+  bound variable from the free variables.
+  \[
+    \supp{\la xt} = \la xt'(\ith\otimes b)|\theta\;\mbox{where}\supp
+    t=t'|\theta\otimes b
+  \]
+  We may check that, indeed,
+  $(\la xt'(\ith\otimes b))\theta
+  = \la x(t'(\ith\otimes b)(\theta\otimes 1))
+  = \la x(t'(\theta\otimes b)) = \la xt$.
+  The universal property of the support follows from that of $\cp\cdot\cdot$.
+\end{proof}
+
+
+\section{The monoidal category of substitutions acts functorially on syntax\label{sec:sbstcat}}
+
+
+\begin{definition}[concatenation of substitutions]
+  If $\sigma_i:\gamma_i\su\delta$ for $i=0,1$, then the vector
+  concatentation is a substitution from the concatenated source scopes
+  to the shared target scope.
+  \[\sigma_0,\sigma_1 : \gamma_0,\gamma_1\su\delta
+    \]
+\end{definition}
+
+Consequently, unlike with thinnings, concatenation is not quite enough
+to induce monoidal structure, and has the wrong type to be the tensor.
+We shall need to fix up the target scopes with some thinnings.
+
+\begin{definition}[tensor of substitutions, weakening]
+  If $\sigma_i : \gamma_i\su\delta_i$ for $i=0,1$, we may take
+  \[
+    \sigma_0\otimes\sigma_1 : \gamma_0,\gamma_1 \su \delta_0,\delta_1
+    \quad
+    \sigma_0\otimes\sigma_1 = \sigma_0(\thinl{\delta_0}{\delta_1}),\sigma_1(\thinr{\delta_0}{\delta_1})
+  \]
+  In particular, if $\sigma : \gamma\su\delta$, then its weakening,
+  $\sigma\otimes1 : \gamma,x\su\delta,x$,
+  is given by
+  \[\sigma\otimes1 = \wka\sigma,x  \quad\mbox{where}\quad \wka\sigma = \sigma\wk
+     \quad\mbox{where}\quad y(\sigma;\theta) = (y\sigma)\theta
+  \]
+  That is, $\sigma\theta$ denotes pointwise action of $\theta$ on terms in $\sigma$.
+  We may define $\sigma,\gamma' : \gamma,\gamma' \su \delta,\gamma'$ by iterating this construct
+  over $\gamma'$
+\end{definition}
+
+
+\begin{lemma}[action of compositions]
+  All four compositions of thinnings and substitions act on terms as the sequence of the
+  component actions.
+  \[
+    t(\theta\phi) = (t\theta)\phi \quad\;
+    t(\sel\theta\sigma) = (t\theta)\sigma \quad\;
+    t(\rho\phi) = (t\rho)\phi \quad\;
+    t(\rho\sigma) = (t\rho)\sigma
+  \]
+  Accordingly, it is unambiguous to abbreviate $\sel\theta\sigma$ by $\theta\sigma$ for
+  selection from a vector which happens to be a substitution.
+\end{lemma}
+\begin{proof}
+  Structural induction on terms establishes this property. To pass under binders, we must
+  establish that weakening distributes $(\cdot\cdot)\otimes1 = (\cdot\otimes1)(\cdot\otimes1)$, which follows from
+  the fact that
+  \[
+    \wka t(\cdot\otimes1) = t\wka\cdot
+  \]
+  for both thinnings and substitutions.
+\end{proof}
+
+To complete the components for the category of substitutions, we must have the identity.
+
+\begin{lemma}[thinning identity]
+  If $\theta:\gamma\thin\delta$, then
+  \[
+    \theta\isu_\delta = \isu_\gamma\theta : \gamma\su\delta
+    \]
+\end{lemma}
+
+\begin{lemma}[monoidal category of substitutions]
+  Substitutions $\sigma : \gamma\su\delta$ are the arrows of a
+  monoidal category with identity $\isu$,
+  composition by juxtaposition
+  and tensor $\otimes$. Moreover, scope extension, $\cdot,x$ is an endofunctor acting
+  on arrows as $\cdot\otimes1$, and action on terms makes $\Tm\lib d\cdot$ a functor
+  from substitutions to \Set.
+\end{lemma}
+\begin{proof}
+  The category and functor laws collate the above results about identity and composition
+  of thinnings and substitutions. The monoidal properties of $\otimes$
+  follow by plumbing with thinnings.
+\end{proof}
+
+\begin{lemma}[monoidal functor from thinnings to substitutions]
+  Composition $\cdot\isu = \isu\cdot$ is the action on arrows of an identity-on-objects
+  monoidal functor from thinnings to substitutions.
+\end{lemma}
+\begin{proof}
+  We already have that $\ith\isu = \isu$. We may readily see that
+  \[(\theta\isu)(\phi\isu)=\isu(\theta(\phi\isu))=(\theta(\phi\isu))
+    = (\theta\phi)\isu \]
+  It takes a little more work to establish that when
+  $\theta_i:\gamma_i\thin\delta_i$
+  \[\begin{array}{lclcl}
+    (\theta_0\isu)\otimes(\theta_1\isu) & = &
+      (\isu\theta_0)\otimes(\isu\theta_1)\\
+    &= &
+        \isu\theta_0(\thinl{\delta_0}{\delta_1}),\isu\theta_1(\thinr{\delta_0}{\delta_1}) \\
+    &= &
+    \isu(\thinl{\delta_0}{\delta_1})(\theta_0\otimes\theta_1), 
+    \isu(\thinr{\delta_0}{\delta_1})(\theta_0\otimes\theta_1) \\
+    &= &
+    ((\thinl{\delta_0}{\delta_1})\isu,(\thinr{\delta_0}{\delta_1})\isu)(\theta_0\otimes\theta_1) \\
+    &= &
+    \isu (\theta_0\otimes\theta_1)
+    &=&(\theta_0\otimes\theta_1)\isu
+    \end{array}\]
+\end{proof}
+
+
+\section{Orphaned material}
 
 Such are the patterns for constructions. The only patterns we ever need for
 computations take the form $\trg\:p$.
@@ -1304,12 +1912,12 @@ We may thus characterize pattern matching as a partial function yielding environ
 \begin{definition}[pattern matching]
   \[\match\cdot\cdot : (p : \Pat{\gamma})\times\Tm\lib\cons\gamma
     \mto \Env{\dom p}\]
-  \begin{array}{l@{\;=\;}l}
+  \[\begin{array}{l@{\;=\;}l}
     \match aa & \emp \\
     \match{(p.q)}{(s.t)} & \match ps, \match qt \\
     \match{\la x q}{\la x t} & \match qt \\
     \match\theta t & \theta t
-  \end{array}
+  \end{array}\]
 \end{definition}
 
 Remember, though, that the patterns in our locally presented rules scope only over the
@@ -1345,7 +1953,7 @@ room to manoeuvre before we begin.
 
 \begin{lemma}[functoriality of environments]
   We may extend $\Env{\cdot,\omega}$ to functors from thinnings or substitutions
-  to \textbf{Set}.
+  to \Set.
 \end{lemma}
 \begin{proof}
   Suppose $\Omega : \Env{\gamma,\omega}$, $\theta : \gamma\thin\gamma'$ and
