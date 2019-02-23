@@ -1102,7 +1102,7 @@ theories by classifying the constructions which occur in them, let us establish
 a concrete running example from which to generalise.
 
 
-\subsection{A bidirectional reconstruction of Martin-L\"of's 1971 type theory}
+\subsection{A bidirectional reconstruction of Martin-L\"of's 1971 type theory\label{sec:ml71}}
 
 I take Martin-L\"of's 1971 type theory~\cite{martinloef:atheoryoftypes} as
 the exemplary system for two reasons. Firstly, it is small:
@@ -1520,8 +1520,9 @@ scope of its term variables.
 Let us now define the notion of \emph{expression} which appears in
 formal judgements, with a precise notion of \emph{schematic scope}.
 
+\newcommand{\ssc}[2]{(#1|#2)}
 \begin{definition}[schematic scope]
-  A schematic scope is a pair $(\delta,p)$, where $\delta$ is an
+  A schematic scope is a pair $\ssc\delta p$, where $\delta$ is an
   ordinary scope, giving the schematic variables which stand for
   computations, and $p : \Pat\emp$, determining the schematic
   variables which stand for constructions.
@@ -1529,8 +1530,8 @@ formal judgements, with a precise notion of \emph{schematic scope}.
 
 \newcommand{\Ex}[4]{\textbf{Expr}\:#1\:#2\:#3\:#4}
 \begin{definition}[expression]
-  The syntax of expressions $\Ex{(\delta,p)}ld\gamma$, with
-  schematic scope $(\delta,p)$ and scope $\gamma$ extends that
+  The syntax of expressions $\Ex{\ssc\delta p}ld\gamma$, with
+  schematic scope $\ssc\delta p$ and scope $\gamma$ extends that
   of terms, as follows:
 \[\begin{array}{r|l|l}
  d \;\backslash\; l& \ess\mbox{ential} & \lib\mbox{eral} \\
@@ -1580,6 +1581,181 @@ The binding site of $T$ is in the rule's conclusion: the checked type
 $T$ in the premise is really abbreviating the expression $T\fsl x$, with
 the $x$ in the premise's context extension effectively
 capturing the bound $x$ in $T$.
+
+
+\subsection{Premises}
+
+Now that we know what an expression is, we can say what a
+\emph{premise} is. The key point is that premises are defined with
+respect to a schematic scope of \emph{trusted} schematic variables
+and a pattern of \emph{untrusted} schematic variables. A type
+construction or type checking premise will select one of the untrusted
+schematic variables as its subject and establish trust in it.
+Each such premise must grow the trusted schematic scope and remove the
+subject from the untrusted pattern, until everything is trusted.
+
+\begin{definition}[pattern variable removal, placelessness]
+  If $q : \Pat\gamma$ and $\xi : \delta\from q$, then $q-\xi$ is given
+  by replacing the placeholder in $q$ pointed to by $\xi$ with the
+  atom $\Pa{}$. Likewise, if $\chi : \Ev q$, we may take $\chi-\xi$ to
+  be the environment in $\Ev{q-\xi}$ given by replacing the term in
+  $\chi$ pointed to by $\xi$ with the atom $\Pa{}$. A pattern with no
+  placeholders is said to be \emph{placeless}.
+\end{definition}
+
+\newcommand{\Prem}[5]{\textbf{Prem}\:#1\:#2\:#3\:#4\:#5}
+\begin{definition}[formal premise]
+  If $\ssc\delta p$ is the schematic scope of trusted schematic
+  variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables,
+  and $\gamma$ is the scope of term variables, then
+  $\Prem{\ssc\delta p}q\gamma{p'}{q'}$ is the set of valid premises
+  establishing \emph{fresh} trust in $p':\Pat\gamma$ and leaving $q' : \Pat\emp$
+  untrusted, defined inductively as follows:
+  \[\begin{array}{c}
+     \Rule{\xi : \delta\from q\quad \theta:\delta\thin\gamma}
+     {\ty{\xi\theta} : \Prem{\ssc\delta p}q\gamma{\theta}{(q-\xi)}}
+    \\
+     \Rule{T : \Ex{\ssc\delta p}\lib\cons\gamma \quad
+       \xi : \delta\from q \quad \theta:\delta\thin\gamma}
+     {\chk{T}{\xi\theta} : \Prem{\ssc\delta p}q\gamma{\theta}{(q-\xi)}}
+  \\
+  \Rule{S,T : \Ex{\ssc\delta p}\lib\cons\gamma}
+    {S=T : \Prem{\ssc\delta p}q\gamma{\Pa{}}q}
+    \qquad
+    \Rule{T : \Ex{\ssc\delta p}\lib\cons\gamma}
+    {\univ T : \Prem{\ssc\delta p}q\gamma{\Pa{}}q}
+  \\
+  \Rule{S : \Ex{\ssc\delta p}\lib\cons\gamma \quad
+    J : \Prem{\ssc\delta p}q(\gamma,x){p'}{q'}}
+  {\cxe xSJ : \Prem{\ssc\delta p}q\gamma{(\la xp')}{q'}}
+  \end{array}\]
+\end{definition}
+
+Before we walk through this definition, let us see how it plugs into
+the definition of a formal premise sequence, managing scope correctly.
+
+\newcommand{\Prems}[3]{\textbf{Prems}\:#1\:#2\:#3}
+\begin{definition}[formal premise sequence]
+  If $\ssc\delta p$ is the schematic scope of trusted schematic
+  variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables, then
+  $\Prems{\ssc\delta p}q{p'}$ is the set of valid premise sequences
+  establishing \emph{overall} trust in $p':\Pat\emp$, defined inductively.
+  \[
+    \Rule{q\;\mbox{placeless}}
+    {\emp : \Prems{\ssc\delta p}q{p}}
+    \qquad
+    \Rule{J : \Prem{\ssc\delta {p_0}}{q_0}\emp{p'}{q_1}\quad
+          \vec J : \Prems{\ssc\delta {\cn{p_0}{p'}}}{q_1}{p_2}}
+         {J\;\vec J : \Prems{\ssc\delta {p_0}}{q_0}{p_2}}
+    \]
+\end{definition}
+
+There is quite a lot to take in, here, so we shall proceed slowly and carefully.
+
+Firstly, note how the untrusted $q$s thread left-to-right. The empty
+sequence demands that $q$ be placeless, ensuring that we stop only
+once trust has been established in everything. The only place where
+$q$ changes is in a \emph{validation} premise: a subject
+$\xi : \delta\from q$ is selected, and the untrusted pattern $q-\xi$
+is sent onwards and rightwards.
+
+Secondly, notice how the trusted $p$s thread left-to-right. The
+definition of \emph{premise} gives us a $p'$ which has
+freshly become trustworthy because of that premise. Correspondingly,
+in the step case of sequences, the trusted pattern for the tail is
+$\cn{p_0}{p'}$, where $p_0$ is what was already trusted and $p'$
+is what the head premise has validated. Observe that validation
+premises give us a new trusted schematic variable --- the validated
+subject --- while a test gives us nothing new. Furthermore, whenever
+a premise contains an expression, it depends only on trusted
+schematic variables.
+
+Thirdly, let us consider what happens with the scope $\gamma$ of term
+variables. A premise sequence consists of $\emp$-premises: we cannot
+talk about free variables, reifying Dogma \ref{dogma:free}. A premise can,
+however, locally extend the scope by means of context extension, with
+a suitable expression giving the type of the bound variable. If we
+eventually arrive at a validation, its subject $\xi\theta$ uses
+$\theta$ to select which of those bound variables are the variables
+$\xi$ depends on. That is, we insist $\xi$ is validated in full
+generality, not just for a particular substitution
+instance. Informally, of course, we never need to write this thinning,
+because we choose the names in the context extension to capture the
+names free at the subject's binding site.
+
+Fourthly, you are entitled to some concern that there are no type
+\emph{synthesis} premises. That is because elimination rules need
+premises only to validate components of the \emph{eliminator}, which
+are all constructions. The validation of the \emph{target},
+synthesizing its type, can be treated uniformly, as we shall shortly
+see.
+
+
+\subsection{What are the rules?}
+
+Let us now work through the judgement forms, characterizing the rules
+which we may write for each.
+
+
+\begin{definition}[configurable type construction]
+A \emph{type construction} rule takes
+the form
+\[\Rule{\vec J}
+       {\ty q}
+\]
+where $q:\Pat\emp$ and $\vec J : \Prems{\ssc\emp{\Pa{}}}q{p'}$ for some
+$p'$.
+\end{definition}
+That is, we initially trust \emph{nothing}, but we learn to trust
+the things in $q$ as we work our way through $\vec J$.
+
+\begin{definition}[configurable type checking]
+A \emph{type checking} rule takes the form
+\[\Rule{\vec J}
+       {\chk pq}
+\]
+where $p,q:\Pat\emp$ and $\vec J : \Prems{\ssc\emp p}q{p'}$ for some
+$p'$.
+\end{definition}
+That is, we initially trust the components of the \emph{type},
+and we learn to trust the components of the term.
+
+\begin{definition}[configurable elimination rule]
+The \emph{type synthesis} rule for an
+elimination takes the form
+\[\Rule{\syn ep \quad \vec J}
+       {\syn{e\:q}S}
+\]
+where $p,q:\Pat\emp$, $\vec J : \Prems{\ssc ep}q{p'}$ for some $p'$, and
+$S : \Ex{\ssc e{p'}}\lib\cons\emp$.
+\end{definition}
+That is, we first synthesize the
+type of the target, $e$ and match it with a pattern, $p$, whose
+components we trust because of the type synthesis
+postcondition. Meanwhile, we have matched the eliminator with a
+pattern, $q$. We may now check the eliminator with a premise sequence
+trusting $p$ and also the target, $e$ --- our one schematic
+computation variable. By the time we have validated the eliminator, we
+now trust $p'$, so the synthesized type may refer to $e$ and to the
+components of $p'$.
+
+\begin{definition}[configurable universe checking]
+The rules for checking whether a known type is a
+\emph{universe} take the form
+\[\Rule{\vec J}
+       {\univ p}
+  \]
+where $p:\Pat\emp$ and $\vec J : \Prems{\ssc\emp p}{\Pa{}}{p'}$ for
+some $p'$.
+\end{definition}
+Here, we already trust the components of the type, so there
+is nothing untrusted.
+
+\begin{example}[Martin-L\"of's 1971 theory]
+By inspection, the configured rules for our reconstruction of
+Martin-L\"of's 1971 theory (see Section \ref{sec:ml71}) are admitted by the above definitions.
+\end{example}
+
 
 
 \section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
