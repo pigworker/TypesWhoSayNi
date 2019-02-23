@@ -1757,6 +1757,33 @@ Martin-L\"of's 1971 theory (see Section \ref{sec:ml71}) are admitted by the abov
 \end{example}
 
 
+\subsection{How to apply a rule}
+
+We have said how to construct the configurable rules from \emph{formal}
+judgements. Let us now say how to deploy those rules to derive
+\emph{actual} judgements. In particular, even though the rules never
+talk about free variables, the actual terms they talk about may very
+well contain free variables.
+
+How are we to allow patterns $p : \Pat\emp$ to refer to terms over
+some $\gamma$? How are we to instantiate expressions with the
+resulting environments? The first step is to define the \emph{opening}
+of a pattern with respect to a scope.
+
+\begin{definition}[pattern opening]
+  If $p : \Pat\delta$, let $\gamma\otimes p : \Pat{(\gamma,\delta)}$
+  given by replacing each $\theta$ in $p$ with $\ith_\gamma,\theta$.
+\end{definition}
+
+Correspondingly, if $\pi:\gamma\otimes p$, then the term in $\pi$
+which instantiates some $\xi : \delta'\from p$ will have scope
+$\gamma,\delta'$. That is to say, it may use free variables, along
+with those of the locally bound variables selected by its placeholder.
+A term $t:\Tm\lib\cons{(\gamma,\delta)}$ matches a pattern
+$p:\Pat\delta$ if it can be expressed as $\pi(\gamma\otimes p)$ for
+some environment $\pi$.
+
+
 
 \section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
 
