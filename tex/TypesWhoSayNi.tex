@@ -1080,12 +1080,18 @@ the reduction systems under this setup.
   {\ra tT \leadsto \ra{t'}T} \qquad
   \Rule{T\leadsto T'}
   {\ra tT \leadsto \ra t{T'}} \qquad
-  \]
+\]
+We may clearly extend reduction pointwise to contexts,
+$\Gamma\leadsto\Gamma'$.
+Let $\leadsto^\ast$ be the reflexive transitive
+closure of $\leadsto$. Let $\leadsto^?$ be the union of $\leadsto$
+with equality, i.e., the relation that characterizes taking at most
+one step.
 \end{definition}
 
 The fact that these rules offer no base case should not cause alarm:
 it is for individual systems to identify specific radical eliminations
-$\ra tT\:s$ as redexes. More particularly, if every well typed radical
+$\ra tT\:s$ as $\beta$-redexes. More particularly, if every well typed radical
 elimination is a redex in at least one way, we shall guarantee
 \emph{progress}, and if every well typed radical elimination is a
 redex in at most one way, we shall guarantee \emph{confluence}.
@@ -1298,6 +1304,76 @@ that the substitutions used in our rules so far occur only in
 expression positions. Moreover, we have learned that the language of
 patterns must be sufficently weak as to sustain a computable notion of
 most general unifier: we can have no such hope for expressions.
+
+The scoping of schematic variables in rules will be governed by the
+following dogma.
+
+\begin{dogma}[clockwise flow\label{dogma:clockwise}]
+  Scoping of schematic variables in typing rules flows clockwise
+  around each typing rule, from the inputs and subjects of the
+  conclusion, left-to-right through the premises, then into the
+  outputs of the conclusion. The schematic variables in the outputs
+  of a premise are brought into scope after that premise.
+\end{dogma}
+
+The effect of this dogma is to ensure a viable strategy for
+implementing a type checking algorithm. It is clear how we will know
+each of the things referred to by schematic variables --- by pattern
+matching --- in time to make use of them in expressions.
+
+However, there is a further refinement of schematic scoping which has
+a powerful and subtle impact.
+
+\begin{dogma}[validation of subject components\label{dogma:subject}]
+  Each schematic variable in a conclusion's subject will be a premise
+  subject exactly once, and no schematic variable may be the
+  subject of a premise unless it is bound by the subject of the
+  conclusion. No subject schematic variable will be used in an
+  expression until after it has been validated as the subject of
+  a premise.
+\end{dogma}
+
+This dogma captures the idea that the schematic variables in the
+conclusion inputs and the premise outputs are already sufficiently
+trusted that there is never any need to revalidate them. The schematic
+variables in conclusion subjects, however, must be validated before it
+is safe to use them. We thus achieve a significant decrease in the
+complexity of subject reduction proofs, because the status of a
+schematic variable tells us how much computation is safe. Trusted
+things --- inputs and outputs --- may reduce arbitrarily; untrusted
+things --- subjects --- may take at most one step. A thing which may
+have reduced arbitrarily never appears in a subject position where
+computation is restricted, so the induction hypothesis for the
+conclusion will always apply: if the conclusion subject takes at most one step,
+then each of the premise subjects --- its components --- takes at most
+one step.
+
+We may now \emph{state} a sensible formulation of \emph{subject
+  reduction}. Indeed, we may \emph{compute} it from the judgement
+forms. Suppose an `old' judgement holds; compute its context and inputs
+arbitrarily and its subjects by at most one step; there exist new
+outputs computable somehow from the old outputs such that the new
+judgment holds.
+
+\begin{theorem}[subject reduction]
+  The following are admissible.
+  \[\begin{array}{c}
+    \Rule{\Gamma\vdash \ty T\quad \Gamma\leadsto^\ast\Gamma'\quad
+      T\leadsto^?T'}
+      {\Gamma'\vdash \ty T'}
+    \\
+    \Rule{\Gamma\vdash \chk Tt\quad \Gamma\leadsto^\ast\Gamma' \quad
+      T\leadsto^\ast T'\quad t\leadsto^?t'}
+      {\Gamma'\vdash \chk{T'}{t'}}
+    \qquad
+    \Rule{\Gamma\vdash \syn eS\quad  \Gamma\leadsto^\ast\Gamma' \quad
+      e\leadsto^?e'}
+      {\exists S'.\;\Gamma'\vdash\syn{e'}{S'} \wedge S\leadsto^\ast
+      S'}
+   \end{array}\]
+\end{theorem}
+
+The proof of this theorem is, of course, deferred.
 
 Let us now design the language of patterns, then consider how to
 manage the business of binding schematic variables for use in
