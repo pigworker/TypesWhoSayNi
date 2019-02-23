@@ -526,7 +526,7 @@ of substitution answers the backslash of abstraction.
   and the latter being the type of abstractions, $\la xt$. The
   $\beta$-rule is
 \[
-  \ra{\la xt}{\PI SxT}\:s \leadsto \ra{t\fsl\ra sS}{T\fsl\ra sS}
+  \ra{\la xt}{\PI SxT}\:s \leadsto_\beta \ra{t\fsl\ra sS}{T\fsl\ra sS}
 \]
 \end{example}
 
@@ -538,7 +538,7 @@ whenever computation concludes, in general.
 
 \begin{dogma}[$\beta$-rules]
   All $\beta$-rules have form
-  \[\ra tT\:s \leadsto \ra{t'}{T'}
+  \[\ra tT\:s \leadsto_\beta \ra{t'}{T'}
   \]
   Further, each of $t$, $T$ and $s$ may demand only essential
   construction structure.
@@ -548,8 +548,8 @@ whenever computation concludes, in general.
 \newcommand{\cdr}{\texttt{cdr}} 
 Were we to add pair types, with atoms $\car$ and $\cdr$ as the
 eliminators, we could have:
-\[\ra{\cn st}{\SG SxT}\:\car \leadsto \ra sS \qquad
-  \ra{\cn st}{\SG SxT}\:\cdr \leadsto \ra t{T\fsl\ra sS}
+\[\ra{\cn st}{\SG SxT}\:\car \leadsto_\beta \ra sS \qquad
+  \ra{\cn st}{\SG SxT}\:\cdr \leadsto_\beta \ra t{T\fsl\ra sS}
 \]
 
 By adopting this uniform presentation of computation, we have already
@@ -865,14 +865,14 @@ or a test according to the status of its inner judgement.
 
 If you are familiar with presentations of type theories, you will immediately notice the
 omission of explicit \emph{contexts}. This is not mere laziness on my part, but is done
-with a purpose that I shall shortly reveal. Typing $\gamma$-rules conclude one $\gamma$-judgement
+with a purpose that I shall shortly reveal. Typing rules conclude one $\gamma$-judgement
 from zero or more $\gamma$-judgement premises, where all of these $\gamma$-judgements
 implicitly share the same $\gamma$-context. Let us say that such rules are \emph{locally presentable}.
 Locally presentable rules may extend the context, assigning a valid type to the new most local
 variable, but they are not explicit about the global context in which they apply.
 
 
-\subsection{A short farewell to contexts}
+\subsection{Contexts: hello, and goodbye}
 
 Free variables exist, so we must have contexts to explain them.
 
@@ -896,7 +896,7 @@ Free variables exist, so we must have contexts to explain them.
   \begin{itemize}
   \item $\emp$ is a valid $\emp$-context.
   \item If $\Gamma$ is a valid $\gamma$-context and $\Gamma\vdash\ty
-    S_\gamma$, then $\wka\Gamma,x\!:\!S_\gamma$ is a valid $\gamma,x$ context.
+    S$, then $\wka\Gamma,x\!:\!\wka S$ is a valid $\gamma,x$-context.
   \end{itemize}
 \end{definition}
 
@@ -924,17 +924,17 @@ extended context is valid if the original context is.
 There are but two globally presented rules:
 \begin{definition}[context extension, type lookup]
   \[\textsc{extend}\;
-    \Rule{\Gamma,\cxe xS J}
+    \Rule{\wka\Gamma,\cxe x{\wka S} J}
     {\Gamma\vdash \cxe xS J}
     \qquad
-    \textsc{lookup}\;\Axiom{\Gamma\vdash x\in x\Gamma}
+    \textsc{lookup}\;\Axiom{\Gamma\vdash x\in \sel x\Gamma}
   \]
 \end{definition}
 The client invoking the \textsc{extend} rule must ensure that $\Gamma$ is valid and that
 $\Gamma\vdash\ty S$, which is sufficient to ensure the validity of the context
 in the premise. Meanwhile, the client invoking the $\textsc{lookup}$
 rule must again ensure that $\Gamma$ is valid, which will allow the
-server to guarantee that $\Gamma\vdash \ty{x\Gamma}$, provided we can
+server to guarantee that $\Gamma\vdash \ty{\sel x\Gamma}$, provided we can
 ensure that type construction is stable under thinning.
 
 We shall develop the technical apparatus to achieve stability with respect to actions
@@ -1058,6 +1058,10 @@ due course. In the meantime, let us establish what is common to all
 the reduction systems under this setup.
 
 \begin{definition}[contextual closure of reduction]
+  \[
+    \Rule{e\leadsto_\beta e'}
+         {e\leadsto e'}
+\]
 \[
   \Rule{s\leadsto s'}
   {\cn st\leadsto\cn{s'}t} \qquad
@@ -1121,7 +1125,7 @@ the exemplary system for two reasons. Firstly, it is small:
        {e\:s\in T\fsl\ra sS}
 \end{array}\]
 \[
-  \Axiom{\ra{\la xt}{\PI SxT}\:s \leadsto \ra{t\fsl\ra sS}{T\fsl\ra sS}}
+  \Axiom{\ra{\la xt}{\PI SxT}\:s \leadsto_\beta \ra{t\fsl\ra sS}{T\fsl\ra sS}}
 \]
 \end{definition}
 
@@ -1174,7 +1178,7 @@ reduct. We must have
 \]
 and we must deliver exactly one $\beta$-rule, of the form
 \[
-  \ra{\la xt}{\PI SxT}\:s \leadsto \ra{\;\;?\;\;}{T\fsl\ra sS}
+  \ra{\la xt}{\PI SxT}\:s \leadsto_\beta \ra{\;\;?\;\;}{T\fsl\ra sS}
 \]
 Our assumptions certainly justify
 \[
@@ -1217,8 +1221,8 @@ type checked in an introduction rule with the target's type in
 an \emph{elimination} rule, in order to obtain \emph{all} possible
 radical eliminations. In this case, we find
 \[\begin{array}{lcl}
-  \ra{\cn st}{\SG SxT}\:\car&\leadsto& \ra{\;\;?_\car\;\;}S \\
-  \ra{\cn st}{\SG SxT}\:\cdr&\leadsto& \ra{\;\;?_\cdr\;\;}{T\fsl\ra{\cn st}{\SG SxT}\:\car}
+  \ra{\cn st}{\SG SxT}\:\car&\leadsto_\beta& \ra{\;\;?_\car\;\;}S \\
+  \ra{\cn st}{\SG SxT}\:\cdr&\leadsto_\beta& \ra{\;\;?_\cdr\;\;}{T\fsl\ra{\cn st}{\SG SxT}\:\car}
 \end{array}\]
 How do we know we have found them \emph{all}?
 \begin{dogma}[unification]
@@ -1236,7 +1240,7 @@ so we may certainly take $?_\car = s$. But may we take $?_\cdr = t$,
 as one might hope? In order to do so, we must immediately precompute with
 the $\beta$-rule for $e\:car$, yielding
 \[
-  \Rule{T\fsl\ra{\cn st}{\SG SxT}\:\car\leadsto T\fsl\ra sS\quad T\fsl\ra sS\ni t}
+  \Rule{T\fsl\ra{\cn st}{\SG SxT}\:\car\leadsto_\beta T\fsl\ra sS\quad T\fsl\ra sS\ni t}
        {T\fsl\ra{\cn st}{\SG SxT}\:\car\ni t}
   \]
 
