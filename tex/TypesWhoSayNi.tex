@@ -575,6 +575,9 @@ whenever computation concludes, in general.
   Further, each of $t$, $T$ and $s$ may demand only essential
   construction structure.
 \end{dogma}
+\begin{proof}
+  This is the substance of Definition \ref{def:reduction}.
+\end{proof}
 
 \newcommand{\car}{\texttt{car}} 
 \newcommand{\cdr}{\texttt{cdr}} 
@@ -868,8 +871,8 @@ postconditions in braces to the right.
 \newcommand{\syn}[2]{#1 \in #2}
 \newcommand{\cxe}[2]{#1\!:\!#2\vdash}
 \newcommand{\cxl}[2]{#1\;:\;#2}
-\newcommand{\Pre}[1]{\textbf{Pre}(#1)}
-\newcommand{\Post}[1]{\textbf{Post}(#1)}
+\newcommand{\Pre}[1]{\textbf{Pre}\:#1}
+\newcommand{\Post}[1]{\textbf{Post}\:#1}
 \begin{definition}[$\gamma$-judgement\label{def:judgement}]
   The judgements, $J_\gamma$, in scope $\gamma$ are given inductively as follows:
   \[\begin{array}{r@{\quad}c@{\quad}l@{\quad}l}
@@ -929,8 +932,8 @@ Free variables exist, so we must have contexts to explain them.
     \Gamma : (\Tm\lib\cons\gamma)^\gamma
     \]
   Informally, we write it as a sequence of type assignments,
-  $x_1:S_1,\ldots,x_n:S_n$. We may write $\theta\Gamma$ for selections
-  from $\Gamma$, thence $x\Gamma$ for projections from
+  $x_1:S_1,\ldots,x_n:S_n$. We may write $\sel\theta\Gamma$ for selections
+  from $\Gamma$, thence $\sel x\Gamma$ for projections from
   $\Gamma$. Meanwhile, thinnings and substitutions act pointwise as
   $\Gamma\theta$ and $\Gamma\sigma$ respectively. In particular, $\wka\Gamma = \Gamma\wk$.
   Given such a $\Gamma$, we may write $\Gamma\vdash J_\gamma$ to assert
@@ -991,12 +994,16 @@ operations which act only on free variables.
   Only context extension and type lookup are globally presented. Rules for all other
   judgement forms are locally presented.
 \end{dogma}
+\begin{proof}
+  This is borne out in Definitions \ref{def:var}, \ref{def:cod},
+  \ref{def:prepost}, and \ref{def:tycon} through \ref{def:univ}.
+\end{proof}
 
 Of course, given that variables do occur free in computations, we shall need one rule
 to synthesize their types. The purpose of the type lookup judgement is to permit
 its local presentation.
 
-\begin{definition}[variable type synthesis]
+\begin{definition}[variable type synthesis\label{def:var}]
   \[\textsc{var}\;
       \Rule{\cxl xS}
          {\syn xS}
@@ -1012,6 +1019,10 @@ However, apart from this rule, access to the global context is absolutely forbid
   schematic variables and term variables which
   are bound locally within judgements, either by abstraction or by context extension.
 \end{dogma}
+\begin{proof}
+  This will be a consequence of the formulae permitted in rules by
+  Definitions \ref{def:prem}, \ref{def:prems}, and \ref{def:tycon} through \ref{def:univ}.
+\end{proof}
 
 When we examine more formally the formulae which may appear in typing
 rules, let us do so in accordance with this dogma.
@@ -1033,7 +1044,7 @@ which police constructions, whether they represent types, values or
 eliminators. Let us treat the remaining syntactic constructs once and
 for all.
 
-\begin{definition}[change of direction]
+\begin{definition}[change of direction\label{def:cod}]
   The following rules shall exist in all systems.
   \[
     \textsc{thunk}\;
@@ -1075,7 +1086,7 @@ We have not yet treated the possibility of
 \emph{reduction} in types, without which our notion of type equality
 is overly restrictive. Calculemus!
 
-\begin{definition}{type reduction, pre-checking and post-synthesis}
+\begin{definition}{type reduction, pre-checking and post-synthesis\label{def:prepost}}
 \[
   \textsc{pre}\;
   \Rule{T\leadsto T' \quad \chk{T'}t}
@@ -1211,6 +1222,9 @@ very particular pattern.
   name the target but not analyse its syntactic structure. The first premise
   of an elimination rule must synthesize the type of the target.
 \end{dogma}
+\begin{proof}
+  This will be the substance of Definition \ref{def:elimrule}.
+\end{proof}
 
 That is, the only real choices we make, even in the synthesis rules, are how to
 analyse constructions. It is in the light of that observation that we
@@ -1282,6 +1296,9 @@ the language for writing types checked in introduction rules and
 for target types analysed in elimination rules has not only decidable
 unification, but also \emph{most general} unifiers.
 \end{dogma}
+\begin{proof}
+  \textbf{To be discharged.}
+\end{proof}
 
 Returning to the problem of finding our reducts, we know
 \[
@@ -1339,6 +1356,11 @@ binding sites for schematic variables; expressions the use sites.
           \end{tabular} }\]
   Moreover, the type given in a context extension for a premise is an expression.
 \end{dogma}
+\begin{proof}
+  The characterization of premises is given in Definitions
+  \ref{def:prem} and \ref{def:prems}. The characterization of
+  conclusions is given in Definitions \ref{def:tycon} through \ref{def:univ}.
+\end{proof}
 
 Informally, we have already learned quite a lot about the difference
 between patterns and expressions. For example, we know that
@@ -1360,6 +1382,10 @@ following dogma.
   outputs of the conclusion. The schematic variables in the outputs
   of a premise are brought into scope after that premise.
 \end{dogma}
+\begin{proof}
+  This will hold by construction as a consequence of Definitions
+  \ref{def:prem}, \ref{def:prems}, and  \ref{def:tycon} through \ref{def:univ}.
+\end{proof}
 
 The effect of this dogma is to ensure a viable strategy for
 implementing a type checking algorithm. It is clear how we will know
@@ -1377,6 +1403,10 @@ a powerful and subtle impact.
   expression until after it has been validated as the subject of
   a premise.
 \end{dogma}
+\begin{proof}
+  This will hold by construction as a consequence of Definitions
+  \ref{def:prem} and \ref{def:prems}.
+\end{proof}
 
 This dogma captures the idea that the schematic variables in the
 conclusion inputs and the premise outputs are already sufficiently
@@ -1477,6 +1507,10 @@ question for a pattern to ask.
   extension of reduction to environments which allows reduction in exactly
   one term therein.
 \end{dogma}
+\begin{proof}
+  Given Definition \ref{def:reduction}, we shall shortly ensure this property
+  via Definition \ref{def:pat}.
+\end{proof}
 
 Why should we adopt such a dogma? Given that we may precompute types
 before checking them by pattern matching and postcompute synthesized
@@ -1502,7 +1536,7 @@ define their grammar.
 \subsection{Patterns}
 
 \newcommand{\Pat}[1]{\textbf{Pat}\:#1}
-\begin{definition}[$\gamma$-pattern]
+\begin{definition}[$\gamma$-pattern\label{def:pat}]
 The grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
 \[\begin{array}{rrl@{\quad}l}
     p_\gamma, q_\gamma & ::= & a \\
@@ -1725,7 +1759,7 @@ subject from the untrusted pattern, until everything is trusted.
 \end{definition}
 
 \newcommand{\Prem}[5]{\textbf{Prem}\:#1\:#2\:#3\:#4\:#5}
-\begin{definition}[formal premise]
+\begin{definition}[formal premise\label{def:prem}]
   If $\ssc\delta p$ is the schematic scope of trusted schematic
   variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables,
   and $\gamma$ is the scope of term variables, then
@@ -1756,7 +1790,7 @@ Before we walk through this definition, let us see how it plugs into
 the definition of a formal premise sequence, managing scope correctly.
 
 \newcommand{\Prems}[3]{\textbf{Prems}\:#1\:#2\:#3}
-\begin{definition}[formal premise sequence]
+\begin{definition}[formal premise sequence\label{def:prems}]
   If $\ssc\delta p$ is the schematic scope of trusted schematic
   variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables, then
   $\Prems{\ssc\delta p}q{p'}$ is the set of valid premise sequences
@@ -1818,7 +1852,7 @@ Let us now work through the judgement forms, characterizing the rules
 which we may write for each.
 
 
-\begin{definition}[configurable type construction]
+\begin{definition}[configurable type construction\label{def:tycon}]
 A \emph{type construction} rule takes
 the form
 \[\Rule{\vec J}
@@ -1841,7 +1875,7 @@ $p'$.
 That is, we initially trust the components of the \emph{type},
 and we learn to trust the components of the term.
 
-\begin{definition}[configurable elimination rule]
+\begin{definition}[configurable elimination rule\label{def:elimrule}]
 The \emph{type synthesis} rule for an
 elimination takes the form
 \[\Rule{\syn ep \quad \vec J}
@@ -1860,7 +1894,7 @@ computation variable. By the time we have validated the eliminator, we
 now trust $p'$, so the synthesized type may refer to $e$ and to the
 components of $p'$.
 
-\begin{definition}[configurable universe checking]
+\begin{definition}[configurable universe checking\label{def:univ}]
 The rules for checking whether a known type is a
 \emph{universe} take the form
 \[\Rule{\vec J}
