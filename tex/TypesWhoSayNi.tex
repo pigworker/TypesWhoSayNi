@@ -715,9 +715,39 @@ into a larger scope. Viewed right-to-left, thinnings represent the
 
 I write the $\sel\theta\cdot$ action prefix as a reminder that the
 length of $\sel\theta{\vec x}$ is given by the source scope
-of $\theta$.
+of $\theta$. In due course, we shall have that selection is
+functorial, and natural in the type of elements.
 
-In particular, we shall need \emph{substitutions}, which act simultaneously on all variables
+We shall have need of left and right injections.
+\newcommand{\thinl}[2]{#1 \triangleleft #2}
+\newcommand{\thinr}[2]{#1 \triangleright #2}
+\begin{definition}[injections to a concatenation]
+  We take
+  \[
+    \thinl\gamma\delta = \ith_\gamma,\eth_\delta :
+    \gamma\thin\gamma,\delta \qquad
+    \thinr\gamma\delta = \eth_\gamma,\ith_\delta :
+    \delta\thin\gamma,\delta
+    \]
+\end{definition}
+
+Seen as selections, the above allow us to extract prefixes and
+suffices of vectors.
+\begin{lemma}[chopstick]
+  Let $\vec x : X^{\gamma,\delta}$. It is the case that
+\[
+  \sel{(\thinl\gamma\delta)}{\vec x},
+  \sel{(\thinr\gamma\delta)}{\vec x}
+  = \vec x
+\]
+\end{lemma}
+\begin{proof}
+  This follows by induction on $\delta$. Strictly speaking, it relies
+  also on the fact that selecting with the identity thinning acts as
+  the identity, which again follows by induction on scope.
+\end{proof}
+
+Next, let us have \emph{substitutions}, which act simultaneously on all variables
 in a scope. Let us take $\sigma$ and $\rho$ as metavariables for substitutions.
 
 \newcommand{\su}{\Rightarrow}
@@ -795,6 +825,20 @@ section \label{sec:sbstcat}. For now, let us establish the operations.
     (\sel x\rho)\sigma
   \]
 \end{definition}
+
+Lastly, let us see how to combine substitutions from separate scopes.
+
+\begin{definition}[tensor of substitutions]
+  Let $\sigma_i : \gamma_i\su\delta_i$ for $i=0,1$. Define
+  \[
+    \sigma_0\otimes\sigma_1 =
+    \sigma_0(\thinl{\delta_0}{\delta_1}),\sigma_1(\thinr{\delta_0}{\delta_1})
+    : \gamma_0,\gamma_1 \to \delta_0,\delta_1
+  \]
+\end{definition}
+
+Note that when we push a substitution under a binder, we compute
+$\wka\sigma,x$, which is exactly $\sigma\otimes\isu_x$.
 
 We have established the \emph{definitions} of thinnings and
 substitutions, with their actions on terms. Let us acknowledge the
@@ -1701,7 +1745,7 @@ formal judgements, with a precise notion of \emph{schematic scope}.
           ::= & k_\gamma \\
           | & \Ne{n_\gamma} \\
           | & \xi\fsl\sigma \quad\mbox{where}\;
-              \xi : \gamma'\from p, \sigma : \gamma'\su\gamma
+              \xi : \gamma'\from p, \sigma : (\Ex{\ssc\delta p}\lib\comp\gamma)^{\gamma'}
         \end{array}
     \\
     \hline
@@ -1938,25 +1982,48 @@ A term $t:\Tm\lib\cons{(\gamma,\delta)}$ matches a pattern
 $p:\Pat\delta$ if it can be expressed as $\pi(\gamma\otimes p)$ for
 some environment $\pi$.
 
+A schematic scope $\ssc\delta p$ can thus be instantiated in scope $\gamma$ by a pair
+$\ssc\rho \pi$ where $\rho : \delta\su\gamma$ and $\pi : \gamma\otimes
+p$.
+
+\begin{definition}[instantiation]
+  Let $\ssc\delta p$ be a schematic scope and $\gamma$ some target
+  scope of free variables. Let  $\rho : \delta\su\gamma$ and $\pi :
+  \gamma\otimes p$. We may define an action
+  \[
+    \cdot\ssc\rho\pi : \Ex{\ssc\delta p}ld{\gamma'} \to
+      \Tm\lib d{\gamma,\gamma'}
+  \]
+  The action proceeds structurally, extending $\gamma'$ to go under a
+  binder without modifying $\rho$ or $\pi$. We need only explain what
+  happens at variables and schematic variables:
+  \begin{itemize}
+    \item A term variable $x$ in $\gamma'$ becomes
+      $x(\thinr\gamma{\gamma'})$.
+    \item A schematic computation variable $x$ in $\delta$ becomes
+      $x\rho(\thinl\gamma{\gamma'}$.
+    \item For $\xi\fsl\sigma$, with $\xi:\delta'\from p$ and
+      $\sigma:(\Ex{\ssc\delta p}ld{\gamma'})^{\delta'}$, we first
+      obtain
+      \[
+        \sel\xi\pi : \Tm\lib\cons\gamma,\delta' \qquad
+        \sigma\ssc\rho\pi : \delta'\su\gamma,\gamma'
+      \]
+      We then substitute
+      \[
+        (\sel\xi\pi)(\isu(\thinl\gamma{\gamma'}),\sigma\ssc\rho\pi)
+      \]
+      which is a precise way of saying that we project $\xi$'s
+      term from the $\pi$ and substitute its bound variables
+      with the instantiation of $\sigma$, letting its free variables be.
+  \end{itemize}
+\end{definition}
 
 
 \section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
 
 Thinnings form a well known category: the \emph{semi-simplicial} category, often notated $\Delta_+$.
 
-
-More generally, we may have left and right injections.
-\newcommand{\thinl}[2]{#1 \triangleleft #2}
-\newcommand{\thinr}[2]{#1 \triangleright #2}
-\begin{definition}[injections to a concatenation]
-  We take
-  \[
-    \thinl\gamma\delta = \ith_\gamma,\eth_\delta :
-    \gamma\thin\gamma,\delta \qquad
-    \thinr\gamma\delta = \eth_\gamma,\ith_\delta :
-    \delta\thin\gamma,\delta
-    \]
-\end{definition}
 
 \begin{lemma}[category of thinnings]
   We have the usual categorical laws:
