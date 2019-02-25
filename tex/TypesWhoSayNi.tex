@@ -1474,8 +1474,8 @@ arbitrarily and its subjects by at most one step; there exist new
 outputs computable somehow from the old outputs such that the new
 judgment holds.
 
-\begin{theorem}[subject reduction]
-  The following are admissible.
+\begin{definition}[subject reduction]
+  The property of \emph{subject reduction} is said to hold if the following are admissible.
   \[\begin{array}{c}
     \Rule{\Gamma\vdash \ty T\quad \Gamma\leadsto^\ast\Gamma'\quad
       T\leadsto^?T'}
@@ -1490,9 +1490,10 @@ judgment holds.
       {\exists S'.\;\Gamma'\vdash\syn{e'}{S'} \wedge S\leadsto^\ast
       S'}
    \end{array}\]
-\end{theorem}
+\end{definition}
 
-The proof of this theorem is, of course, deferred.
+In order to show this property, we shall need to say how to formulate
+the rules and check that a suitable condition holds of them.
 
 Let us now design the language of patterns, then consider how to
 manage the business of binding schematic variables for use in
@@ -2147,8 +2148,70 @@ a bidirectional type theory', in the sense of this paper.
   of the formal $\beta$-rules given by Definition \ref{def:beta}.
 \end{definition}
 
+The point of making such a definition is to establish metatheoretical
+properties of the entire class of bidirectional type theories. In
+order to do so, we shall need to go back and identify the necessary
+structural properties of the equipment we have built thus far.
 
-\section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
+
+\section{Stability of derivations under thinning and substitution}
+
+In as much as the expressions we write in our formal rules make use of
+substitution, whether in typing rules or in $\beta$-rules (and our
+example system does both), the metatheoretic health of our theories
+will rest on the stability of derivations under substitutions which
+are suitably type-preserving. Fortunately, we have done the hard
+work to ensure that this is so. But what is so? Let us put the claim
+on a formal footing and develop the structure required to prove it.
+
+We can say what it means for a thinning to be \emph{contextual}.
+
+\begin{definition}[contextual thinning]
+  If $\theta:\gamma\thin\gamma'$, $\Gamma$ is a $\gamma$-context and
+  $\Gamma'$ is a $\gamma'$-context, then we say $\theta$ is a
+  \emph{contextual} thinning from $\Gamma$ to $\Gamma'$ and write
+  \[
+    \Gamma\thin_\theta\Gamma'\quad \mbox{whenever}\quad
+    \Gamma\theta = \sel\theta\Gamma'
+    \]
+\end{definition}
+
+Note that the above is a relatively weak definition: it certainly does
+not guarantee that $\Gamma'$ will be \emph{valid}, even if $\Gamma$
+is. It does just enough work to ensure that $\Gamma'$ and $\Gamma$
+agree on the types of the free variables related by $\theta$.
+
+We can further say what it means for a substitution to be contextual.
+
+\begin{definition}[contextual substitution]
+  If $\sigma:\gamma\thin\gamma'$, $\Gamma$ is a $\gamma$-context and
+  $\Gamma'$ is a $\gamma'$-context, then we say $\sigma$ is a
+  \emph{contextual} substitution from $\Gamma$ to $\Gamma'$ and write
+  \[
+    \Gamma\su_\sigma\Gamma'\quad \mbox{whenever}\quad
+    \Gamma'\vdash\syn{\sel x\sigma}{(\sel x\Gamma)\sigma}\;\;\mbox{is
+      derivable for all}\;x\;\mbox{in}\;\gamma
+    \]
+\end{definition}
+
+That is, $\sigma$ must map variables to computations such that the
+\emph{advertised} type of each variable can be \emph{synthesized}
+for the corresponding computation. We expect to replace appeals
+to the \textsc{var} rule by the given derivations, and we shall need
+these to be stable under contextual thinnings if we are to pass under binders.
+
+On the one hand, we shall need to ensure that the fixed part of the
+bidirectional setup satisifies these properties. On the other hand,
+we shall need to check that the instantiation of formal rules to
+actual rules absorbs thinnings and substitutions, so that stability
+amounts to choosing a thinned or substituted instance of the same
+formal rules invoked in the derivation that we seek to preserve.
+
+In short, we must establish that our various actions on syntax are
+appropriately compositional.
+
+
+\subsection{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
 
 Thinnings form a well known category: the \emph{semi-simplicial} category, often notated $\Delta_+$.
 
@@ -2371,7 +2434,7 @@ represented.
 \end{proof}
 
 
-\section{The monoidal category of substitutions acts functorially on syntax\label{sec:sbstcat}}
+\subsection{The monoidal category of substitutions acts functorially on syntax\label{sec:sbstcat}}
 
 
 \begin{definition}[concatenation of substitutions]
