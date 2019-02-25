@@ -2125,13 +2125,15 @@ Only one component is now missing. Let us fill it in, forthwith!
 
 \subsection{What is a bidirectional type theory?}
 
-We are, at last, in a position to specify what is meant by specifying
-a bidirectional type theory, in the sense of this paper.
+We are, at last, in a position to specify what is meant by `specifying
+a bidirectional type theory', in the sense of this paper.
 
 \begin{definition}[bidirectional type theory]
   A bidirectional type theory is presented by giving the sets of formal
-  rules for type construction, type checking, elimination, universe
-  checking, and $\beta$-reduction. The rules of the type theory thus presented
+  rules for type construction, type checking, elimination and universe
+  checking, as specified in Definitions \ref{def:tycon} through
+  \ref{def:univ}, together with a set of formal $\beta$-reduction rules as
+  specified in Definition \ref{def:beta}. The rules of the type theory thus presented
   are as follows: \textsc{extend} and \textsc{lookup} (Definition
   \ref{def:cxrules});
   \textsc{var} (Definition \ref{def:var});
