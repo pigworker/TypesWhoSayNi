@@ -808,7 +808,7 @@ We now have all we need to make substitutions act on our syntax.
 \end{definition}
 
 Substitutions also have categorical structure, as we shall see in
-section \label{sec:sbstcat}. For now, let us establish the operations.
+section \ref{sec:sbstcat}. For now, let us establish the operations.
 
 \newcommand{\isu}{\iota}
 \begin{definition}[identity substitution]
@@ -1014,7 +1014,7 @@ extended context is valid if the original context is.
 \end{itemize}
 
 There are but two globally presented rules:
-\begin{definition}[context extension, type lookup]
+\begin{definition}[context extension, type lookup\label{def:cxrules}]
   \[\textsc{extend}\;
     \Rule{\wka\Gamma,\cxe x{\wka S} J}
     {\Gamma\vdash \cxe xS J}
@@ -2080,7 +2080,7 @@ environment. We may now iterate across a formal premise sequence.
 We can now say which actual derivations our formal rules are willing
 to yield.
 
-\begin{definition}[actual rules]
+\begin{definition}[actual rules\label{def:actualrules}]
   \[\begin{array}{ccl}
       \textbf{formal} & \textbf{actual} & \medskip \\
       \Rule{\vec J}
@@ -2106,6 +2106,44 @@ to yield.
   \end{array} \]
 \end{definition}
 
+Only one component is now missing. Let us fill it in, forthwith!
+
+\begin{definition}[formal and actual $\beta$-reduction rules\label{def:beta}]
+  A formal $\beta$-rule is given by a quintuple comprising three
+  patterns and two expressions
+  \[
+    \ra{p_0}{p_1}\:p_2 \leadsto_\beta \ra tT
+  \]
+  where $p_i:\Pat\emp$ and $t,T:\Ex{\ssc\emp\cn{\cn{p_0}{p_1}}{p_2}}\lib\cons\emp$.
+  The actual $\beta$-rule thus represented is
+  \[
+    \ra{\pi_0p_0}{\pi_1p_1}\:(\pi_2p_2) \leadsto_\beta
+    \ra{t\ssc\emp{\cn{\cn{\pi_0}{\pi_1}}{\pi_2}}}{T\ssc\emp{\cn{\cn{\pi_0}{\pi_1}}{\pi_2}}}
+    \]
+\end{definition}
+
+
+\subsection{What is a bidirectional type theory?}
+
+We are, at last, in a position to specify what is meant by specifying
+a bidirectional type theory, in the sense of this paper.
+
+\begin{definition}[bidirectional type theory]
+  A bidirectional type theory is presented by giving the sets of formal
+  rules for type construction, type checking, elimination, universe
+  checking, and $\beta$-reduction. The rules of the type theory thus presented
+  are as follows: \textsc{extend} and \textsc{lookup} (Definition
+  \ref{def:cxrules});
+  \textsc{var} (Definition \ref{def:var});
+  \textsc{thunk}, \textsc{universe} and \textsc{radical} (Definition
+  \ref{def:cod});
+  \textsc{pre} and \textsc{post} (Definition \ref{def:prepost});
+  the actual translations of the formal rules given in Definition
+  \ref{def:actualrules}.
+  Its reduction rules are given by the contextual closure rules in
+  Definition \ref{def:reduction} together with the actual translation
+  of the formal $\beta$-rules given by Definition \ref{def:beta}.
+\end{definition}
 
 
 \section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
@@ -2504,7 +2542,7 @@ be entirely precise.
 The following dogma specifies the permitted usage of schematic variables in the
 premises and conclusion of a configurable rule.
 
-\begin{dogma}[\label{dogma:clockwise}clockwise flow]
+\begin{dogma}[clockwise flow]
   Let a rule take the form
   \[\Rule{J_1\quad\ldots J_n}
          {J'}
