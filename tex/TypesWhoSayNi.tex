@@ -1896,7 +1896,7 @@ Let us now work through the judgement forms, characterizing the rules
 which we may write for each.
 
 
-\begin{definition}[configurable type construction\label{def:tycon}]
+\begin{definition}[formal type construction\label{def:tycon}]
 A \emph{type construction} rule takes
 the form
 \[\Rule{\vec J}
@@ -1908,7 +1908,7 @@ $p'$.
 That is, we initially trust \emph{nothing}, but we learn to trust
 the things in $q$ as we work our way through $\vec J$.
 
-\begin{definition}[configurable type checking]
+\begin{definition}[formal type checking]
 A \emph{type checking} rule takes the form
 \[\Rule{\vec J}
        {\chk pq}
@@ -1919,7 +1919,7 @@ $p'$.
 That is, we initially trust the components of the \emph{type},
 and we learn to trust the components of the term.
 
-\begin{definition}[configurable elimination rule\label{def:elimrule}]
+\begin{definition}[formal elimination rule\label{def:elimrule}]
 The \emph{type synthesis} rule for an
 elimination takes the form
 \[\Rule{\syn ep \quad \vec J}
@@ -1938,7 +1938,7 @@ computation variable. By the time we have validated the eliminator, we
 now trust $p'$, so the synthesized type may refer to $e$ and to the
 components of $p'$.
 
-\begin{definition}[configurable universe checking\label{def:univ}]
+\begin{definition}[formal universe checking\label{def:univ}]
 The rules for checking whether a known type is a
 \emph{universe} take the form
 \[\Rule{\vec J}
@@ -1958,7 +1958,7 @@ Martin-L\"of's 1971 theory (see Section \ref{sec:ml71}) are admitted by the abov
 
 \subsection{How to apply a rule}
 
-We have said how to construct the configurable rules from \emph{formal}
+We have said how to construct the formal rules from \emph{formal}
 judgements. Let us now say how to deploy those rules to derive
 \emph{actual} judgements. In particular, even though the rules never
 talk about free variables, the actual terms they talk about may very
@@ -2018,6 +2018,94 @@ p$.
       with the instantiation of $\sigma$, letting its free variables be.
   \end{itemize}
 \end{definition}
+
+To deploy this machinery, we need to follow the structure of
+Definitions $\ref{def:prem}$ and $\ref{def:prems}$, repeating the same
+juggling act for trusted and untrusted environments, $\pi$ and $\chi$,
+respectively, as we did between the trusted and untrusted patterns,
+$p$ and $q$. Fortunately, there is only one way to do it.
+
+\newcommand{\prem}[4]{\textbf{prem}\:#1\:\ssc{#2}{#3}\:#4}
+\newcommand{\prems}[4]{\textbf{prems}\:#1\:\ssc{#2}{#3}\:#4}
+\begin{definition}[actual premise]
+  If $J : \Prem{\ssc\delta p}q\gamma{p'}{q'}$, $\rho : \delta\su\gamma'$,
+  $\pi : \gamma'\otimes
+  p$, and $\chi : \gamma'\otimes q$, then define
+  \[\prem J\rho\pi\chi = J'|\pi'|\chi'\;\;\mbox{where}\;\;
+    J'\;\mbox{is a $\gamma',\gamma$-judgment,}\;
+    \pi' : \gamma'\otimes p'\;\mbox{and}\; \chi':\gamma'\otimes q'
+  \]
+  whose computation proceeds as follows:
+  \[\begin{array}{l@{\:}lcl@{\,|\,}l@{\,|\,}l}
+      \prem{(\ty{\xi\theta})&}\rho\pi\chi & =
+      & \ty{(\sel\xi\chi)(\ith_{\gamma'},\theta)}
+      & \sel\xi\chi & \chi-\xi \\
+      \prem{(\chk T{\xi\theta})&}\rho\pi\chi & =
+      & \chk{T\ssc\rho\pi}{(\sel\xi\chi)(\ith_{\gamma'},\theta)}
+      & \sel\xi\chi & \chi-\xi \\
+      \prem{(S=T)&}\rho\pi\chi & =
+      & S\ssc\rho\pi=T\ssc\rho\pi & \Pa{} & \chi \\
+      \prem{(\univ T)&}\rho\pi\chi & =
+      & \univ{T\ssc\rho\pi} & \Pa{} & \chi \\
+      \prem{(\cxe xS J)&}\rho\pi\chi & =
+      & \cxe x{S\ssc\rho\pi}J' & \la x\pi' & \chi'\\
+      \multicolumn{6}{l}{\quad  \mbox{where} \;\;J'|\pi'|\chi' = \prem J\rho\pi\chi}
+  \end{array}\]
+\end{definition}
+
+That is, the schematic variables are everywhere instantiated using the
+trusted environment, and the validation premises move the validated
+term from the untrusted environment to the freshly trusted
+environment. We may now iterate across a formal premise sequence.
+
+\begin{definition}[actual premise sequence]
+  If $\vec J : \Prems{\ssc\delta p}q{p'}$,  $\rho : \delta\su\gamma'$,
+  $\pi : \gamma'\otimes p$, and $\chi : \gamma'\otimes q$, then define
+  \[\prems{\vec J}\rho\pi\chi = \vec{J'}|\pi'|\chi'\;\;\mbox{where}\;\;
+    \vec{J'}\;\mbox{is a list of $\gamma',\gamma$-judgments,}\;\mbox{and}\;
+    \pi' : \gamma'\otimes p'
+  \]
+  whose computation proceeds as follows.
+  \[\begin{array}{l@{\:}lcl@{\,|\,}l}
+      \prems{\emp&}\rho\pi\chi & = & \emp & \pi \\
+      \prems{J\;\vec J&}\rho{\pi_0}{\chi_0} & = & J'\;\vec{J'} & \pi_2
+      \\
+      \multicolumn{5}{l}{\quad \mbox{where}\quad
+      J'|\pi'|\chi_1 = \prem J\rho{\pi_0}{\chi_0}\quad
+      \vec{J'}|\pi_2 = \prems{\vec J}\rho{\cn{\pi_0}{\pi'}}{\chi_1}
+      }
+  \end{array}\]
+\end{definition}
+
+We can now say which actual derivations our formal rules are willing
+to yield.
+
+\begin{definition}[actual rules]
+  \[\begin{array}{ccl}
+      \textbf{formal} & \textbf{actual} & \medskip \\
+      \Rule{\vec J}
+      {\ty q}
+      & \Rule{\vec{J'}}
+        {\ty{\chi q}}
+      & \vec{J'}|\pi' = \prems{\vec J}\emp{\Pa{}}\chi \\
+      \Rule{\vec J}
+      {\chk pq}
+      & \Rule{\vec{J'}}
+        {\chk{\pi p}{\chi q}}
+                                        & \vec{J'}|\pi' = \prems{\vec J}\emp\pi\chi \\
+      \Rule{\syn ep \quad \vec J}
+      {\syn{e\:q}S}
+                      & \Rule{\syn e{\pi p}\quad \vec{J'}}
+                        {\syn{e\:(\chi q)}{S\ssc e{\pi'}}}
+                                        & \vec{J'}|\pi' = \prems{\vec J}e\pi\chi \\
+      \Rule{\vec J}
+      {\univ p}
+      & \Rule{\vec{J'}}
+        {\univ {\pi p}}
+      & \vec{J'}|\pi' = \prems{\vec J}\emp\pi{\Pa{}} \\
+  \end{array} \]
+\end{definition}
+
 
 
 \section{The monoidal category of thinnings acts functorially on syntax\label{sec:thincat}}
