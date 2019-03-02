@@ -324,3 +324,21 @@ atom a   %P atom .a    = ! a
 cons p q %P cons ss ts = (p %P ss) & (q %P ts)
 abst q   %P abst ts    = \\ (q %P ts)
 hole th  %P hole t = t ^ (oi ^+ th)
+
+
+------------------------------------------------------------------------------
+-- FROM PATTERNS TO EXPRESSIONS
+------------------------------------------------------------------------------
+
+patEnv : forall {ga M}(p : Pat ga) de ->
+         (forall {de} -> de <P- p -> de <P- snd M) ->
+         Env M (de ,P p)
+patEnv (atom a) de v = atom a
+patEnv (cons p q) de v = cons (patEnv p de (v ` car)) (patEnv q de (v ` cdr))
+patEnv (abst q) de v = abst (patEnv q de (v ` abst))
+patEnv (hole th) de v = hole (v hole ?- all (_^ thinr de oi) idsb)
+
+patTerm : forall {ga M}(p : Pat []) ->
+          (forall {de} -> de <P- p -> de <P- snd M) ->
+          Term M ga lib chk
+patTerm p v = p %P patEnv p _ v

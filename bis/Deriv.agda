@@ -1,6 +1,7 @@
 module Deriv where
 
 open import Basics
+open import Fun
 open import Eq
 open import Bwd
 open import Thin
@@ -9,25 +10,28 @@ open import Pat
 open import Term
 open import All
 open import ActCats
+open import Hull
 
-Chk Syn : Nat -> Set
-Chk ga = Term ([] , atom NIL) ga lib chk
-Syn ga = Term ([] , atom NIL) ga lib syn
+module _ (M : Meta) where
 
-data Judgement (ga : Nat) : Set where
-  _!-_ : Chk ga -> Judgement (ga -, <>) -> Judgement ga
-  type univ : Chk ga -> Judgement ga
-  _:>_ : Chk ga -> Chk ga -> Judgement ga
-  _<:_ : Syn ga -> Chk ga -> Judgement ga
-  _~_  : Chk ga -> Chk ga -> Judgement ga
+  Chk Syn : Nat -> Set
+  Chk ga = Term M ga lib chk
+  Syn ga = Term M ga lib syn
 
-_^J_ : forall {ga de}(J : Judgement ga)(th : ga <= de) -> Judgement de
-(S !- J) ^J th = (S ^ th) !- (J ^J (th su))
-type T   ^J th = type (T ^ th)
-univ T   ^J th = univ (T ^ th)
-(T :> t) ^J th = (T ^ th) :> (t ^ th)
-(e <: S) ^J th = (e ^ th) <: (S ^ th)
-(S ~ T)  ^J th = (S ^ th) ~ (T ^ th)
+  data Judgement (ga : Nat) : Set where
+    _!-_ : Chk ga -> Judgement (ga -, <>) -> Judgement ga
+    type univ : Chk ga -> Judgement ga
+    _:>_ : Chk ga -> Chk ga -> Judgement ga
+    _<:_ : Syn ga -> Chk ga -> Judgement ga
+    _~_  : Chk ga -> Chk ga -> Judgement ga
+
+  _^J_ : forall {ga de}(J : Judgement ga)(th : ga <= de) -> Judgement de
+  (S !- J) ^J th = (S ^ th) !- (J ^J (th su))
+  type T   ^J th = type (T ^ th)
+  univ T   ^J th = univ (T ^ th)
+  (T :> t) ^J th = (T ^ th) :> (t ^ th)
+  (e <: S) ^J th = (e ^ th) <: (S ^ th)
+  (S ~ T)  ^J th = (S ^ th) ~ (T ^ th)
 
 Subject : Nat -> Pat [] -> Pat [] -> Set
 Subject ga suj suj' = Sg _ \ de -> Remove de suj suj' * de <= ga
@@ -94,15 +98,15 @@ removeSbst (cdr x) (cons ss ts) th with removeSbst x ts th
 removeSbst (abst x) (abst ts) th with removeSbst x ts th
 ... | q0 , q1 rewrite q0 | q1 = refl , refl
 
-premise : forall ga {gas inp tru suj de tr' suj'}
+premise : forall ga {M gas inp tru suj de tr' suj'}
   -> Premise gas inp tru suj de tr' suj'
-  -> [ ([] , atom NIL) ! gas ]/ ga
-  -> Env ([] , atom NIL) (ga ,P inp)
-  -> Env ([] , atom NIL) (ga ,P tru)
-  -> Env ([] , atom NIL) (ga ,P suj)
-  -> Judgement (ga -+ de)
-   * Env ([] , atom NIL) (ga ,P tr')
-   * Env ([] , atom NIL) (ga ,P suj')
+  -> [ M ! gas ]/ ga
+  -> Env M (ga ,P inp)
+  -> Env M (ga ,P tru)
+  -> Env M (ga ,P suj)
+  -> Judgement M (ga -+ de)
+   * Env M (ga ,P tr')
+   * Env M (ga ,P suj')
 premise ga (S' !- pr) sgs inps trus sujs =
   let S = S' % (sgs , cons inps trus)
       J , ts , sujs' = premise ga pr sgs inps trus sujs
@@ -122,14 +126,14 @@ premise ga (tyeq S' T') sgs inps trus sujs =
       T = T' % (sgs , cons inps trus)
   in  (S ~ T) , atom NIL , sujs
 
-premises : forall ga {gas inp suj0 tru suj1}
+premises : forall ga {M gas inp suj0 tru suj1}
   -> Premises gas inp suj0 tru suj1
-  -> [ ([] , atom NIL) ! gas ]/ ga
-  -> Env ([] , atom NIL) (ga ,P inp)
-  -> Env ([] , atom NIL) (ga ,P suj0)
-  -> Bwd (Judgement ga)
-   * Env ([] , atom NIL) (ga ,P tru)
-   * Env ([] , atom NIL) (ga ,P suj1)
+  -> [ M ! gas ]/ ga
+  -> Env M (ga ,P inp)
+  -> Env M (ga ,P suj0)
+  -> Bwd (Judgement M ga)
+   * Env M (ga ,P tru)
+   * Env M (ga ,P suj1)
 premises ga [] sgs inps sujs = [] , atom NIL , sujs
 premises ga (prs -, pr) sgs inps sujs0 = 
   let jz , trus , sujs1 = premises ga prs sgs inps sujs0
@@ -202,11 +206,16 @@ module _ where
     =  introTypeMatches (e , T , uT , uTe , uTT) tz
     -, (t , vT , r0 , r1)
 
-  redexes : Bwd EliminationRule -> Bwd FormationRule -> Bwd CheckingRule ->
-    Bwd
-    (Sg EliminationRule \ e -> Sg FormationRule \ T -> Sg CheckingRule \ t ->
+  Redex = Sg EliminationRule \ e -> Sg FormationRule \ T -> Sg CheckingRule \ t ->
      Sg (Pat []) \ Ty ->
-     (Ty <P= trgType e) * (Ty <P= typeSuj T) * (Ty <P= chkInp t))
+     (Ty <P= trgType e) * (Ty <P= typeSuj T) * (Ty <P= chkInp t)
+
+  Reduct : Redex -> Set
+  Reduct (e , T , t , Ty , re , rT , rt) =
+    Term ([] , cons (cons (chkSuj t) Ty) (elimSuj e)) [] lib chk
+
+  redexes : Bwd EliminationRule -> Bwd FormationRule -> Bwd CheckingRule ->
+    Bwd Redex
   redexes ez Tz tz = help (elimTypeMatches ez Tz)
     where
       help : _ -> _
@@ -216,7 +225,6 @@ module _ where
         bwd (\ { (t , Ty , r2 , r3) -> 
                e , T , t , Ty , (r2 -<P=- r0) , (r2 -<P=- r1) , r3 })
           (introTypeMatches m tz)
-
 
 record UniverseRule : Set where
   field
@@ -229,14 +237,38 @@ record BetaRule : Set where
     betaIntro betaType betaElim : Pat []
     redTerm redType : Term ([] , cons (cons betaIntro betaType) betaElim) [] lib chk
 
+module _ where
+  open FormationRule
+  open CheckingRule
+  open EliminationRule
+
+  betaRules : (rz : Bwd Redex) -> All Reduct rz -> Bwd (BetaRule)
+  betaRules .[] [] = []
+  betaRules (rz -, (e , T , t , Ty , re , rT , rt)) (uz -, u)
+    with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
+       | refineMatch re (patEnv Ty [] (car ` cdr))
+  ... | rad | chi , _
+    with premises [] (elimPrems e) ([] -, rad) chi
+          (patEnv (elimSuj e) [] cdr)
+  ... | _ , pi , _ =
+    betaRules rz uz -, record
+      { betaIntro = chkSuj t
+      ; betaType  = Ty
+      ; betaElim  = elimSuj e
+      ; redTerm   = u
+      ; redType   = resType e %
+         (([] -, rad)
+         , cons chi pi)
+      }
+
 {-
 data Context : Nat -> Set where
   [] : Context []
   _-,_ : forall {ga} -> Context ga -> Chk ga -> Context (ga -, <>)
 -}
 
-Context : Nat -> Set
-Context ga = All (\ _ -> Term ([] , atom NIL) ga lib chk) ga
+Context : Meta -> Nat -> Set
+Context M ga = All (\ _ -> Term M ga lib chk) ga
 
 record TypeTheory : Set where
   open FormationRule
@@ -249,97 +281,98 @@ record TypeTheory : Set where
     checking    : Bwd CheckingRule
     elimination : Bwd EliminationRule
     universe    : Bwd UniverseRule
-    computation : Bwd BetaRule
+    reducts     : All Reduct (redexes elimination formation checking)
     formationUnambiguous   : Apart typeSuj formation
     checkingUnambiguous    : Apart (\ r -> cons (chkInp r) (chkSuj r)) checking
     eliminationUnambiguous : Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
     universeUnambiguous    : Apart uniInp universe
-    computationUnambiguous :
-      Apart (\ r -> cons (cons (betaType r) (betaIntro r)) (betaElim r)) computation
-
+  computation : Bwd BetaRule
+  computation = betaRules (redexes elimination formation checking) reducts
 
 module TYPETHEORY (TH : TypeTheory) where
   open TypeTheory TH
 
-  data _~>_ {ga} : forall {d}(t t' : Term ([] , atom NIL) ga lib d) -> Set where
+  module _ {M : Meta} where
 
-    car  : forall {s s' t} -> s ~> s' -> (s & t) ~> (s' & t)
-    cdr  : forall {s t t'} -> t ~> t' -> (s & t) ~> (s & t')
-    abst : forall {t t'} -> t ~> t' -> (\\ t) ~> (\\ t')
-    thnk : forall {n e} -> essl n ~> e -> thnk n ~> [ e ]
-    targ : forall {e e' s} -> e ~> e' -> (e $ s) ~> (e' $ s)
-    elim : forall {e s s'} -> s ~> s' -> (e $ s) ~> (e $ s')
-    term : forall {t t' T} -> t ~> t' -> (t :: T) ~> (t' :: T)
-    type : forall {t T T'} -> T ~> T' -> (t :: T) ~> (t :: T')
-    beta : forall {R}(x : R <- computation) -> let open BetaRule R in
-      (ts : Env ([] , atom NIL) (ga ,P betaIntro)) ->
-      (Ts : Env ([] , atom NIL) (ga ,P betaType)) ->
-      (ss : Env ([] , atom NIL) (ga ,P betaElim)) ->
-      (((betaIntro %P ts) :: (betaType %P Ts)) $ (betaElim %P ss))
-        ~>
-      ((redTerm % ([] , cons (cons ts Ts) ss))
-        :: (redType % ([] , cons (cons ts Ts) ss)))
+    data _~>_ {ga} : forall {d}(t t' : Term M ga lib d) -> Set where
+
+      car  : forall {s s' t} -> s ~> s' -> (s & t) ~> (s' & t)
+      cdr  : forall {s t t'} -> t ~> t' -> (s & t) ~> (s & t')
+      abst : forall {t t'} -> t ~> t' -> (\\ t) ~> (\\ t')
+      thnk : forall {n e} -> essl n ~> e -> thnk n ~> [ e ]
+      targ : forall {e e' s} -> e ~> e' -> (e $ s) ~> (e' $ s)
+      elim : forall {e s s'} -> s ~> s' -> (e $ s) ~> (e $ s')
+      term : forall {t t' T} -> t ~> t' -> (t :: T) ~> (t' :: T)
+      type : forall {t T T'} -> T ~> T' -> (t :: T) ~> (t :: T')
+      beta : forall {R}(x : R <- computation) -> let open BetaRule R in
+        (ts : Env M (ga ,P betaIntro)) ->
+        (Ts : Env M (ga ,P betaType)) ->
+        (ss : Env M (ga ,P betaElim)) ->
+        (((betaIntro %P ts) :: (betaType %P Ts)) $ (betaElim %P ss))
+          ~>
+        ((redTerm % ([] , cons (cons ts Ts) ss))
+          :: (redType % ([] , cons (cons ts Ts) ss)))
 
 
-  data _!=_ : {ga : Nat}(Ga : Context ga) -> Judgement ga -> Set where
+    data _!=_ {ga : Nat}(Ga : Context M ga) : Judgement M ga -> Set where
 
 
-    extend : forall {ga}{Ga : Context ga}{S J}
+      extend : forall {S J}
   
             -> all (_^ (oi no)) (Ga -, S) != J
             -------------------------------------
             -> Ga != (S !- J)
 
 
-    var    : forall {ga}{Ga : Context ga}{x}
+      var    : forall {x}
 
         ---------------------------------
         -> Ga != (# x <: project x Ga)
 
 
-    thunk  : forall {ga}{Ga : Context ga}{n S T}
+      thunk  : forall {n S T}
 
         -> Ga != (n <: S) -> Ga != (S ~ T)
         -------------------------------------
         -> Ga != (T :> [ n ])
 
 
-    unis   : forall {ga}{Ga : Context ga}{n S}
+      unis   : forall {n S}
 
         -> Ga != (n <: S) -> Ga != univ S
         -----------------------------------
         -> Ga != type [ n ]
 
 
-    rad    : forall {ga}{Ga : Context ga}{t T}
+      rad    : forall {t T}
 
         -> Ga != type T -> Ga != (T :> t)
         ------------------------------------
         -> Ga != ((t :: T) <: T)
            
 
-    eq   : forall {ga}{Ga : Context ga}{T}
+      eq   : forall {T}
 
         -------------------
         -> Ga != (T ~ T)
 
 
-    pre  : forall {ga}{Ga : Context ga}{T T' t}
+      pre  : forall {T T' t}
 
         -> T ~> T'   -> Ga != (T' :> t)
         ----------------------------------
         -> Ga != (T :> t)
 
 
-    post : forall {ga}{Ga : Context ga}{e S S'}
+      post : forall {e S S'}
 
         -> Ga != (e <: S)   -> S ~> S'
         --------------------------------
         -> Ga != (e <: S')
 
 
-    type : forall {R}(rule : R <- formation) -> let open FormationRule R in
-         forall {ga}{Ga : Context ga}(ts : Env ([] , atom NIL) (ga ,P typeSuj))
+      type : forall {R}(rule : R <- formation) -> let open FormationRule R in
+         forall (ts : Env M (ga ,P typeSuj))
         -> let Jz , _ = premises ga typePrems [] (atom NIL) ts in
 
            All (Ga !=_) Jz
@@ -347,10 +380,10 @@ module TYPETHEORY (TH : TypeTheory) where
         -> Ga != type (typeSuj %P ts)
 
 
-    chk  : forall {R}(rule : R <- checking) -> let open CheckingRule R in
-         forall {ga}{Ga : Context ga}
-         (Ts : Env ([] , atom NIL) (ga ,P chkInp))
-         (ts : Env ([] , atom NIL) (ga ,P chkSuj))
+      chk  : forall {R}(rule : R <- checking) -> let open CheckingRule R in
+         forall 
+         (Ts : Env M (ga ,P chkInp))
+         (ts : Env M (ga ,P chkSuj))
         -> let Jz , _ = premises ga chkPrems [] Ts ts in
 
            All (Ga !=_) Jz
@@ -358,10 +391,10 @@ module TYPETHEORY (TH : TypeTheory) where
         -> Ga != ((chkInp %P Ts) :> (chkSuj %P ts))
 
 
-    elir  : forall {R}(rule : R <- elimination) -> let open EliminationRule R in
-         forall {ga}{Ga : Context ga}(e : Term ([] , atom NIL) ga lib syn)
-         (Ss : Env ([] , atom NIL) (ga ,P trgType))
-         (ss : Env ([] , atom NIL) (ga ,P elimSuj))
+      elir  : forall {R}(rule : R <- elimination) -> let open EliminationRule R in
+         forall (e : Term M ga lib syn)
+         (Ss : Env M (ga ,P trgType))
+         (ss : Env M (ga ,P elimSuj))
         -> let Jz , trus , _ = premises ga elimPrems ([] -, e) Ss ss in
 
            Ga != (e <: (trgType %P Ss))
@@ -370,9 +403,9 @@ module TYPETHEORY (TH : TypeTheory) where
         -> Ga != ((e $ (elimSuj %P ss)) <: (resType % ([] -, e , cons Ss trus))) 
 
 
-    unic : forall {R}(rule : R <- universe) -> let open UniverseRule R in
-         forall {ga}{Ga : Context ga}
-         (Ts : Env ([] , atom NIL) (ga ,P uniInp))
+      unic : forall {R}(rule : R <- universe) -> let open UniverseRule R in
+         forall 
+         (Ts : Env M (ga ,P uniInp))
         -> let Jz , _ = premises ga uniPrems [] Ts (atom NIL) in
 
            All (Ga !=_) Jz
