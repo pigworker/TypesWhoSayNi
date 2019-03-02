@@ -21,16 +21,14 @@ formation STLC = [] -,
   record { typeSuj = BASE ; typePrems = [] }
   -,
   record
-  { typeSuj =
-    cons ARROW (cons (hole oi) (cons (hole oi) NIL))
+  { typeSuj = ARROW - hole oi - hole oi - NIL
   ; typePrems =
      [] -, type (_ , cdr (car hole) , oi)
         -, type (_ , cdr (cdr (car hole)) , oi)
   }
 checking STLC = [] -,
   record
-  { chkInp = 
-    cons ARROW (cons (hole oi) (cons (hole oi) NIL))
+  { chkInp = ARROW - hole oi - hole oi - NIL
   ; chkSuj = abst (hole oi)
   ; chkPrems = [] -, ((car (cdr (car hole)) ?- [])
                      !- ((car (cdr (cdr (car hole))) ?- [])
@@ -38,8 +36,7 @@ checking STLC = [] -,
   }
 elimination STLC = [] -,
   record
-  { trgType = 
-    cons ARROW (cons (hole oi) (cons (hole oi) NIL))
+  { trgType = ARROW - hole oi - hole oi - NIL 
   ; elimSuj = hole oi
   ; elimPrems = [] -, ((car (cdr (car hole)) ?- [])
                       :> (_ , hole , oi))

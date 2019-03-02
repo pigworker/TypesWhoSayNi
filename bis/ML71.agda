@@ -28,10 +28,7 @@ formation ML71 =
     }
   -,
   record
-    { typeSuj   = cons PI (
-                  cons (hole oi) (
-                  cons (abst (hole oi)) 
-                  NIL))
+    { typeSuj   = PI - hole oi - \\\ hole oi - NIL
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -39,10 +36,7 @@ formation ML71 =
     }
   -,
   record
-    { typeSuj   = cons SG (
-                  cons (hole oi) (
-                  cons (abst (hole oi)) 
-                  NIL))
+    { typeSuj   = SG - hole oi - \\\ hole oi - NIL
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -58,20 +52,14 @@ checking ML71 =
     }
   -,
   record
-    { chkInp   = cons PI (
-                 cons (hole oi) (
-                 cons (abst (hole oi))
-                 NIL))
+    { chkInp   = PI - hole oi - \\\ hole oi - NIL
     ; chkSuj   = abst (hole oi)
     ; chkPrems = [] -, ((car (cdr (car hole)) ?- []) !-
                          ((car (cdr (cdr (car (abst hole)))) ?- ([] -, # (oe su)))
                            :> (_ , abst hole , oi))) }
   -,
   record
-    { chkInp   = cons SG (
-                 cons (hole oi) (
-                 cons (abst (hole oi))
-                 NIL))
+    { chkInp   = SG - hole oi - \\\ hole oi - NIL
     ; chkSuj   = cons (hole oi) (hole oi)
     ; chkPrems = []
         -, ((car (cdr (car hole)) ?- [])
@@ -83,29 +71,20 @@ checking ML71 =
     
 elimination ML71 = [] -,
   record
-    { trgType   = cons PI (
-                  cons (hole oi) (
-                  cons (abst (hole oi))
-                  NIL))
+    { trgType   = PI - hole oi - \\\ hole oi - NIL
     ; elimSuj   = hole oi
     ; elimPrems = [] -, ((car (cdr (car hole)) ?- []) :> (_ , hole , oi))
     ; resType   = car (cdr (cdr (car (abst hole)))) ?- ([] -, (
                     (cdr (cdr hole) ?- []) :: (car (cdr (car hole)) ?- []))) }
   -,
   record
-    { trgType   = cons SG (
-                  cons (hole oi) (
-                  cons (abst (hole oi))
-                  NIL))
+    { trgType   = SG - hole oi - \\\ hole oi - NIL
     ; elimSuj   = CAR
     ; elimPrems = []
     ; resType   = car (cdr (car hole)) ?- [] }
   -,
   record
-    { trgType   = cons SG (
-                  cons (hole oi) (
-                  cons (abst (hole oi))
-                  NIL))
+    { trgType   = SG - hole oi - \\\ hole oi - NIL
     ; elimSuj   = CDR
     ; elimPrems = []
     ; resType   = car (cdr (cdr (car (abst hole)))) ?-
