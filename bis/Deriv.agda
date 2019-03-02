@@ -179,7 +179,7 @@ module _ where
   trgTypeMatches e [] = []
   trgTypeMatches e (Tz -, T) with unify (trgType e) (typeSuj T)
   trgTypeMatches e (Tz -, T) | fail , u = trgTypeMatches e Tz
-  trgTypeMatches e (Tz -, T) | [ uT ]M , er , Tr , _ =
+  trgTypeMatches e (Tz -, T) | [ uT ]M , er , Tr =
     trgTypeMatches e Tz -, (T , uT , er , Tr)
 
   elimTypeMatches : Bwd EliminationRule -> Bwd FormationRule ->
@@ -202,7 +202,7 @@ module _ where
   introTypeMatches (e , T , uT , uTe , uTT) [] = []
   introTypeMatches (e , T , uT , uTe , uTT) (tz -, t) with unify uT (chkInp t)
   ... | fail , _ = introTypeMatches (e , T , uT , uTe , uTT) tz
-  ... | [ vT ]M , r0 , r1 , _
+  ... | [ vT ]M , r0 , r1
     =  introTypeMatches (e , T , uT , uTe , uTT) tz
     -, (t , vT , r0 , r1)
 
@@ -241,6 +241,7 @@ module _ where
   open FormationRule
   open CheckingRule
   open EliminationRule
+  open BetaRule
 
   betaRules : (rz : Bwd Redex) -> All Reduct rz -> Bwd (BetaRule)
   betaRules .[] [] = []
@@ -256,11 +257,29 @@ module _ where
       ; betaType  = Ty
       ; betaElim  = elimSuj e
       ; redTerm   = u
-      ; redType   = resType e %
-         (([] -, rad)
-         , cons chi pi)
+      ; redType   = resType e % (([] -, rad) , cons chi pi)
       }
 
+  betaRulesUnambiguous : (rz : Bwd Redex) ->
+    Apart (\ { (e , T , t , Ty , re , rT , rt) ->
+               cons (cons (chkSuj t) Ty) (elimSuj e) }) rz ->
+    (uz : All Reduct rz) ->
+    Apart (\ b -> cons (cons (betaIntro b) (betaType b)) (betaElim b))
+      (betaRules rz uz)
+  betaRulesUnambiguous .[] rza [] = _
+  betaRulesUnambiguous (rz -, (e , T , t , Ty , re , rT , rt)) (rza , a) (uz -, u)
+    = betaRulesUnambiguous rz rza uz , help rz a uz where
+    help : forall rz ->
+      Apartz (\ { (e , T , t , Ty , re , rT , rt)
+              -> cons (cons (chkSuj t) Ty) (elimSuj e) })
+          rz (e , T , t , Ty , re , rT , rt) ->
+      (uz : All Reduct rz) ->
+      Apartz (\ b -> cons (cons (betaIntro b) (betaType b)) (betaElim b))
+       (betaRules rz uz) _
+    help .[] a [] = _
+    help (rz -, (e' , T' , t' , Ty' , re' , rT' , rt')) (az , a) (uz -, u)
+       = help rz az uz , a
+       
 {-
 data Context : Nat -> Set where
   [] : Context []

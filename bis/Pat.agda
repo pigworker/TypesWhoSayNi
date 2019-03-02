@@ -142,7 +142,7 @@ squeezeRefine ph (atom a) = atom a
 squeezeRefine ph (cons p q) = cons (squeezeRefine ph p) (squeezeRefine ph q)
 squeezeRefine ph (abst q) = abst (squeezeRefine (ph su) q)
 squeezeRefine ph (hole th) with pullback ph th
-... | _ , ph' , th' , ps' , t0 , t1 , u
+... | _ , ph' , th' , ps' , t0 , t1
     = hole (hole th') (hole $= (
         (th' -< th)
           =[ triDet (mkTri th' th) t1 >=
@@ -178,10 +178,8 @@ pullbackPat (hole th) th0 (abst p1) th1 ()
 pullbackPat (hole th0') th0 (hole th1') th1 e
   with th0' -< th0 | mkTri th0' th0 | th1' -< th1 | mkTri th1' th1
 pullbackPat (hole th0') th0 (hole th1') th1 refl | ps0 | t0 | .ps0 | t1
-  with pullback th0 th1
-... | de , ph0 , ph1 , ps' , t2 , t3 , u
-  with u t0 t1
-... | ps , t4 , t5
+  with pullback th0 th1 | pullbackU th0 th1 t0 t1
+... | de , ph0 , ph1 , ps' , t2 , t3 | ps , t4 , t5
     = hole ps , hole $= triDet (mkTri ps ph0) t4 , hole $= triDet (mkTri ps ph1) t5
 
 squeezedRefine : forall {de ga p' p}(ph : de <= ga) ->
@@ -200,7 +198,7 @@ squeezedRefine {p' = cons p' p''} {abst q} ph ()
 squeezedRefine {p' = abst p'} {abst q} ph (abst r) = abst (squeezedRefine (ph su) r)
 squeezedRefine {p' = hole th} {abst q} ph ()
 squeezedRefine {p' = p'} {hole th} ph (hole p e) with pullback ph th | pullbackPat p' ph p th (sym e)
-... | de , ph' , th' , ps' , t0 , t1 , u | q , eq' , eq = hole q (
+... | de , ph' , th' , ps' , t0 , t1 | q , eq' , eq = hole q (
   (q ^P coC ph' ph)
     =< patTri q (mkTri ph' ph) ]=
   ((q ^P ph') ^P ph)
@@ -217,73 +215,107 @@ fail   <MP= q      = One
 [ p ]M <MP= fail   = Zero
 [ p ]M <MP= [ q ]M = p <P= q
 
+patMono : forall {ga de}(p p' : Pat ga)(th : ga <= de) ->
+  (p ^P th) == (p' ^P th) -> p == p'
+patMono (atom a) (atom .a) th refl = refl
+patMono (atom _) (cons _ _) th ()
+patMono (atom _) (abst _) th ()
+patMono (atom _) (hole _) th ()
+patMono (cons _ _) (atom _) th ()
+patMono (cons p q) (cons p' q') th e = patNoConf e \ e0 e1 -> 
+  cons $= patMono p p' th e0 =$= patMono q q' th e1
+patMono (cons _ _) (abst _) th ()
+patMono (cons _ _) (hole _) th ()
+patMono (abst _) (atom _) th ()
+patMono (abst _) (cons _ _) th ()
+patMono (abst p) (abst p') th q = patNoConf q \ e -> abst $= patMono p p' (th su) e
+patMono (abst _) (hole _) th ()
+patMono (hole _) (atom _) th ()
+patMono (hole _) (cons _ _) th ()
+patMono (hole _) (abst _) th ()
+patMono (hole ph0) (hole ph1) th q = patNoConf q \ { refl e -> 
+  hole $= thinMono ph0 ph1 th e }
+
+patRIrr : forall {ga}{p q : Pat ga}(r r' : p <P= q) -> r == r'
+patRIrr (atom a) (atom .a) = refl
+patRIrr (cons r0 r1) (cons r2 r3) rewrite patRIrr r0 r2 | patRIrr r1 r3 = refl
+patRIrr (abst r) (abst r') rewrite patRIrr r r' = refl
+patRIrr (hole p refl) (hole p' q) with patMono p' p _ q
+patRIrr (hole p refl) (hole .p refl) | refl = refl
+
+mpatRIrr : forall {ga}{p q : MPat ga}(r r' : p <MP= q) -> r == r'
+mpatRIrr {p = fail} {q} r r' = refl
+mpatRIrr {p = [ _ ]M} {fail} () r'
+mpatRIrr {p = [ _ ]M} {[ _ ]M} r r' = patRIrr r r'
+
 unify : forall {ga}(p0 p1 : Pat ga) ->
-        Sg (MPat ga) \ p ->
-        (p <MP= [ p0 ]M) *
-        (p <MP= [ p1 ]M) *
-        ((p' : MPat ga) -> p' <MP= [ p0 ]M -> p' <MP= [ p1 ]M -> p' <MP= p)
-unify (hole th) p
-  = [ (th ?P p) ^P th ]M
-  , hole (th ?P p) refl
-  , squeezeRefine th p
-  , \ { fail _ _ -> <>
-      ; [ .(p' ^P _) ]M (hole p' refl) p'1 -> squeezedRefine th p'1 }
-unify p (hole th)
-  = [ (th ?P p) ^P th ]M
-  , squeezeRefine th p
-  , hole (th ?P p) refl
-  , \ { fail _ _ -> <>
-      ; [ .(p' ^P _) ]M p'0 (hole p' refl) -> squeezedRefine th p'0 }
+        Sg (MPat ga) \ p -> (p <MP= [ p0 ]M) * (p <MP= [ p1 ]M)
+unify (hole th) p = [ (th ?P p) ^P th ]M , hole (th ?P p) refl , squeezeRefine th p
+unify p (hole th) = [ (th ?P p) ^P th ]M , squeezeRefine th p , hole (th ?P p) refl 
 unify (atom a0)    (atom a1) with atomEq? a0 a1
-unify (atom a)  (atom .a) | #1 , refl = [ atom a ]M , atom a , atom a ,
-  \ { fail p'0 p'1 -> <> ; [ .(atom a) ]M (atom a) (atom .a) -> atom a }
-unify (atom a0) (atom a1) | #0 , x = fail , <> , <> , 
-  \ { fail p'0 p'1 -> <> ; [ .(atom a0) ]M (atom a0) (atom .a0) -> x refl }
+unify (atom a)  (atom .a) | #1 , refl = [ atom a ]M , atom a , atom a
+unify (atom a0) (atom a1) | #0 , x = fail , <> , <>
 unify (cons p0 q0) (cons p1 q1) with unify p0 p1 | unify q0 q1
-unify (cons p0 q0) (cons p1 q1)
-  | fail , pr0 , pr1 , pu | q , qr0 , qr1 , qu
-  = fail , <> , <> ,
-  \ { fail _ _ -> <>
-    ; [ .(cons _ _) ]M (cons p'0 q'0) (cons p'1 q'1) ->
-      pu [ _ ]M p'0 p'1 }
-unify (cons p0 q0) (cons p1 q1)
-  | [ p ]M , pr0 , pr1 , pu | fail , qr0 , qr1 , qu
-  = fail , <> , <> ,
-  \ { fail _ _ -> <>
-    ; [ .(cons _ _) ]M (cons p'0 q'0) (cons p'1 q'1) ->
-      qu [ _ ]M q'0 q'1 }
-unify (cons p0 q0) (cons p1 q1)
-  | [ p ]M , pr0 , pr1 , pu | [ q ]M , qr0 , qr1 , qu
-  = [ cons p q ]M , cons pr0 qr0 , cons pr1 qr1 ,
-  \ { fail _ _ -> <>
-    ; [ .(cons _ _) ]M (cons p'0 q'0) (cons p'1 q'1) ->
-      cons (pu [ _ ]M p'0 p'1) (qu [ _ ]M q'0 q'1) }
+unify (cons p0 q0) (cons p1 q1) | fail , _           | _        = fail , <> , <>
+unify (cons p0 q0) (cons p1 q1) | [ _ ]M , _         | fail , _ = fail , <> , <>
+unify (cons p0 q0) (cons p1 q1) | [ p ]M , pr0 , pr1 | [ q ]M , qr0 , qr1
+  = [ cons p q ]M , cons pr0 qr0 , cons pr1 qr1
 unify (abst q0)    (abst q1) with unify q0 q1
-unify (abst q0) (abst q1) | fail , qr0 , qr1 , qu = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(abst _) ]M (abst q'0) (abst q'1) ->
-                           qu [ _ ]M q'0 q'1 }
-unify (abst q0) (abst q1) | [ q ]M , qr0 , qr1 , qu
-  = [ abst q ]M , abst qr0 , abst qr1 ,
-  \ { fail _ _ -> <> ; [ .(abst _) ]M (abst q'0) (abst q'1) ->
-                           abst (qu [ _ ]M q'0 q'1) }
-unify (atom a) (cons p1 p2)  = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(atom a) ]M (atom a) () }
-unify (atom a) (abst p1)     = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(atom a) ]M (atom a) () }
-unify (cons p0 p2) (atom a)  = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(cons _ _) ]M (cons p'0 p'1) () }
-unify (cons p0 p2) (abst p1) = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(cons _ _) ]M (cons p'0 p'1) () }
-unify (abst p0) (atom a)     = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(abst _) ]M (abst p'0) () }
-unify (abst p0) (cons p1 p2) = fail , <> , <> ,
-  \ { fail _ _ -> <> ; [ .(abst _) ]M (abst p'0) () }
+unify (abst q0) (abst q1) | fail , qr0 , qr1 = fail , <> , <>
+unify (abst q0) (abst q1) | [ q ]M , qr0 , qr1
+  = [ abst q ]M , abst qr0 , abst qr1
+unify _ _  = fail , <> , <>
+
+unifyU : forall {ga}(p0 p1 : Pat ga) ->
+         let p , r0 , r1 = unify p0 p1 in
+         ((p' : MPat ga) -> p' <MP= [ p0 ]M -> p' <MP= [ p1 ]M -> p' <MP= p)
+unifyU p0 p1 fail r0 r1 = <>
+unifyU (hole th) p1 [ x ]M (hole p refl) r1 = squeezedRefine th r1
+unifyU (atom a) .(atom a) [ .(atom a) ]M (atom .a) (atom .a)
+  rewrite atomEqLemma a = atom a
+unifyU (cons p0 q0) (cons p1 q1) [ .(cons _ _) ]M (cons r0 r1) (cons r2 r3)
+  with unify p0 p1 | unifyU p0 p1 _ r0 r2 | unify q0 q1 | unifyU q0 q1 _ r1 r3
+... | fail , pr0 , pr1 | () | q , qr0 , qr1 | qu
+... | [ p ]M , pr0 , pr1 | pu | fail , qr0 , qr1 | ()
+... | [ p ]M , pr0 , pr1 | pu | [ q ]M , qr0 , qr1 | qu = cons pu qu
+unifyU (abst q0) (abst q1) [ .(abst _) ]M (abst r0) (abst r1)
+  with unify q0 q1 | unifyU q0 q1 _ r0 r1
+... | fail , qr0 , qr1 | ()
+... | [ q ]M , qr0 , qr1 | qu = abst qu
+unifyU (atom a)     .(hole _) [ .(atom a) ]M (atom .a) (hole p x) = atom a
+unifyU (cons p0 q0) .(hole _) [ .(cons _ _) ]M (cons r0 r1) (hole (atom a) ())
+unifyU (cons p0 q0) (hole th) [ ._ ]M (cons r0 r1) (hole (cons p' q') refl) =
+  squeezedRefine th (cons r0 r1)
+unifyU (cons p0 q0) .(hole _) [ .(cons _ _) ]M (cons r0 r1) (hole (abst p) ())
+unifyU (cons p0 q0) .(hole _) [ .(cons _ _) ]M (cons r0 r1) (hole (hole th) ())
+unifyU (abst p0) .(hole _) [ .(abst _) ]M (abst r0) (hole (atom a) ())
+unifyU (abst p0) .(hole _) [ .(abst _) ]M (abst r0) (hole (cons _ _) ())
+unifyU (abst p0) (hole th) [ ._ ]M (abst r0) (hole (abst q') refl) =
+  squeezedRefine th (abst r0)
+unifyU (abst p0) .(hole _) [ .(abst _) ]M (abst r0) (hole (hole th) ())
+
+sgIrr : forall {A B}{a0 a1 : A}(a : a0 == a1){b0 : B a0}{b1 : B a1} ->
+  ((a : A)(b b' : B a) -> b == b') ->
+  _==_ {_}{Sg A B} (a0 , b0) (a1 , b1)
+sgIrr refl Birr = (_ ,_) $= Birr _ _ _
+
+unifyEq : forall {ga}(p : Pat ga) -> unify p p == ([ p ]M , refl<P= p , refl<P= p)
+unifyEq (atom a) rewrite atomEqLemma a = refl
+unifyEq (cons p q) rewrite unifyEq p | unifyEq q = refl
+unifyEq (abst q) rewrite unifyEq q = refl
+unifyEq (hole th) with pullback th th | pullbackEq th
+unifyEq (hole th) | .(_ , oi , oi , th , oiTri th , oiTri th) | refl
+  = sgIrr ([_]M $= (hole $= idcoC _))
+  \ { a (r0 , r1) (r2 , r3) -> _,_ $= mpatRIrr r0 r2 =$= mpatRIrr r1 r3 }   
+
+_=/=_ : forall {ga}(p q : Pat ga) -> Set
+p =/= q with unify p q
+... | fail , _ = One
+... | [ _ ]M , _ = Zero
 
 Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> X -> Set
 Apartz f [] x = One
-Apartz f (xz -, y) x with unify (f y) (f x)
-... | fail , _ = Apartz f xz x
-... | [ _ ]M , _ = Zero
+Apartz f (xz -, y) x = Apartz f xz x * (f x =/= f y)
 
 Apart : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Set
 Apart f [] = One

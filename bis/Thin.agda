@@ -152,6 +152,11 @@ module _ {X : Set} where
   triMono (t0 su) (t1 su) rewrite triMono t0 t1 = refl
   triMono ze ze = refl
 
+  thinMono : forall {iz jz kz}(th0 th1 : iz <= jz)(ph : jz <= kz) ->
+    (th0 -< ph) == (th1 -< ph) -> th0 == th1
+  thinMono th0 th1 ph q with mkTri th0 ph | mkTri th1 ph
+  ... | t0 | t1 rewrite q = triMono t0 t1
+
   thinrLemma : forall {az bz cz dz ez}(th : az <= bz)(ph : cz <= dz)(ps : bz <= ez) ->
     (thinr cz th -< (ph ^+ ps)) == thinr dz (th -< ps)
   thinrLemma th ph (ps no) = _no $= thinrLemma th ph ps
@@ -209,27 +214,42 @@ module _ {X : Set} where
   pullback : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
     Sg _ \ hz ->
     Sg (hz <= iz) \ th' -> Sg (hz <= jz) \ ph' -> Sg (hz <= kz) \ ps' ->
-    Tri th' th ps' * Tri ph' ph ps' * forall {gz}
-    {th_ : gz <= iz}{ph_ : gz <= jz}{ps_ : gz <= kz} ->
-    Tri th_ th ps_ -> Tri ph_ ph ps_ ->
-    Sg (gz <= hz) \ ps -> Tri ps th' th_ * Tri ps ph' ph_
+    Tri th' th ps' * Tri ph' ph ps'
     
   pullback (th no) (ph no) with pullback th ph
-  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 no) , (t1 no) ,
-    \ { (t2 no) (t3 no) -> let _ , t4 , t5 = u t2 t3 in _ , t4 , t5 }
+  ... | _ , _ , _ , _ , t0 , t1 = _ , _ , _ , _ , (t0 no) , (t1 no)
   pullback (th no) (ph su) with pullback th ph
-  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 no) , (t1 nosuno) ,
-   \ { (t2 no) (t3 nosuno) -> let _ , t4 , t5 = u t2 t3 in _ , t4 , (t5 no) }
+  ... | _ , _ , _ , _ , t0 , t1 = _ , _ , _ , _ , (t0 no) , (t1 nosuno)
   pullback (th su) (ph no) with pullback th ph
-  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 nosuno) , (t1 no) , 
-   \ { (t2 nosuno) (t3 no) -> let _ , t4 , t5 = u t2 t3 in _ , (t4 no) , t5
-     ; (t2 su) () }
+  ... | _ , _ , _ , _ , t0 , t1 = _ , _ , _ , _ , (t0 nosuno) , (t1 no)
   pullback (th su) (ph su) with pullback th ph
-  ... | _ , _ , _ , _ , t0 , t1 , u = _ , _ , _ , _ , (t0 su) , (t1 su) , 
-   \ { (t2 nosuno) (t3 nosuno) -> let _ , t4 , t5 = u t2 t3 in _ , (t4 nosuno) , (t5 nosuno)
-     ; (t2 su)     (t3 su)     -> let _ , t4 , t5 = u t2 t3 in _ , (t4 su) , (t5 su) }
-  pullback ze ze = _ , _ , _ , _ , ze , ze , 
-   \ { ze ze -> ze , ze , ze }
+  ... | _ , _ , _ , _ , t0 , t1 = _ , _ , _ , _ , (t0 su) , (t1 su)
+  pullback ze ze = _ , _ , _ , _ , ze , ze
+
+  pullbackU : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
+              let hz , th' , ph' , ps' , t0 , t1 = pullback th ph in
+              forall {gz} {th_ : gz <= iz}{ph_ : gz <= jz}{ps_ : gz <= kz} ->
+              Tri th_ th ps_ -> Tri ph_ ph ps_ ->
+              Sg (gz <= hz) \ ps -> Tri ps th' th_ * Tri ps ph' ph_
+  pullbackU (th no) (ph no) (t2 no) (t3 no) =
+    let _ , t4 , t5 = pullbackU th ph t2 t3 in _ , t4 , t5
+  pullbackU (th no) (ph su) (t2 no) (t3 nosuno) =
+    let _ , t4 , t5 = pullbackU th ph t2 t3 in _ , t4 , t5 no
+  pullbackU (th su) (ph no) (t2 nosuno) (t3 no) =
+    let _ , t4 , t5 = pullbackU th ph t2 t3 in _ , t4 no , t5
+  pullbackU (th su) (ph no) (t2 su) ()
+  pullbackU (th su) (ph su) (t2 nosuno) (t3 nosuno) =
+    let _ , t4 , t5 = pullbackU th ph t2 t3 in  _ , t4 nosuno , t5 nosuno
+  pullbackU (th su) (ph su) (t2 su) (t3 su) =
+    let _ , t4 , t5 = pullbackU th ph t2 t3 in  _ , t4 su , t5 su
+  pullbackU ze ze ze ze = ze , ze , ze
+
+  pullbackEq : forall {iz jz}(th : iz <= jz) ->
+    
+    pullback th th == (iz , oi , oi , th , oiTri th , oiTri th)
+  pullbackEq (th no) rewrite pullbackEq th = refl
+  pullbackEq (th su) rewrite pullbackEq th = refl
+  pullbackEq ze = refl
 
   coproduct : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
     Sg _ \ hz ->
@@ -344,3 +364,4 @@ module _ {X : Set} where
   THIN' = record { eval = eval ; norm = norm ; nova = nova }
     where open THINSTUFF
 -}
+
