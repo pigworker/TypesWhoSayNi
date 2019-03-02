@@ -313,10 +313,10 @@ p =/= q with unify p q
 ... | fail , _ = One
 ... | [ _ ]M , _ = Zero
 
-Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> X -> Set
-Apartz f [] x = One
-Apartz f (xz -, y) x = Apartz f xz x * (f x =/= f y)
+Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Pat ga -> Set
+Apartz f [] p = One
+Apartz f (xz -, y) p = Apartz f xz p * (p =/= f y)
 
 Apart : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Set
 Apart f [] = One
-Apart f (xz -, x) = Apart f xz * Apartz f xz x
+Apart f (xz -, x) = Apart f xz * Apartz f xz (f x)

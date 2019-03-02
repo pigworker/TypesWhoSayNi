@@ -272,7 +272,7 @@ module _ where
     help : forall rz ->
       Apartz (\ { (e , T , t , Ty , re , rT , rt)
               -> cons (cons (chkSuj t) Ty) (elimSuj e) })
-          rz (e , T , t , Ty , re , rT , rt) ->
+          rz (cons (cons (chkSuj t) Ty) (elimSuj e)) ->
       (uz : All Reduct rz) ->
       Apartz (\ b -> cons (cons (betaIntro b) (betaType b)) (betaElim b))
        (betaRules rz uz) _
