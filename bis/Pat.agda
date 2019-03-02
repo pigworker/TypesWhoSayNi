@@ -66,12 +66,30 @@ cons p q ^P ph = cons (p ^P ph) (q ^P ph)
 abst q   ^P ph = abst (q ^P (ph su))
 hole th  ^P ph = hole (th -< ph)
 
+{-
 comp^P : forall {ga0 ga1 ga2}(p : Pat ga0)(ph0 : ga0 <= ga1)(ph1 : ga1 <= ga2) ->
   (p ^P (ph0 -< ph1)) == ((p ^P ph0) ^P ph1)
 comp^P (atom a)   ph0 ph1 = refl
 comp^P (cons p q) ph0 ph1 = cons $= comp^P p ph0 ph1 =$= comp^P q ph0 ph1
 comp^P (abst q)   ph0 ph1 = abst $= comp^P q (ph0 su) (ph1 su)
 comp^P (hole th)  ph0 ph1 = hole $= cocoC th ph0 ph1
+-}
+
+patTri : forall {ga0 ga1 ga2}(p : Pat ga0)
+         {ph0 : ga0 <= ga1}{ph1 : ga1 <= ga2}{ph2 : ga0 <= ga2}
+         (t : Tri ph0 ph1 ph2) ->
+         ((p ^P ph0) ^P ph1) == (p ^P ph2)
+patTri (atom a)   t = refl
+patTri (cons p q) t = cons $= patTri p t =$= patTri q t
+patTri (abst q)   t = abst $= patTri q (t su)
+patTri (hole th) {ph0}{ph1}{ph2} t = hole $= (
+  ((th -< ph0) -< ph1)
+    =< cocoC th ph0 ph1 ]=
+  (th -< (ph0 -< ph1))
+    =[ (th -<_) $= triDet (mkTri ph0 ph1) t >=
+  (th -< ph2)
+    [QED])
+
 
 _^<P-_ : forall {ga' ga de}{p : Pat ga} ->
          ga' <P- p -> (ph : ga <= de) -> ga' <P- (p ^P ph)
@@ -102,7 +120,7 @@ thickRefine {p1 = cons p1 q1} ph (cons p01 q01)
 thickRefine {p1 = abst q1}    ph (abst q01) with thickRefine (ph su) q01
 ... | q , qe , qr = abst q , abst $= qe , abst qr
 thickRefine {p1 = hole th}    ph (hole p e)     =
-  (p ^P th) , _ =< comp^P p th ph ]= _ =[ e >= _ [QED] , hole p refl
+  (p ^P th) , _ =[ patTri p (mkTri th ph) >= _ =[ e >= _ [QED] , hole p refl
 
 refl<P= : forall {ga}(p : Pat ga) -> p <P= p
 refl<P= (atom a)   = atom a
@@ -184,7 +202,7 @@ squeezedRefine {p' = hole th} {abst q} ph ()
 squeezedRefine {p' = p'} {hole th} ph (hole p e) with pullback ph th | pullbackPat p' ph p th (sym e)
 ... | de , ph' , th' , ps' , t0 , t1 , u | q , eq' , eq = hole q (
   (q ^P coC ph' ph)
-    =[ comp^P q ph' ph >=
+    =< patTri q (mkTri ph' ph) ]=
   ((q ^P ph') ^P ph)
     =[ (_^P ph) $= eq' >=
   (p' ^P ph)

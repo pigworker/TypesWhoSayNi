@@ -133,6 +133,11 @@ module _ {X : Set} where
   oeTri (th su) = oeTri th nosuno
   oeTri ze = ze
 
+  oiTri : forall {iz jz}(th : iz <= jz) -> Tri oi th th
+  oiTri (th no) = oiTri th no
+  oiTri (th su) = oiTri th su
+  oiTri ze = ze
+
   triDet : forall {iz jz kz}{th : iz <= jz}{ph : jz <= kz}{ps0 ps1} ->
     Tri th ph ps0 -> Tri th ph ps1 -> ps0 == ps1
   triDet (t0 no) (t1 no) rewrite triDet t0 t1 = refl

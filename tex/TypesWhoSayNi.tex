@@ -42,6 +42,8 @@
 
 \newcommand{\ths}{}
 
+\newcommand{\Se}{\mathsf}
+
 \begin{document}
 \title[Journal of Functional Programming]{The types who say `ni'}
 \author[C. McBride]{CONOR MCBRIDE\\
@@ -431,13 +433,13 @@ constants which play the role of tags --- their purpose is not
 to stand for things but to be told apart. The symbol $\Pa{}$ is
 considered an atom and pronounced `nil'.
 
-\newcommand{\lib}{\textbf{lib}}
-\newcommand{\ess}{\textbf{ess}}
-\newcommand{\cons}{\textbf{cons}}
-\newcommand{\comp}{\textbf{comp}}
+\newcommand{\lib}{\Se{lib}}
+\newcommand{\ess}{\Se{ess}}
+\newcommand{\cons}{\Se{cons}}
+\newcommand{\comp}{\Se{comp}}
 
 
-\newcommand{\Tm}[3]{\mathbf{Term}\:#1\:#2\:#3}
+\newcommand{\Tm}[3]{\Se{Term}\:#1\:#2\:#3}
 \begin{definition}[constructions and computations, essential and liberal\label{def:syntax}]
 The object-level syntax is specified,
 written as a subscript, and
@@ -731,22 +733,6 @@ We shall have need of left and right injections.
     \]
 \end{definition}
 
-Seen as selections, the above allow us to extract prefixes and
-suffices of vectors.
-\begin{lemma}[chopstick]
-  Let $\vec x : X^{\gamma,\delta}$. It is the case that
-\[
-  \sel{(\thinl\gamma\delta)}{\vec x},
-  \sel{(\thinr\gamma\delta)}{\vec x}
-  = \vec x
-\]
-\end{lemma}
-\begin{proof}
-  This follows by induction on $\delta$. Strictly speaking, it relies
-  also on the fact that selecting with the identity thinning acts as
-  the identity, which again follows by induction on scope.
-\end{proof}
-
 Next, let us have \emph{substitutions}, which act simultaneously on all variables
 in a scope. Let us take $\sigma$ and $\rho$ as metavariables for substitutions.
 
@@ -826,19 +812,6 @@ section \ref{sec:sbstcat}. For now, let us establish the operations.
   \]
 \end{definition}
 
-Lastly, let us see how to combine substitutions from separate scopes.
-
-\begin{definition}[tensor of substitutions]
-  Let $\sigma_i : \gamma_i\su\delta_i$ for $i=0,1$. Define
-  \[
-    \sigma_0\otimes\sigma_1 =
-    \sigma_0(\thinl{\delta_0}{\delta_1}),\sigma_1(\thinr{\delta_0}{\delta_1})
-    : \gamma_0,\gamma_1 \to \delta_0,\delta_1
-  \]
-\end{definition}
-
-Note that when we push a substitution under a binder, we compute
-$\wka\sigma,x$, which is exactly $\sigma\otimes\isu_x$.
 
 We have established the \emph{definitions} of thinnings and
 substitutions, with their actions on terms. Let us acknowledge the
@@ -915,8 +888,8 @@ postconditions in braces to the right.
 \newcommand{\syn}[2]{#1 \in #2}
 \newcommand{\cxe}[2]{#1\!:\!#2\vdash}
 \newcommand{\cxl}[2]{#1\;:\;#2}
-\newcommand{\Pre}[1]{\textbf{Pre}\:#1}
-\newcommand{\Post}[1]{\textbf{Post}\:#1}
+\newcommand{\Pre}[1]{\Se{Pre}\:#1}
+\newcommand{\Post}[1]{\Se{Post}\:#1}
 \begin{definition}[$\gamma$-judgement\label{def:judgement}]
   The judgements, $J_\gamma$, in scope $\gamma$ are given inductively as follows:
   \[\begin{array}{r@{\quad}c@{\quad}l@{\quad}l}
@@ -1580,7 +1553,7 @@ define their grammar.
 
 \subsection{Patterns}
 
-\newcommand{\Pat}[1]{\textbf{Pat}\:#1}
+\newcommand{\Pat}[1]{\Se{Pat}\:#1}
 \begin{definition}[$\gamma$-pattern\label{def:pat}]
 The grammar of patterns, $\Pat\gamma$, for a given scope is as follows:
 \[\begin{array}{rrl@{\quad}l}
@@ -1629,7 +1602,7 @@ listing the permitted variables. We could also have written:
 Meanwhile, the pattern $\PI{S\huth{}}x{T\!\huth{}}$ matches only function types which
 happen to be non-dependent.
 
-\newcommand{\pr}{\preceq}
+\newcommand{\pr}{\sqsubseteq}
 The $\bot$ pattern may seem a trifle peculiar: it would certainly be
 rather pointless to use it in a rule, as that would ensure its
 inapplicability. My motivation for introducing it is primarily
@@ -1728,7 +1701,7 @@ formal judgements, with a precise notion of \emph{schematic scope}.
   variables which stand for constructions.
 \end{definition}
 
-\newcommand{\Ex}[4]{\textbf{Expr}\:#1\:#2\:#3\:#4}
+\newcommand{\Ex}[4]{\Se{Expr}\:#1\:#2\:#3\:#4}
 \begin{definition}[expression]
   The syntax of expressions $\Ex{\ssc\delta p}ld\gamma$, with
   schematic scope $\ssc\delta p$ and scope $\gamma$ extends that
@@ -1803,7 +1776,7 @@ subject from the untrusted pattern, until everything is trusted.
   placeholders is said to be \emph{placeless}.
 \end{definition}
 
-\newcommand{\Prem}[5]{\textbf{Prem}\:#1\:#2\:#3\:#4\:#5}
+\newcommand{\Prem}[5]{\Se{Prem}\:#1\:#2\:#3\:#4\:#5}
 \begin{definition}[formal premise\label{def:prem}]
   If $\ssc\delta p$ is the schematic scope of trusted schematic
   variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables,
@@ -1834,7 +1807,7 @@ subject from the untrusted pattern, until everything is trusted.
 Before we walk through this definition, let us see how it plugs into
 the definition of a formal premise sequence, managing scope correctly.
 
-\newcommand{\Prems}[3]{\textbf{Prems}\:#1\:#2\:#3}
+\newcommand{\Prems}[3]{\Se{Prems}\:#1\:#2\:#3}
 \begin{definition}[formal premise sequence\label{def:prems}]
   If $\ssc\delta p$ is the schematic scope of trusted schematic
   variables, $q : \Pat\emp$ is the pattern of untrusted schematic variables, then
@@ -2026,8 +1999,8 @@ juggling act for trusted and untrusted environments, $\pi$ and $\chi$,
 respectively, as we did between the trusted and untrusted patterns,
 $p$ and $q$. Fortunately, there is only one way to do it.
 
-\newcommand{\prem}[4]{\textbf{prem}\:#1\:\ssc{#2}{#3}\:#4}
-\newcommand{\prems}[4]{\textbf{prems}\:#1\:\ssc{#2}{#3}\:#4}
+\newcommand{\prem}[4]{\Se{prem}\:#1\:\ssc{#2}{#3}\:#4}
+\newcommand{\prems}[4]{\Se{prems}\:#1\:\ssc{#2}{#3}\:#4}
 \begin{definition}[actual premise]
   If $J : \Prem{\ssc\delta p}q\gamma{p'}{q'}$, $\rho : \delta\su\gamma'$,
   $\pi : \gamma'\otimes
@@ -2215,7 +2188,6 @@ appropriately compositional.
 
 Thinnings form a well known category: the \emph{semi-simplicial} category, often notated $\Delta_+$.
 
-
 \begin{lemma}[category of thinnings]
   We have the usual categorical laws:
   \[
@@ -2250,32 +2222,27 @@ Thinnings form a well known category: the \emph{semi-simplicial} category, often
   concatenation of thinnings.
 \end{proof}
 
-\begin{lemma}[functoriality of scope extension]
-  The actions $\cdot,x$ on scopes and $\cdot\otimes1$ on thinnings is functorial:
-  \[
-    \ith_\gamma,1 = \ith_{\gamma,x}\qquad \theta\phi,1 = (\theta,1)(\phi,1)
-    \]
+
+\begin{lemma}[functoriality of the thinning action]
+ The thinning action extends $\Tm ld\cdot$ to a functor from $\Delta_+$ to $\Set$.
 \end{lemma}
 \begin{proof}
-  This holds by definition.
+  We must show that $m\ith = m$ and that $m(\theta\phi) = (m\theta)\phi$ for any term $m$ in any quadrant.
+  This is established straightforwardly by induction on $m$, relying
+  on the functoriality of
+  $\cdot\otimes 1$ to pass under an abstraction.
 \end{proof}
 
 \begin{remark}[thinnings as an integer monoid]
   In another life, I teach undergraduates about computer hardware. Consequently, I recognize the identity thinning as the two's complement representation of $-1$.
-  Effectively, we may regard the integers as the infinite right-to-left bit vectors which eventually stabilise as all 0 (for non-negative integers) or all 1 (for negative integers). Thinning composition induces a monoid on the integers whose neutral element is $-1$. The details are left to the curious reader.
+  Consider the integers as the infinite right-to-left bit vectors which eventually stabilise as all 0 (for non-negative integers) or all 1 (for negative integers). Thinning composition induces a monoid on the integers whose neutral element is $-1$. The details are left to the curious reader.
 \end{remark}
 
+\subsection{Thinnings act contravariantly on vectors}
+
 \begin{lemma}[natural selection]
-  If $X$ is a set, let $X^\delta$ be the set of vectors with one
-  component in $X$ for each variable in $\delta$. $X^\cdot$ extends
+  The selection operator $\sel\cdot\cdot$ extends $X^\cdot$
   to a functor from $\op{\Delta_+}$ to \Set.
-  Specifically, if $\theta:\gamma\thin\delta$ and $\vec x:X^\gamma$,
-  then $\sel\theta{\vec x} : X^\gamma$, defined thus:
-  \[
-    \sel\emp\emp=\emp \qquad
-    \sel{(\theta,0)}{(\vec x,x)} = \sel\theta{\vec x} \qquad
-    \sel{(\theta,1)}{(\vec x,x)} = (\sel\theta{\vec x}),x
-  \]
   Moreover $\sel\theta\cdot$ is a natural transformation from
   $\cdot^\gamma$ to $\cdot^\delta$.
 \end{lemma}
@@ -2284,17 +2251,17 @@ Thinnings form a well known category: the \emph{semi-simplicial} category, often
   \[
     \sel\ith{\vec x} = \vec x \qquad
     \sel{(\theta\phi)}{\vec x} = \sel\theta{(\sel\phi{\vec x})} \qquad
-    \sel{\theta}{(\vec x f^\delta)} = (\sel\theta{\vec x})f^\gamma
+    \sel{\theta}{(\vec x f)} = (\sel\theta{\vec x})f
   \]
-  where postfix $\cdot f^\cdot$ is the pointwise mapping of $f:X\to Y$ across a vector.
+  where postfix $\cdot f$ is the pointwise mapping of $f:X\to Y$ across a vector.
   All are readily established by functional induction.
 \end{proof}
 
-Selection by our injections allows us to take prefixes and suffixes of
-vectors. In particular, we can cut a vector in two, then stick it back
+Selection by injections allows us to take prefixes and suffixes of
+vectors. In particular, we can chop a vector in two, then stick it back
 together.
 
-\begin{lemma}[left-to-right concatenation]
+\begin{lemma}[chopstick]
   If $\vec x : X^{\gamma,\delta}$, then
   \[
     \sel{(\thinl\gamma\delta)}{\vec x}, \sel{(\thinr\gamma\delta)}{\vec x}
@@ -2306,17 +2273,122 @@ together.
 \end{proof}
 
 
-\begin{lemma}[functoriality of the thinning action]
- The thinning action extends $\Tm ld\cdot$ to a functor from $\Delta_+$ to $\Set$.
+\subsection{The monoidal category of substitutions acts functorially on syntax\label{sec:sbstcat}}
+
+Unlike with thinnings, concatenation is not quite enough
+to induce monoidal structure, and has the wrong type to be the tensor.
+We shall need to fix up the target scopes with some thinnings.
+
+\begin{definition}[tensor of substitutions, weakening]
+  If $\sigma_i : \gamma_i\su\delta_i$ for $i=0,1$, we may take
+  \[
+    \sigma_0\otimes\sigma_1 : \gamma_0,\gamma_1 \su \delta_0,\delta_1
+    \quad
+    \sigma_0\otimes\sigma_1 = \sigma_0(\thinl{\delta_0}{\delta_1}),\sigma_1(\thinr{\delta_0}{\delta_1})
+  \]
+  In particular, if $\sigma : \gamma\su\delta$, then its weakening,
+  $\sigma\otimes1 : \gamma,x\su\delta,x$,
+  is given by
+  \[\sigma\otimes1 = \wka\sigma,x  \quad\mbox{where}\quad \wka\sigma = \sigma\wk
+     \quad\mbox{where}\quad y(\sigma;\theta) = (y\sigma)\theta
+  \]
+  That is, $\sigma\theta$ denotes pointwise action of $\theta$ on terms in $\sigma$.
+  We may define $\sigma,\gamma' : \gamma,\gamma' \su \delta,\gamma'$ by iterating this construct
+  over $\gamma'$
+\end{definition}
+
+\begin{lemma}[action of identity\label{lem:sbstid}]
+  If $\theta:\gamma\thin\delta$, then
+  \[
+    \sel\theta{\isu_\delta} = \isu_\gamma\theta : \gamma\su\delta
+  \]
+  As a consequence, $x\isu = x$.
 \end{lemma}
 \begin{proof}
-  We must show that $m\ith = m$ and that $m(\theta\phi) = (m\theta)\phi$ for any term $m$ in any quadrant.
-  This is established straightforwardly by induction on $m$, relying on the functoriality of scope extension
-  to pass under an abstraction.
+  Induction on scopes establishes the former; induction on $x$, the latter.
 \end{proof}
 
-Before we leave the category of thinnings, let me establish two more properties which
-will prove crucial to my treatment of \emph{patterns}.
+\begin{lemma}[action of compositions\label{lem:sbstco}]
+  All four compositions of thinnings and substitions act on terms as the sequence of the
+  component actions.
+  \[
+    t(\theta\phi) = (t\theta)\phi \quad\;
+    t(\sel\theta\sigma) = (t\theta)\sigma \quad\;
+    t(\rho\phi) = (t\rho)\phi \quad\;
+    t(\rho\sigma) = (t\rho)\sigma
+  \]
+  Accordingly, it is unambiguous to abbreviate $\sel\theta\sigma$ by $\theta\sigma$ for
+  selection from a vector which happens to be a substitution.
+\end{lemma}
+\begin{proof}
+  Structural induction on terms establishes this property. To pass under binders, we must
+  establish that weakening distributes $(\cdot\cdot)\otimes1 = (\cdot\otimes1)(\cdot\otimes1)$, which follows from
+  the fact that
+  \[
+    \wka t(\cdot\otimes1) = t\wka\cdot
+  \]
+  for both thinnings and substitutions.
+\end{proof}
+
+We may now readily establish that substitutions form a category.
+
+\begin{lemma}[category of substitutions]
+  Substitutions $\sigma : \gamma\su\delta$ are the arrows of a
+  category with identity $\isu$ and pointwise composition.
+  Further, action on terms extends $\Tm\lib d\cdot$ to functor
+  from substitutions to \Set.
+\end{lemma}
+\begin{proof}
+  Pointwise lifting of Lemmas \ref{lem:sbstid} and \ref{lem:sbstco}
+  establishes the category, which allows us to state the functoriality
+  those Lemmas already embody.
+\end{proof}
+
+It is, moreover, a \emph{monoidal} category.
+
+\begin{lemma}[monoidal structure of substitutions]
+  Substitutions are a monoidal category with unit the trivial
+  substitution between empty scopes, and tensor $\otimes$.
+\end{lemma}
+\begin{proof}
+  The monoidal properties of $\otimes$ follow by plumbing with thinnings.
+\end{proof}
+
+\begin{lemma}[monoidal functor from thinnings to substitutions]
+  Composition $\cdot\isu = \isu\cdot$ is the action on arrows of an identity-on-objects
+  monoidal functor from thinnings to substitutions.
+\end{lemma}
+\begin{proof}
+  We already have that $\ith\isu = \isu\ith = \isu$. We may readily see that
+  \[(\theta\isu)(\phi\isu)=\isu(\theta(\phi\isu))=(\theta(\phi\isu))
+    = (\theta\phi)\isu \]
+  It takes a little more work to establish that when
+  $\theta_i:\gamma_i\thin\delta_i$
+  \[\begin{array}{lclcl}
+    (\theta_0\isu)\otimes(\theta_1\isu) & = &
+      (\isu\theta_0)\otimes(\isu\theta_1)\\
+    &= &
+        \isu\theta_0(\thinl{\delta_0}{\delta_1}),\isu\theta_1(\thinr{\delta_0}{\delta_1}) \\
+    &= &
+    \isu(\thinl{\delta_0}{\delta_1})(\theta_0\otimes\theta_1), 
+    \isu(\thinr{\delta_0}{\delta_1})(\theta_0\otimes\theta_1) \\
+    &= &
+    ((\thinl{\delta_0}{\delta_1})\isu,(\thinr{\delta_0}{\delta_1})\isu)(\theta_0\otimes\theta_1) \\
+    &= &
+    \isu (\theta_0\otimes\theta_1)
+    &=&(\theta_0\otimes\theta_1)\isu
+    \end{array}\]
+\end{proof}
+
+
+\subsection{Action of thinnings and substitutions on environments}
+
+
+\subsection{Stability of typing derivations under contextual thinnings
+and substitutions}
+
+
+\section{Pullbacks of patterns put to purpose}
 
 \newcommand{\pb}[2]{#1 \sqcap #2}
 \newcommand{\cp}[2]{#1 \sqcup #2}
@@ -2433,439 +2505,6 @@ represented.
   The universal property of the support follows from that of $\cp\cdot\cdot$.
 \end{proof}
 
-
-\subsection{The monoidal category of substitutions acts functorially on syntax\label{sec:sbstcat}}
-
-
-\begin{definition}[concatenation of substitutions]
-  If $\sigma_i:\gamma_i\su\delta$ for $i=0,1$, then the vector
-  concatentation is a substitution from the concatenated source scopes
-  to the shared target scope.
-  \[\sigma_0,\sigma_1 : \gamma_0,\gamma_1\su\delta
-    \]
-\end{definition}
-
-Consequently, unlike with thinnings, concatenation is not quite enough
-to induce monoidal structure, and has the wrong type to be the tensor.
-We shall need to fix up the target scopes with some thinnings.
-
-\begin{definition}[tensor of substitutions, weakening]
-  If $\sigma_i : \gamma_i\su\delta_i$ for $i=0,1$, we may take
-  \[
-    \sigma_0\otimes\sigma_1 : \gamma_0,\gamma_1 \su \delta_0,\delta_1
-    \quad
-    \sigma_0\otimes\sigma_1 = \sigma_0(\thinl{\delta_0}{\delta_1}),\sigma_1(\thinr{\delta_0}{\delta_1})
-  \]
-  In particular, if $\sigma : \gamma\su\delta$, then its weakening,
-  $\sigma\otimes1 : \gamma,x\su\delta,x$,
-  is given by
-  \[\sigma\otimes1 = \wka\sigma,x  \quad\mbox{where}\quad \wka\sigma = \sigma\wk
-     \quad\mbox{where}\quad y(\sigma;\theta) = (y\sigma)\theta
-  \]
-  That is, $\sigma\theta$ denotes pointwise action of $\theta$ on terms in $\sigma$.
-  We may define $\sigma,\gamma' : \gamma,\gamma' \su \delta,\gamma'$ by iterating this construct
-  over $\gamma'$
-\end{definition}
-
-
-\begin{lemma}[action of compositions]
-  All four compositions of thinnings and substitions act on terms as the sequence of the
-  component actions.
-  \[
-    t(\theta\phi) = (t\theta)\phi \quad\;
-    t(\sel\theta\sigma) = (t\theta)\sigma \quad\;
-    t(\rho\phi) = (t\rho)\phi \quad\;
-    t(\rho\sigma) = (t\rho)\sigma
-  \]
-  Accordingly, it is unambiguous to abbreviate $\sel\theta\sigma$ by $\theta\sigma$ for
-  selection from a vector which happens to be a substitution.
-\end{lemma}
-\begin{proof}
-  Structural induction on terms establishes this property. To pass under binders, we must
-  establish that weakening distributes $(\cdot\cdot)\otimes1 = (\cdot\otimes1)(\cdot\otimes1)$, which follows from
-  the fact that
-  \[
-    \wka t(\cdot\otimes1) = t\wka\cdot
-  \]
-  for both thinnings and substitutions.
-\end{proof}
-
-To complete the components for the category of substitutions, we must have the identity.
-
-\begin{lemma}[thinning identity]
-  If $\theta:\gamma\thin\delta$, then
-  \[
-    \theta\isu_\delta = \isu_\gamma\theta : \gamma\su\delta
-    \]
-\end{lemma}
-
-\begin{lemma}[monoidal category of substitutions]
-  Substitutions $\sigma : \gamma\su\delta$ are the arrows of a
-  monoidal category with identity $\isu$,
-  composition by juxtaposition
-  and tensor $\otimes$. Moreover, scope extension, $\cdot,x$ is an endofunctor acting
-  on arrows as $\cdot\otimes1$, and action on terms makes $\Tm\lib d\cdot$ a functor
-  from substitutions to \Set.
-\end{lemma}
-\begin{proof}
-  The category and functor laws collate the above results about identity and composition
-  of thinnings and substitutions. The monoidal properties of $\otimes$
-  follow by plumbing with thinnings.
-\end{proof}
-
-\begin{lemma}[monoidal functor from thinnings to substitutions]
-  Composition $\cdot\isu = \isu\cdot$ is the action on arrows of an identity-on-objects
-  monoidal functor from thinnings to substitutions.
-\end{lemma}
-\begin{proof}
-  We already have that $\ith\isu = \isu$. We may readily see that
-  \[(\theta\isu)(\phi\isu)=\isu(\theta(\phi\isu))=(\theta(\phi\isu))
-    = (\theta\phi)\isu \]
-  It takes a little more work to establish that when
-  $\theta_i:\gamma_i\thin\delta_i$
-  \[\begin{array}{lclcl}
-    (\theta_0\isu)\otimes(\theta_1\isu) & = &
-      (\isu\theta_0)\otimes(\isu\theta_1)\\
-    &= &
-        \isu\theta_0(\thinl{\delta_0}{\delta_1}),\isu\theta_1(\thinr{\delta_0}{\delta_1}) \\
-    &= &
-    \isu(\thinl{\delta_0}{\delta_1})(\theta_0\otimes\theta_1), 
-    \isu(\thinr{\delta_0}{\delta_1})(\theta_0\otimes\theta_1) \\
-    &= &
-    ((\thinl{\delta_0}{\delta_1})\isu,(\thinr{\delta_0}{\delta_1})\isu)(\theta_0\otimes\theta_1) \\
-    &= &
-    \isu (\theta_0\otimes\theta_1)
-    &=&(\theta_0\otimes\theta_1)\isu
-    \end{array}\]
-\end{proof}
-
-
-\section{Orphaned material}
-
-Such are the patterns for constructions. The only patterns we ever need for
-computations take the form $\trg\:p$.
-
-Every pattern has a \emph{domain}, which is a left-nested sequence of
-scopes: $\delta_{n-1},\ldots,\delta_0$. Domains are to schematic variables
-as scopes are to term variables, and I refer to them by the
-metavariables $\omega$ and $\chi$. All of our machinery related to thinnings works
-perfectly well for domains, embedding one sequence in another by inserting
-zero or more new entries. Formally, then, we may select a schematic variable
-from a domain by giving a singleton thinning, $\xi : \gamma \thin \omega$.
-
-\newcommand{\dom}[1]{\textbf{dom}(#1)}
-\newcommand{\src}[1]{\textbf{src}(#1)}
-\begin{definition}[domain of a pattern]
-  The \emph{domain} of a pattern is computed as follows:
-  \[\begin{array}{lcl}
-      \dom a & = & \emp \\
-      \dom{(p.q)} & = & \dom{p},\dom{q} \\
-      \dom{\la xq} & = & \dom{q} \\
-      \dom{\theta} & = & \src{\theta}
-    \end{array}\]
-  where $\omega,\omega'$ is concatenation of domains and $\src{\theta} = \delta$ whenever
-  $\theta : \delta\thin\gamma$.
-  We may write $\dom{\vec p}$ for the concatenation of the domains of a sequence
-  of patterns.
-\end{definition}
-
-Let us now say what are the expressions, relative to a domain of schematic variables and
-a scope of term variables.
-
-\newcommand{\Exp}[2]{\textbf{Exp}(#1,#2)}
-\newcommand{\Expo}[2]{\textbf{Exp}^\trg(#1,#2)}
-\begin{definition}[$\omega$-$\gamma$-expression]
-  The expressions $\Exp\omega\gamma$ are liberal constructions in the full syntax of
-  terms, augmented by the liberal constructions $\xi/\sigma$, where
-  $\xi : \delta \thin \omega$ and $\rho : \delta\su\gamma$.
-  Expressions in the synthesis rule for an elimination may also contain the
-  essential computation, $\trg$, standing for the target. These we classify
-  as $\Expo\omega\gamma$.
-\end{definition}
-
-Informally, just as we write names at the binding sites of schematic variables
-in patterns, we refer to them by names instead of some $\xi$. We may omit the identity
-substitution $/\isu$, hence $S$ not $S/\emp$ and $T$ not $T/x$ in, e.g., the example
-rule for checking an abstraction.
-The binding site of a schematic variable determines its scope, so we
-need not say which variables are being substituted.
-
-It is straightforward to extend the action of thinnings $\cdot\theta$ and substitutions
-$\cdot\sigma$ from terms to expressions as we can compute the compositions $\rho;\theta$
-and $\rho;\sigma$.
-
-By inspection, our example theory conforms to Dogma \ref{dogma:mode}, using
-patterns $\U$, $\PI SxT$, $\la t$ and $\trg\:s$ where only patterns are permitted,
-and in expression positions, only schematic variables and $T/(s:S)$. We have
-already excluded the mention of free term variables from our rules, but there
-is still the matter of which schematic variables we may use where. Let us now
-be entirely precise.
-
-
-\subsection{What is the domain?}
-
-The following dogma specifies the permitted usage of schematic variables in the
-premises and conclusion of a configurable rule.
-
-\begin{dogma}[clockwise flow]
-  Let a rule take the form
-  \[\Rule{J_1\quad\ldots J_n}
-         {J'}
-  \]
-  Let $\vec p_i$ be the sequence of patterns in the outputs of $J_i$ and $\vec p'$ the sequence of
-  patterns in the \emph{inputs} of $J'$. Let $q$ be the subject of $J'$ if it has one and $()$
-  otherwise.
-  We may compute sequences of domains
-  $\omega_1,\ldots,\omega_{n+1}$ of \emph{trusted} schematic variables
-  and $\chi_0,\ldots,\chi_1$ of \emph{untrusted} schematic variables. We shall require
-  the expressions in the inputs of $J_i$ to have domain $\omega_i$ and the subject of $J_i$ to
-  be chosen from $\chi_i$. The expressions in the outputs of $J'$ must have domain $\omega_{n+1}$.
-  We require that $\chi_{n+1}=\emp$. The computation proceeds as follows:
-  \begin{itemize}
-  \item initially, $\omega_1 = \dom{\vec p'}$ and $\chi_1=\dom q$;
-  \item if $J_i$ has no subject, then $\omega_{i+1}=\omega_i,\dom{\vec p_i}$ and $\chi_{i+1}=\chi_i$;
-  \item if $J_i$ has context extensions yielding scope $\gamma$ and a subject, then that
-    subject must be specified by a pair $\xi\theta$, such that $\xi : \delta\thin\chi_i$
-    and $\theta : \delta\thin\gamma$; that being the case,
-    $\omega_{i+1}=\omega_i,\dom{\vec p_i},\delta$
-    and $\chi_{i+1} = \chi_i-\xi$, i.e., $\chi_i$ with $\xi$ removed.
-  \end{itemize}
-\end{dogma}
-
-What is going on? The \emph{trusted} $\omega_i$ grow as we work our way
-clockwise around the rule, starting with the schematic variables which come from the conclusion's
-inputs: we trust them in the sense that we know the precondition which must hold for them.
-The \emph{untrusted} $\chi_i$ come from the subject's conclusion
-and shrink to nothing as we work our way along the premises. Each premise
-grows the trusted domain by the schematic variables of its outputs (trusted because
-of postconditions) and moves its subject, if it has one, out of the untrusted domain
-and into the trusted: the premise states the trust which has been established.
-The thinning in a premise subject ensures that the term variables in
-scope for that schematic variable map to term variables locally bound in the
-context: informally, we achieve this by artful name capture, as in the
-premise $\cxe xS \chk Tt$ of the rule for $\la xt$.
-
-Let me emphasize a key consequence of Dogma \ref{dogma:clockwise}:
-subjects of premises come \emph{only} from the subject of a
-conclusion; a rule establishes trust in \emph{every} part of its
-conclusion's subject; trust, once established, is \emph{never}
-revisited.
-
-We may readily check that our example rules all conform to Dogma \ref{dogma:clockwise}.
-
-
-\subsection{How to apply a rule}
-
-\newcommand{\mto}{\rightharpoonup}
-
-Dogma \ref{dogma:clockwise} makes it intuitive that rules are applied
-to actual terms by matching patterns to compute environments and
-instantiating expressions with environments. Let us make this intuition precise.
-
-\newcommand{\Env}[1]{\textbf{Env}(#1)}
-\begin{definition}[$\omega$-environment]
-  A given domain $\omega$ determines a notion of environment, $\Env\omega$.
-  We may refer to such environments by metavariable $\Omega$, and define them inductively as follows:
-  \[
-    \Axiom{\emp : \Env\emp} \qquad
-    \Rule{\Omega : \Env\omega\quad t : \Tm\lib\cons\delta}
-         {\Omega,t : \Env{\omega,\delta}}
-  \]
-\end{definition}
-Again, we may use a comma to concatenate whole environments, as well as to extend them with a
-single term.
-
-Pattern matching rests on dependency checking, known colloquially as \emph{thickening},
-as it is the partial inverse of thinning.
-\begin{definition}[thickening]
-  If $\theta : \delta\thin\gamma$ then $\theta\cdot : \Tm ld\gamma \mto \Tm ld\delta$,
-  specified by the assertion
-  \[\theta t = s \;\Leftrightarrow\; t = s\theta
-  \]
-  We may compute $\theta t$ by a failure-propagating structural recursion on $t$. It suffices
-  to consider the cases for abstraction and variables, as all others proceed componentwise.
-  Straightforwardly, $\theta\grp{\la x t} = \la x\grp{(\theta1)t}$. For variables, recall
-  that the variable we write as $x$ is really a singleton thinning $\phi : x\thin\gamma$:
-  let $(\theta',\phi') = \pb\theta\phi$ and return $\theta'$ if $\phi'=\ith$, as by
-  the definition of a pullback, we have $\theta';\theta = \ith;\phi = \phi$.
-\end{definition}
-
-We may thus characterize pattern matching as a partial function yielding environments.
-
-\newcommand{\match}[2]{\textbf{match}(#1,#2)}
-\begin{definition}[pattern matching]
-  \[\match\cdot\cdot : (p : \Pat{\gamma})\times\Tm\lib\cons\gamma
-    \mto \Env{\dom p}\]
-  \[\begin{array}{l@{\;=\;}l}
-    \match aa & \emp \\
-    \match{(p.q)}{(s.t)} & \match ps, \match qt \\
-    \match{\la x q}{\la x t} & \match qt \\
-    \match\theta t & \theta t
-  \end{array}\]
-\end{definition}
-
-Remember, though, that the patterns in our locally presented rules scope only over the
-\emph{locally} bound variables, by Dogma \ref{dogma:free}. We shall need to match
-terms which contain the free variables that the rules are not allowed to talk about.
-
-\begin{definition}[shifting of domains and patterns]
-  Let $\gamma,\omega$ be the domain obtained by mapping every scope $\delta$ in $\omega$
-  to the concatenation $\gamma,\delta$. Let $\gamma,p$ be the pattern obtained by
-  mapping every placeholder $\theta$ in $p$ to the concatenation $\ith_\gamma,\theta$.
-  For the latter, we obtain
-    \[\gamma,\cdot : \Pat{\gamma'} \to \Pat{\gamma,\gamma'} \]
-\end{definition}
-
-\begin{lemma}[coherence of shifting]
-  \[\dom{\gamma,p} = \gamma,\dom p
-  \]
-\end{lemma}
-\begin{proof}
-  Proceed by structural induction on $p$, using the fact that mapping commutes with
-  concatenation.
-\end{proof}
-
-If $\gamma$ is the scope of free variables and $\gamma'$ the scope of variables
-locally bound in a rule, we may take a pattern $p : \Pat{\gamma'}$ and
-a term $t : \Tm\lib\cons{\gamma,\gamma'}$,
-and compute $\match{(\gamma,p)}t$, obtaining, if we are lucky, an $\Env{\gamma,\dom p}$.
-
-What happens to expressions? We should be able to instantiate an expression
-$t : \Exp\omega\gamma$ with an environment $\Omega : \Env{\gamma,\omega}$, and obtain a
-$t\Omega : \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma}$. We shall need a little
-room to manoeuvre before we begin.
-
-\begin{lemma}[functoriality of environments]
-  We may extend $\Env{\cdot,\omega}$ to functors from thinnings or substitutions
-  to \Set.
-\end{lemma}
-\begin{proof}
-  Suppose $\Omega : \Env{\gamma,\omega}$, $\theta : \gamma\thin\gamma'$ and
-  $\sigma : \gamma\su\gamma'$.
-  We define $\Omega\theta$ and $\Omega\sigma$ to act pointwise on the terms
-  $t$ in $\Omega$ over $\gamma,\delta$ for each $\delta$ in $\omega$.
-  The image of $t$ under $\cdot\theta$ is $t(\theta\delta)$, while for
-  $\cdot\sigma$, we obtain $t(\sigma\delta)$. The functor laws hold because
-  terms are also functors from thinnings and substitutions, and the iterated
-  weakening $\cdot\delta$ is an endofunctor on both thinnings and substitutions.
-\end{proof}
-
-With this in place, we may now push environments under binders.
-
-\begin{definition}[expression instantiation]
-  \[\Rule{t : \Exp\omega\gamma\quad \Omega : \Env{\gamma,\omega}}
-         {t\Omega :  \Tm{\textbf{liberal}}{\textbf{construction}}{\gamma}}
-  \]
-  The operation proceeds by structural recursion on $t$. We propagate $\Omega$
-  componentwise, except when we encounter an abstraction or a schematic variable:
-  \begin{itemize}
-  \item $\grp{\la x t}\Omega = \la x \grp{t\hat\Omega}$
-  \item $\grp{\xi/\rho}\Omega = t(\isu_\gamma,\rho)$ where
-    $\xi : \delta\thin\omega$, thence
-    $t : \Tm\lib\cons{(\gamma,\delta)}$ is the
-    projection at $\xi$ from $\Omega$.
-  \end{itemize}
-\end{definition}
-
-That is to say, instantiating a schematic variable requires substitution of the variables
-abstracted by the corresponding term in the environment.
-
-
-
-$\U\U\U$
-
-
-
-\begin{definition}[thinning judgements]
-  If $J$ is a $\gamma$-judgement and $\theta : \gamma\thin\delta$, then $J\theta$
-  is the $\delta$-judgement given by the action of $\theta$ distributed structurally
-  to all the places of $J$. I give only the case for context extension
-  \[
-    \grp{\cxe xS J}\theta = \cxe x{S\theta}{J\grp{\theta1}}
-  \]
-  as the rest just propagate $\theta$ unchanged.
-\end{definition}
-
-The only variables which appear in the rest of the rules are \emph{bound},
-either by the abstraction construct of the syntax, or by the context extension
-judgement form, and thus  It will take a little
-more clarity about the structure of rules to achieve this outcome for substitution,
-but let us deal with the case for thinnings now.
-
-\begin{definition}[contextual thinning]
-  If $\theta:\gamma\thin\delta$, $\Gamma$ is a $\gamma$-context and $\Delta$ is a $\delta$-context
-  then $\Gamma\thin_\theta\Delta$ asserts that $\theta$ extends from scopes to contexts and holds as
-  follows.
-  \[
-    \Axiom{\emp\thin_\emp\emp} \qquad
-    \Rule{\Gamma\thin_\theta\Delta}
-    {\Gamma,x\!:\!S\thin_{\theta1}\Delta,x\!:\!S\theta} \qquad
-    \Rule{\Gamma\thin_\theta\Delta\quad \Delta\vdash \ty T}
-      {\Gamma\thin_{\theta0}\Delta,y\!:\!T}
-    \]
-\end{definition}
-
-\begin{lemma}[stability under thinning]
-  The following is admissible
-  \[\Rule{\Gamma\thin_\theta\Delta\quad \Gamma\vdash J}
-         {\Delta\vdash J\theta}
-       \]
-  Moreover, if $\Gamma$ is valid and $\Gamma\thin_\theta\Delta$, then $\Delta$ is valid.
-\end{lemma}
-\begin{proof}
-For type lookup judgements, we proceed by induction on the derivation of
-$\Gamma\thin_\theta\Delta$ and inversion of $\Gamma\vdash\cxl xS$: we must show
-$\Delta\vdash \cxl {x;\theta}{S\theta}$. There are three cases:
-\begin{itemize}
-\item $\Gamma,x\!:\!S\thin_{\theta1}\Delta,x\!:\!S\theta$ and
-  $\Gamma,\cxe xS \cxl x{\wka S}$ by \textsc{top}. Invoke \textsc{top}.
-\item $\Gamma,y\!:\!T\thin_{\theta1}\Delta,y\!:\!T\theta$ and
-  $\Gamma,\cxe xS \cxl x{\wka S}$ by \textsc{pop}. Invoke \textsc{pop}.
-\item $\Gamma\thin_{\theta0}\Delta,y\!:\!T$. Invoke \textsc{pop}.
-\end{itemize}
-In each case, we rely on the fact that
-\[
-  \wka{S}\grp{\theta1} = S\grp{\wk;\theta1} = S\grp{\theta;\wk} = \widehat{S\theta}
-\]
-For the rest of the judgement forms, we proceed by induction on derivations.
-For $\Gamma\thin_\theta\Delta$ and $\Gamma\vdash\cxe xS J$, we need
-merely invoke the induction hypothesis for $\Gamma,x\!:\!S\thin_{\theta1}\Delta,x\!:\!S\theta$
-and $\Gamma,\cxe xS J$. For the \textsc{var} rule, we have already established the
-conformity of type lookup. For all the remaining rules, as yet unspecified,
-Dogma \ref{dogma:free} insists that
-we have deduced some $\Gamma\vdash J\eth$ from some $\Gamma\vdash J_i\eth$. Inductively,
-we obtain $\Delta\vdash J_i\eth\theta$, but $\eth;\theta = \eth$, so we may invoke
-the very same rule to deduce $\Delta\vdash J_i\eth$, and again, $\eth = \eth;\theta$
-so we have the induction conclusion.
-\end{proof}
-
-We are nearly ready to consider how, in general, to construct the
-typing rules for particular theories, but we have three more rules to
-give which must be present in any theory, characterising the
-relationship between types, type checking and type synthesis.
-
-These rules all conform to \ref{dogma:free}.
-
-The seasoned type theorist will further notice the total absence from the rules
-so far of any form of \emph{computation}. Our type systems are, thus far,
-entirely \emph{inert}. That much I shall remedy after we have introduced the
-means of creating a redex, but for that, we shall need to check canonical constructions
-and synthesize types for computations. And in order to do that, we should think further
-about which typing rules make sense by construction.
-
-
-\section{Ruling on rules}
-
-\emph{in which I introduce the formal notions of `pattern' and `expression', with a
-  systematic treatment of the schematic variables in rules; I also give the permitted
-  shapes of rules which check constructions and rules which synthesize types for eliminations;
-  I give the scoping dogma for schematic variables in rules, in particular the dogma which insists that subjects in premises must come from the subjects of the conclusion; I demonstrate stability under substitution}
-
-
-
-\section{Questions better left unasked}
-
-\emph{in which I investigate further the consequences of the deliberately restrictive language of patterns; the structural rules for reduction ensure that pattern matching is stable with respect to reduction; patterns have simple unification, ensuring the appropriate invertibility of rules; on syntax-directedness and its consequences; I specify the sanity clause and prove its decidability}
 
 \section{Mind diamonds!}
 

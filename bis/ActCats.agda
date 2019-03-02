@@ -224,10 +224,14 @@ module _ where
 
   THINTHINTHIN = objAComp OBJTHINTHINTHIN
 
-  thinco : forall {M G0 G1 G2 d}(t : Term M G0 lib d)(th : G0 <= G1)(ph : G1 <= G2) ->
-    ((t ^ th) ^ ph) == t ^ (th -< ph)
-  thinco t th ph = coLib t (refl , th) (refl , ph)
-    where open ActCompo THINTHINTHIN
+  module _ where 
+    open ActCompo THINTHINTHIN
+    thinco : forall {M G0 G1 G2 l d}(t : Term M G0 l d)(th : G0 <= G1)(ph : G1 <= G2) ->
+      ((t ^ th) ^ ph) == t ^ (th -< ph)
+    thinco {l = ess} {chk} t th ph = coCan t (refl , th) (refl , ph)
+    thinco {l = ess} {syn} t th ph with coNeu t (refl , th) (refl , ph)
+    ... | q = termNoConf q \ q' -> q'
+    thinco {l = lib} t th ph = coLib t (refl , th) (refl , ph)
 
   OBJTHINSBSTSBST : ObjComp OBJTHIN OBJSBST OBJSBST
   coOb OBJTHINSBSTSBST = select
