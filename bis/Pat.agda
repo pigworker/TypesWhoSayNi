@@ -278,3 +278,13 @@ unify (abst p0) (atom a)     = fail , <> , <> ,
   \ { fail _ _ -> <> ; [ .(abst _) ]M (abst p'0) () }
 unify (abst p0) (cons p1 p2) = fail , <> , <> ,
   \ { fail _ _ -> <> ; [ .(abst _) ]M (abst p'0) () }
+
+Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> X -> Set
+Apartz f [] x = One
+Apartz f (xz -, y) x with unify (f y) (f x)
+... | fail , _ = Apartz f xz x
+... | [ _ ]M , _ = Zero
+
+Apart : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Set
+Apart f [] = One
+Apart f (xz -, x) = Apart f xz * Apartz f xz x

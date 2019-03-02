@@ -73,7 +73,8 @@ diagSgTh {M}{ga}{de} sg {ps}{xi} ph =
 CxThin : forall {ga de}(th : ga <= de) -> Context ga -> Context de -> Set
 CxThin th Ga De = all (_^ th) Ga == select th De
 
-module _ where
+module STABTHIN (TH : TypeTheory) where
+  open TYPETHEORY TH
   open BetaRule
   
   redThin : forall {ga d}{t t' : Term ([] , atom NIL) ga lib d} -> t ~> t' ->
@@ -194,7 +195,7 @@ module _ where
   ... | Jz , trus , sujs | Jz' , ._ , ._ | dz' , refl , refl
     rewrite plugThinLemma (trgType R) Ss th
           | plugThinLemma (elimSuj R) ss th
-          | instThinLemma (resType R) ([] -, e) trus th
+          | instThinLemma (resType R) ([] -, e) (cons Ss trus) th
       = ready d' dz'
   derThin (unic {R} rule Ts dz)       th Th
     rewrite plugThinLemma (uniInp R) Ts th
@@ -274,53 +275,6 @@ theUsualShoogle t sg e =
   (t / sg) ^ (oi no)
     [QED]
 
-CxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-         (Ga : Context ga)(De : Context de) -> Set
-CxSbst {ga} sg Ga De = (i : <> <- ga) -> De != (project i sg <: (project i Ga / sg))
-
-ruCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-           (Ga : Context ga)(De : Context de) ->
-           CxSbst sg Ga De -> CxSbst (sg >/< idsb {[]}) Ga De
-ruCxSbst sg Ga De eSs rewrite sbstRunitor sg = eSs
-
-wkru : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de) xi ->
-  wksb (sg >/< idsb {xi}) == (sg >/< idsb {xi -, <>})
-wkru {ga}{de} sg xi = _-,_
-   $= (all (_^ (oi no)) (all (_^ thinl oi xi) sg :+ all (_^ thinr de oi) idsb)
-        =[ allCat (_^ (oi no)) (all _ sg) (all _ idsb) >=
-      all (_^ (oi no)) (all (_^ thinl oi xi) sg)
-                                        :+ all (_^ (oi no)) (all (_^ thinr de oi) idsb)
-        =< _:+_ $= allCo _ _ _ (\ t -> t ^ (thinl oi xi no)
-                                         =< (t ^_) $= (_no $= POLYTHIN.coidC _) ]=
-                                        t ^ ((thinl oi xi -< oi) no)
-                                         =< thinco t _ _ ]=
-                                        (t ^ thinl oi xi) ^ (oi no)
-                                          [QED]) sg
-                =$= icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
-                    ((refl ,_) $= (_no $= oiLemma _)) idsb ]=
-      all (_^ (thinl oi xi no)) sg :+ all (_^ (thinr de oi su)) (all (_^ (oi no)) idsb)
-        [QED])
-  =$= (#_ $= (_su $= oeU _ _))
-
-exCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-           (Ga : Context ga)(De : Context de)(eSs : CxSbst sg Ga De)
-           (e : Syn (de -, <>))(S : Chk ga) ->
-           let sg' = (all (_^ (oi no)) sg -, e)
-               Ga' = (all (_^ (oi no)) (Ga -, S))
-               S' = (S ^ (oi no)) / sg'
-               De' = all (_^ (oi no)) De -, S' in
-           De' != (e <: S') ->
-           CxSbst sg' Ga'  De'
-exCxSbst sg Ga De eSs e S eS (i no)
-  with derThin (eSs i)
-    {De = all (_^ (oi no)) De -, ((S ^ (oi no)) / (all (_^ (oi no)) sg -, e))}
-    (oi no) (sym (POLYSELECT.funId _))
-... | d
-  rewrite selectAll i (_^ (oi no)) sg
-        | selectAll i (_^ (oi no)) Ga
-        | theUsualShoogle (project i Ga) sg e = d
-exCxSbst sg Ga De eSs e S eS (i su) = eS
-
 _/J_ : forall {ga}(J : Judgement ga){de}(sg : [ [] , atom NIL ! ga ]/ de) ->
        Judgement de
 (S !- J) /J sg = (S / sg) !- (J /J wksb sg)
@@ -331,12 +285,62 @@ univ T   /J sg = univ (T / sg)
 (S ~ T)  /J sg = (S / sg) ~ (T / sg)
 
 
-module _ where
+module STABSBST (TH : TypeTheory) where
+  open TYPETHEORY TH
+  open STABTHIN TH
   open FormationRule
   open CheckingRule
   open EliminationRule
   open UniverseRule
   open Monoidal (OPEMON {One})
+  
+  CxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+           (Ga : Context ga)(De : Context de) -> Set
+  CxSbst {ga} sg Ga De = (i : <> <- ga) -> De != (project i sg <: (project i Ga / sg))
+
+  ruCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+             (Ga : Context ga)(De : Context de) ->
+             CxSbst sg Ga De -> CxSbst (sg >/< idsb {[]}) Ga De
+  ruCxSbst sg Ga De eSs rewrite sbstRunitor sg = eSs
+
+  wkru : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de) xi ->
+    wksb (sg >/< idsb {xi}) == (sg >/< idsb {xi -, <>})
+  wkru {ga}{de} sg xi = _-,_
+     $= (all (_^ (oi no)) (all (_^ thinl oi xi) sg :+ all (_^ thinr de oi) idsb)
+          =[ allCat (_^ (oi no)) (all _ sg) (all _ idsb) >=
+        all (_^ (oi no)) (all (_^ thinl oi xi) sg)
+                                        :+ all (_^ (oi no)) (all (_^ thinr de oi) idsb)
+          =< _:+_ $= allCo _ _ _ (\ t -> t ^ (thinl oi xi no)
+                                           =< (t ^_) $= (_no $= POLYTHIN.coidC _) ]=
+                                          t ^ ((thinl oi xi -< oi) no)
+                                           =< thinco t _ _ ]=
+                                          (t ^ thinl oi xi) ^ (oi no)
+                                            [QED]) sg
+                  =$= icompoLemma THINTHINTHIN THINTHINTHIN _ _ _ _
+                      ((refl ,_) $= (_no $= oiLemma _)) idsb ]=
+        all (_^ (thinl oi xi no)) sg :+
+        all (_^ (thinr de oi su)) (all (_^ (oi no)) idsb)
+          [QED])
+    =$= (#_ $= (_su $= oeU _ _))
+
+  exCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
+             (Ga : Context ga)(De : Context de)(eSs : CxSbst sg Ga De)
+             (e : Syn (de -, <>))(S : Chk ga) ->
+             let sg' = (all (_^ (oi no)) sg -, e)
+                 Ga' = (all (_^ (oi no)) (Ga -, S))
+                 S' = (S ^ (oi no)) / sg'
+                 De' = all (_^ (oi no)) De -, S' in
+             De' != (e <: S') ->
+             CxSbst sg' Ga'  De'
+  exCxSbst sg Ga De eSs e S eS (i no)
+    with derThin (eSs i)
+      {De = all (_^ (oi no)) De -, ((S ^ (oi no)) / (all (_^ (oi no)) sg -, e))}
+      (oi no) (sym (POLYSELECT.funId _))
+  ... | d
+    rewrite selectAll i (_^ (oi no)) sg
+          | selectAll i (_^ (oi no)) Ga
+          | theUsualShoogle (project i Ga) sg e = d
+  exCxSbst sg Ga De eSs e S eS (i su) = eS
 
   derSbst : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
             forall {de}{De : Context de}
@@ -397,7 +401,7 @@ module _ where
   ... | Jz , trus , sujs | Jz' , ._ , ._ | dz' , refl , refl
         rewrite plugSbstLemma0 (trgType R) Ss sg
           | plugSbstLemma0 (elimSuj R) ss sg
-          | instSbstLemma0 (resType R) ([] -, e) trus sg
+          | instSbstLemma0 (resType R) ([] -, e) (cons Ss trus) sg
           = ready d' dz'
   derSbst (unic {R} rule Ts dz) sg eSs
     rewrite plugSbstLemma0 (uniInp R) Ts sg

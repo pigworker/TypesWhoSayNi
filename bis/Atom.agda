@@ -11,6 +11,10 @@ data NAT : Set where
   suc  : NAT -> NAT
 {-# BUILTIN NATURAL NAT #-}
 
+Atom = NAT
+
+pattern NIL = 0
+
 natEq? : (x y : NAT) -> Dec (x == y)
 natEq? zero zero = #1 , refl
 natEq? zero (suc y) = #0 , \ ()
@@ -23,6 +27,10 @@ natEqLemma : (x : NAT) -> natEq? x x == (#1 , refl)
 natEqLemma zero = refl
 natEqLemma (suc x) rewrite natEqLemma x = refl
 
+atomEq? = natEq?
+atomEqLemma = natEqLemma
+
+{-
 -- if you don't like uip, use Hedberg's Lemma
 uip : {X : Set}{x y : X}{q0 : x == y}{q1 : x == y} -> q0 == q1
 uip {q0 = refl}{q1 = refl} = refl
@@ -72,3 +80,4 @@ module _ where
   open ENUMERATION Atom (\ a -> fst (enum a)) enumFact
   atomEq? = enumEq?
   atomEqLemma = enumEqLemma
+-}
