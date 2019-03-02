@@ -127,7 +127,3 @@ formationUnambiguous ML71 = _
 checkingUnambiguous ML71 = _
 eliminationUnambiguous ML71 = _
 universeUnambiguous ML71 = _
-
-module _ where
-  open EliminationRule
-  open FormationRule
