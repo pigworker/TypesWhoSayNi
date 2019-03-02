@@ -37,7 +37,7 @@ data _<P-_ {ga}(de : Nat) : Pat ga -> Set where
   abst : forall {q}   -> de <P- q -> de <P- abst q
 
 data Remove {ga}(de : Nat) : Pat ga -> Pat ga -> Set where
-  hole : forall {th : de <= ga} -> Remove de (hole th) (atom NIL)
+  hole : forall {th : de <= ga} -> Remove de (hole th) (atom 0)
   car  : forall {p p' q} -> Remove de p p' -> Remove de (cons p q) (cons p' q)
   cdr  : forall {p q q'} -> Remove de q q' -> Remove de (cons p q) (cons p q')
   abst : forall {q q'} -> Remove de q q' -> Remove de (abst q) (abst q')

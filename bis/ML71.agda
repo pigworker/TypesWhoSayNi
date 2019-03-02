@@ -30,8 +30,8 @@ formation ML71 =
   record
     { typeSuj   = cons PI (
                   cons (hole oi) (
-                  cons (abst (hole oi)) (
-                  atom NIL)))
+                  cons (abst (hole oi)) 
+                  NIL))
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -41,8 +41,8 @@ formation ML71 =
   record
     { typeSuj   = cons SG (
                   cons (hole oi) (
-                  cons (abst (hole oi)) (
-                  atom NIL)))
+                  cons (abst (hole oi)) 
+                  NIL))
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -60,8 +60,8 @@ checking ML71 =
   record
     { chkInp   = cons PI (
                  cons (hole oi) (
-                 cons (abst (hole oi)) (
-                 atom NIL)))
+                 cons (abst (hole oi))
+                 NIL))
     ; chkSuj   = abst (hole oi)
     ; chkPrems = [] -, ((car (cdr (car hole)) ?- []) !-
                          ((car (cdr (cdr (car (abst hole)))) ?- ([] -, # (oe su)))
@@ -70,8 +70,8 @@ checking ML71 =
   record
     { chkInp   = cons SG (
                  cons (hole oi) (
-                 cons (abst (hole oi)) (
-                 atom NIL)))
+                 cons (abst (hole oi))
+                 NIL))
     ; chkSuj   = cons (hole oi) (hole oi)
     ; chkPrems = []
         -, ((car (cdr (car hole)) ?- [])
@@ -85,8 +85,8 @@ elimination ML71 = [] -,
   record
     { trgType   = cons PI (
                   cons (hole oi) (
-                  cons (abst (hole oi)) (
-                  atom NIL)))
+                  cons (abst (hole oi))
+                  NIL))
     ; elimSuj   = hole oi
     ; elimPrems = [] -, ((car (cdr (car hole)) ?- []) :> (_ , hole , oi))
     ; resType   = car (cdr (cdr (car (abst hole)))) ?- ([] -, (
@@ -95,8 +95,8 @@ elimination ML71 = [] -,
   record
     { trgType   = cons SG (
                   cons (hole oi) (
-                  cons (abst (hole oi)) (
-                  atom NIL)))
+                  cons (abst (hole oi))
+                  NIL))
     ; elimSuj   = CAR
     ; elimPrems = []
     ; resType   = car (cdr (car hole)) ?- [] }
@@ -104,8 +104,8 @@ elimination ML71 = [] -,
   record
     { trgType   = cons SG (
                   cons (hole oi) (
-                  cons (abst (hole oi)) (
-                  atom NIL)))
+                  cons (abst (hole oi))
+                  NIL))
     ; elimSuj   = CDR
     ; elimPrems = []
     ; resType   = car (cdr (cdr (car (abst hole)))) ?-
@@ -123,7 +123,4 @@ reducts ML71 =
   -,
   (car (car (cdr hole)) ?- [])
 
-formationUnambiguous ML71 = _
-checkingUnambiguous ML71 = _
-eliminationUnambiguous ML71 = _
-universeUnambiguous ML71 = _
+unambiguous ML71 = _

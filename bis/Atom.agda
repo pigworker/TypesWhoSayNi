@@ -13,8 +13,6 @@ data NAT : Set where
 
 Atom = NAT
 
-pattern NIL = 0
-
 natEq? : (x y : NAT) -> Dec (x == y)
 natEq? zero zero = #1 , refl
 natEq? zero (suc y) = #0 , \ ()

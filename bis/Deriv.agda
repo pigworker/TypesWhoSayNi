@@ -12,6 +12,8 @@ open import All
 open import ActCats
 open import Hull
 
+pattern NIL = atom 0
+
 module _ (M : Meta) where
 
   Chk Syn : Nat -> Set
@@ -25,7 +27,9 @@ module _ (M : Meta) where
     _<:_ : Syn ga -> Chk ga -> Judgement ga
     _~_  : Chk ga -> Chk ga -> Judgement ga
 
-  _^J_ : forall {ga de}(J : Judgement ga)(th : ga <= de) -> Judgement de
+module _ {M : Meta} where
+
+  _^J_ : forall {ga de}(J : Judgement M ga)(th : ga <= de) -> Judgement M de
   (S !- J) ^J th = (S ^ th) !- (J ^J (th su))
   type T   ^J th = type (T ^ th)
   univ T   ^J th = univ (T ^ th)
@@ -49,13 +53,13 @@ data Premise gas (inp tru suj : Pat []) de : Pat de -> Pat [] -> Set where
          -> (x : Subject de suj suj')
          -> Premise gas inp tru suj de (hole (snd (snd x))) suj'
   univ : Term (gas , cons inp tru) de lib chk
-         -> Premise gas inp tru suj de (atom NIL) suj
+         -> Premise gas inp tru suj de NIL suj
   tyeq :    Term (gas , cons inp tru) de lib chk
          -> Term (gas , cons inp tru) de lib chk
-         -> Premise gas inp tru suj de (atom NIL) suj
+         -> Premise gas inp tru suj de NIL suj
 
 data Premises gas inp suj0 : Pat [] -> Pat [] -> Set where
-  [] : Premises gas inp suj0 (atom NIL) suj0
+  [] : Premises gas inp suj0 NIL suj0
   _-,_ : forall {tru suj1 tr' suj2}
     -> Premises gas inp suj0 tru suj1
     -> Premise gas inp tru suj1 [] tr' suj2
@@ -63,7 +67,7 @@ data Premises gas inp suj0 : Pat [] -> Pat [] -> Set where
 
 remove : forall ga {M}{de' de}{suj suj' : Pat de'}(x : Remove {de'} de suj suj') ->
   Env M (ga ,P suj) -> Term M (ga -+ de) lib chk * Env M (ga ,P suj')
-remove ga hole (hole t) = t , atom NIL
+remove ga hole (hole t) = t , NIL
 remove ga (car x) (cons ss ts) = let s , ss' = remove ga x ss in s , cons ss' ts
 remove ga (cdr x) (cons ss ts) = let t , ts' = remove ga x ts in t , cons ss ts'
 remove ga (abst x) (abst ts) = let t , ts' = remove ga x ts in t , abst ts'
@@ -120,11 +124,11 @@ premise ga (T' :> (_ , x , th)) sgs inps trus sujs =
   in  (T :> (t ^ (oi ^+ th))) , hole t , sujs'
 premise ga (univ T') sgs inps trus sujs =
   let T = T' % (sgs , cons inps trus)
-  in  univ T , atom NIL , sujs
+  in  univ T , NIL , sujs
 premise ga (tyeq S' T') sgs inps trus sujs =
   let S = S' % (sgs , cons inps trus)
       T = T' % (sgs , cons inps trus)
-  in  (S ~ T) , atom NIL , sujs
+  in  (S ~ T) , NIL , sujs
 
 premises : forall ga {M gas inp suj0 tru suj1}
   -> Premises gas inp suj0 tru suj1
@@ -134,7 +138,7 @@ premises : forall ga {M gas inp suj0 tru suj1}
   -> Bwd (Judgement M ga)
    * Env M (ga ,P tru)
    * Env M (ga ,P suj1)
-premises ga [] sgs inps sujs = [] , atom NIL , sujs
+premises ga [] sgs inps sujs = [] , NIL , sujs
 premises ga (prs -, pr) sgs inps sujs0 = 
   let jz , trus , sujs1 = premises ga prs sgs inps sujs0
       j , trs' , sujs2 = premise ga pr sgs inps trus sujs1
@@ -145,7 +149,7 @@ record FormationRule : Set where
     typeSuj    : Pat []
     {typeTru}  : Pat []
     {typeSuj'} : Pat []
-    typePrems  : Premises [] (atom NIL) typeSuj typeTru typeSuj'
+    typePrems  : Premises [] NIL typeSuj typeTru typeSuj'
     {typeDone} : Unholey typeSuj'
 
 record CheckingRule : Set where
@@ -230,7 +234,7 @@ record UniverseRule : Set where
   field
     uniInp    : Pat []
     {uniTru}  : Pat []
-    uniPrems  : Premises [] uniInp (atom NIL) uniTru (atom NIL)
+    uniPrems  : Premises [] uniInp NIL uniTru NIL
 
 record BetaRule : Set where
   field
@@ -304,10 +308,10 @@ record TypeTheory : Set where
   redexes = wellTypedRedexes elimination formation checking
   field
     reducts     : All Reduct redexes
-    formationUnambiguous   : Apart typeSuj formation
-    checkingUnambiguous    : Apart (\ r -> cons (chkInp r) (chkSuj r)) checking
-    eliminationUnambiguous : Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
-    universeUnambiguous    : Apart uniInp universe
+    {unambiguous} : Apart typeSuj formation
+                  * Apart (\ r -> cons (chkInp r) (chkSuj r)) checking
+                  * Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
+                  * Apart uniInp universe
   computation : Bwd BetaRule
   computation = betaRules redexes reducts
 
@@ -395,7 +399,7 @@ module TYPETHEORY (TH : TypeTheory) where
 
       type : forall {R}(rule : R <- formation) -> let open FormationRule R in
          forall (ts : Env M (ga ,P typeSuj))
-        -> let Jz , _ = premises ga typePrems [] (atom NIL) ts in
+        -> let Jz , _ = premises ga typePrems [] NIL ts in
 
            All (Ga !=_) Jz
         --------------------------------
@@ -428,7 +432,7 @@ module TYPETHEORY (TH : TypeTheory) where
       unic : forall {R}(rule : R <- universe) -> let open UniverseRule R in
          forall 
          (Ts : Env M (ga ,P uniInp))
-        -> let Jz , _ = premises ga uniPrems [] Ts (atom NIL) in
+        -> let Jz , _ = premises ga uniPrems [] Ts NIL in
 
            All (Ga !=_) Jz
         ----------------------------------------------

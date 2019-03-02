@@ -70,14 +70,15 @@ diagSgTh {M}{ga}{de} sg {ps}{xi} ph =
     [QED]
 
 
-CxThin : forall {ga de}(th : ga <= de) -> Context ga -> Context de -> Set
+CxThin : forall {ga de}(th : ga <= de) ->
+  Context ([] , NIL) ga -> Context ([] , NIL) de -> Set
 CxThin th Ga De = all (_^ th) Ga == select th De
 
 module STABTHIN (TH : TypeTheory) where
   open TYPETHEORY TH
   open BetaRule
   
-  redThin : forall {ga d}{t t' : Term ([] , atom NIL) ga lib d} -> t ~> t' ->
+  redThin : forall {ga d}{t t' : Term ([] , NIL) ga lib d} -> t ~> t' ->
             forall {de}(th : ga <= de) -> (t ^ th) ~> (t' ^ th)
   redThin (car t) th = car (redThin t th)
   redThin (cdr t) th = cdr (redThin t th)
@@ -96,8 +97,8 @@ module STABTHIN (TH : TypeTheory) where
           | instThinLemma (redType R) [] (cons (cons ts Ts) ss) th
           = beta {R = R} x _ _ _
 
-  redSbst : forall {ga d}{t t' : Term ([] , atom NIL) ga lib d} -> t ~> t' ->
-            forall {de}(sg : [ [] , atom NIL ! ga ]/ de) -> (t / sg) ~> (t' / sg)
+  redSbst : forall {ga d}{t t' : Term ([] , NIL) ga lib d} -> t ~> t' ->
+            forall {de}(sg : [ [] , NIL ! ga ]/ de) -> (t / sg) ~> (t' / sg)
   redSbst (car t) sg = car (redSbst t sg)
   redSbst (cdr t) sg = cdr (redSbst t sg)
   redSbst (abst t) sg = abst (redSbst t (wksb sg))
@@ -122,29 +123,34 @@ module STABTHIN (TH : TypeTheory) where
   open UniverseRule
   open Monoidal (OPEMON {One})
 
-  derThin : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
-            forall {de}{De : Context de}(th : ga <= de) -> CxThin th Ga De ->
+  derThin : forall {ga}{Ga : Context  ([] , NIL) ga}
+                   {J : Judgement ([] , NIL) ga} ->
+            Ga != J ->
+            forall {de}{De : Context ([] , NIL) de}(th : ga <= de) ->
+            CxThin th Ga De ->
             De != (J ^J th)
-  premsThin : forall {ga}{Ga : Context ga}{gas inp suj0 tru suj1}
+  premsThin : forall {ga}{Ga : Context ([] , NIL) ga}{gas inp suj0 tru suj1}
               (Pz : Premises gas inp suj0 tru suj1)
-              (sgs : [ ([] , atom NIL) ! gas ]/ ga)
-              (inps : Env ([] , atom NIL) (ga ,P inp))
-              (sujs0 : Env ([] , atom NIL) (ga ,P suj0)) ->
+              (sgs : [ ([] , NIL) ! gas ]/ ga)
+              (inps : Env ([] , NIL) (ga ,P inp))
+              (sujs0 : Env ([] , NIL) (ga ,P suj0)) ->
               let Jz , trus , sujs1 = premises ga Pz sgs inps sujs0 in
               All (Ga !=_) Jz ->
-              forall {de}{De : Context de}(th : ga <= de) -> CxThin th Ga De ->
+              forall {de}{De : Context ([] , NIL) de}(th : ga <= de) ->
+              CxThin th Ga De ->
               let Jz' , trus' , sujs1' = premises de Pz
                     (all (_^ th) sgs) (inps ^E th) (sujs0 ^E th) in
               All (De !=_) Jz' * trus' == (trus ^E th) * sujs1' == (sujs1 ^E th)
-  premThin : forall {ga}{gas inp tru suj xi tr' suj'}{Ga : Context (ga -+ xi)}
+  premThin : forall {ga}{gas inp tru suj xi tr' suj'}
+    {Ga : Context ([] , NIL) (ga -+ xi)}
     (P : Premise gas inp tru suj xi tr' suj')
-    (sgs : [ ([] , atom NIL) ! gas ]/ ga)
-    (inps : Env ([] , atom NIL) (ga ,P inp))
-    (trus : Env ([] , atom NIL) (ga ,P tru))
-    (sujs0 : Env ([] , atom NIL) (ga ,P suj)) ->
+    (sgs : [ ([] , NIL) ! gas ]/ ga)
+    (inps : Env ([] , NIL) (ga ,P inp))
+    (trus : Env ([] , NIL) (ga ,P tru))
+    (sujs0 : Env ([] , NIL) (ga ,P suj)) ->
     let J , trs , sujs1 = premise ga P sgs inps trus sujs0 in
     Ga != J ->
-    forall {de}{De : Context (de -+ xi)}(th : ga <= de) ->
+    forall {de}{De : Context ([] , NIL) (de -+ xi)}(th : ga <= de) ->
     CxThin (th ^+ oi {S = xi}) Ga De ->
     let J' , trs' , sujs1' = premise de P
          (all (_^ th) sgs) (inps ^E th) (trus ^E th) (sujs0 ^E th) in
@@ -180,14 +186,14 @@ module STABTHIN (TH : TypeTheory) where
   derThin (post d x)             th Th = post (derThin d th Th) (redThin x th)
   derThin (type {R} rule Ts dz)  th Th
     rewrite plugThinLemma (typeSuj R) Ts th
-    = let dz' , _ , _ = premsThin (typePrems R) [] (atom NIL) Ts dz th Th in
+    = let dz' , _ , _ = premsThin (typePrems R) [] NIL Ts dz th Th in
       type rule (Ts ^E th) dz'
   derThin (chk {R} rule Ts ts dz)     th Th
     rewrite plugThinLemma (chkInp R) Ts th | plugThinLemma (chkSuj R) ts th
     = let dz' , _ , _ = premsThin (chkPrems R) [] Ts ts dz th Th in 
       chk rule (Ts ^E th) (ts ^E th) dz'
   derThin {ga} (elir {R} rule e Ss ss d dz) {de}{De} th Th
-    with elir rule {Ga = De} (e ^ th) (Ss ^E th) (ss ^E th) | derThin d th Th
+    with elir rule (e ^ th) (Ss ^E th) (ss ^E th) | derThin d th Th
   ... | ready | d'
     with premises ga (elimPrems R) ([] -, e) Ss ss
        | premises de (elimPrems R) ([] -, (e ^ th)) (Ss ^E th) (ss ^E th)
@@ -199,7 +205,7 @@ module STABTHIN (TH : TypeTheory) where
       = ready d' dz'
   derThin (unic {R} rule Ts dz)       th Th
     rewrite plugThinLemma (uniInp R) Ts th
-    = let dz' , _ , _ = premsThin (uniPrems R) [] Ts (atom NIL) dz th Th in
+    = let dz' , _ , _ = premsThin (uniPrems R) [] Ts NIL dz th Th in
       unic rule (Ts ^E th) dz'
   
   premsThin [] sgs inpz sujs0 [] th Th = [] , refl , refl
@@ -275,8 +281,8 @@ theUsualShoogle t sg e =
   (t / sg) ^ (oi no)
     [QED]
 
-_/J_ : forall {ga}(J : Judgement ga){de}(sg : [ [] , atom NIL ! ga ]/ de) ->
-       Judgement de
+_/J_ : forall {ga}(J : Judgement ([] , NIL) ga){de}(sg : [ [] , NIL ! ga ]/ de) ->
+       Judgement ([] , NIL) de
 (S !- J) /J sg = (S / sg) !- (J /J wksb sg)
 type T   /J sg = type (T / sg)
 univ T   /J sg = univ (T / sg)
@@ -294,16 +300,16 @@ module STABSBST (TH : TypeTheory) where
   open UniverseRule
   open Monoidal (OPEMON {One})
   
-  CxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-           (Ga : Context ga)(De : Context de) -> Set
+  CxSbst : forall {ga de}(sg : [ [] , NIL ! ga ]/ de)
+           (Ga : Context ([] , NIL) ga)(De : Context ([] , NIL) de) -> Set
   CxSbst {ga} sg Ga De = (i : <> <- ga) -> De != (project i sg <: (project i Ga / sg))
 
-  ruCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-             (Ga : Context ga)(De : Context de) ->
+  ruCxSbst : forall {ga de}(sg : [ [] , NIL ! ga ]/ de)
+             (Ga : Context ([] , NIL) ga)(De : Context ([] , NIL) de) ->
              CxSbst sg Ga De -> CxSbst (sg >/< idsb {[]}) Ga De
   ruCxSbst sg Ga De eSs rewrite sbstRunitor sg = eSs
 
-  wkru : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de) xi ->
+  wkru : forall {ga de}(sg : [ [] , NIL ! ga ]/ de) xi ->
     wksb (sg >/< idsb {xi}) == (sg >/< idsb {xi -, <>})
   wkru {ga}{de} sg xi = _-,_
      $= (all (_^ (oi no)) (all (_^ thinl oi xi) sg :+ all (_^ thinr de oi) idsb)
@@ -323,9 +329,10 @@ module STABSBST (TH : TypeTheory) where
           [QED])
     =$= (#_ $= (_su $= oeU _ _))
 
-  exCxSbst : forall {ga de}(sg : [ [] , atom NIL ! ga ]/ de)
-             (Ga : Context ga)(De : Context de)(eSs : CxSbst sg Ga De)
-             (e : Syn (de -, <>))(S : Chk ga) ->
+  exCxSbst : forall {ga de}(sg : [ [] , NIL ! ga ]/ de)
+             (Ga : Context ([] , NIL) ga)(De : Context ([] , NIL) de)
+             (eSs : CxSbst sg Ga De)
+             (e : Syn ([] , NIL) (de -, <>))(S : Chk ([] , NIL) ga) ->
              let sg' = (all (_^ (oi no)) sg -, e)
                  Ga' = (all (_^ (oi no)) (Ga -, S))
                  S' = (S ^ (oi no)) / sg'
@@ -342,30 +349,32 @@ module STABSBST (TH : TypeTheory) where
           | theUsualShoogle (project i Ga) sg e = d
   exCxSbst sg Ga De eSs e S eS (i su) = eS
 
-  derSbst : forall {ga}{Ga : Context ga}{J : Judgement ga} -> Ga != J ->
-            forall {de}{De : Context de}
+  derSbst : forall {ga}{Ga : Context ([] , NIL) ga}{J : Judgement ([] , NIL) ga} ->
+            Ga != J ->
+            forall {de}{De : Context ([] , NIL) de}
             sg -> CxSbst sg Ga De ->
             De != (J /J sg)
-  premsSbst : forall {ga}{Ga : Context ga}{gas inp suj0 tru suj1}
+  premsSbst : forall {ga}{Ga : Context ([] , NIL) ga}{gas inp suj0 tru suj1}
               (Pz : Premises gas inp suj0 tru suj1)
-              (sgs : [ ([] , atom NIL) ! gas ]/ ga)
-              (inps : Env ([] , atom NIL) (ga ,P inp))
-              (sujs0 : Env ([] , atom NIL) (ga ,P suj0)) ->
+              (sgs : [ ([] , NIL) ! gas ]/ ga)
+              (inps : Env ([] , NIL) (ga ,P inp))
+              (sujs0 : Env ([] , NIL) (ga ,P suj0)) ->
               let Jz , trus , sujs1 = premises ga Pz sgs inps sujs0 in
               All (Ga !=_) Jz ->
-              forall {de}{De : Context de} sg -> CxSbst sg Ga De ->
+              forall {de}{De : Context ([] , NIL) de} sg -> CxSbst sg Ga De ->
               let Jz' , trus' , sujs1' = premises de Pz
                     (all (_/ sg) sgs) (inps /E sg) (sujs0 /E sg) in
               All (De !=_) Jz' * trus' == (trus /E sg) * sujs1' == (sujs1 /E sg)
-  premSbst : forall {ga}{gas inp tru suj xi tr' suj'}{Ga : Context (ga -+ xi)}
+  premSbst : forall {ga}{gas inp tru suj xi tr' suj'}
+    {Ga : Context ([] , NIL) (ga -+ xi)}
     (P : Premise gas inp tru suj xi tr' suj')
-    (sgs : [ ([] , atom NIL) ! gas ]/ ga)
-    (inps : Env ([] , atom NIL) (ga ,P inp))
-    (trus : Env ([] , atom NIL) (ga ,P tru))
-    (sujs0 : Env ([] , atom NIL) (ga ,P suj)) ->
+    (sgs : [ ([] , NIL) ! gas ]/ ga)
+    (inps : Env ([] , NIL) (ga ,P inp))
+    (trus : Env ([] , NIL) (ga ,P tru))
+    (sujs0 : Env ([] , NIL) (ga ,P suj)) ->
     let J , trs , sujs1 = premise ga P sgs inps trus sujs0 in
     Ga != J ->
-    forall {de}{De : Context (de -+ xi)}(sg : [ [] , atom NIL ! ga ]/ de) ->
+    forall {de}{De : Context ([] , NIL) (de -+ xi)}(sg : [ [] , NIL ! ga ]/ de) ->
     CxSbst (sg >/< idsb {xi}) Ga De ->
     let J' , trs' , sujs1' = premise de P
          (all (_/ sg) sgs) (inps /E sg) (trus /E sg) (sujs0 /E sg) in
@@ -386,14 +395,14 @@ module STABSBST (TH : TypeTheory) where
   derSbst (post d x) sg eSs = post (derSbst d sg eSs) (redSbst x sg)
   derSbst (type {R} rule Ts dz) sg eSs
     rewrite plugSbstLemma0 (typeSuj R) Ts sg
-    = let dz' , _ , _ = premsSbst (typePrems R) [] (atom NIL) Ts dz sg eSs in
+    = let dz' , _ , _ = premsSbst (typePrems R) [] NIL Ts dz sg eSs in
       type rule (Ts /E sg) dz'
   derSbst (chk {R} rule Ts ts dz) sg eSs
     rewrite plugSbstLemma0 (chkInp R) Ts sg | plugSbstLemma0 (chkSuj R) ts sg
     = let dz' , _ , _ = premsSbst (chkPrems R) [] Ts ts dz sg eSs in 
       chk rule (Ts /E sg) (ts /E sg) dz'
   derSbst {ga} (elir {R} rule e Ss ss d dz) {de}{De} sg eSs
-    with elir rule {Ga = De} (e / sg) (Ss /E sg) (ss /E sg) | derSbst d sg eSs
+    with elir rule (e / sg) (Ss /E sg) (ss /E sg) | derSbst d sg eSs
   ... | ready | d'
     with premises ga (elimPrems R) ([] -, e) Ss ss
        | premises de (elimPrems R) ([] -, (e / sg)) (Ss /E sg) (ss /E sg)
@@ -405,7 +414,7 @@ module STABSBST (TH : TypeTheory) where
           = ready d' dz'
   derSbst (unic {R} rule Ts dz) sg eSs
     rewrite plugSbstLemma0 (uniInp R) Ts sg
-    = let dz' , _ , _ = premsSbst (uniPrems R) [] Ts (atom NIL) dz sg eSs in
+    = let dz' , _ , _ = premsSbst (uniPrems R) [] Ts NIL dz sg eSs in
       unic rule (Ts /E sg) dz'
   premsSbst [] sgs inps sujs0 dz sg eSs = [] , refl , refl
   premsSbst {ga} (Pz -, P) sgs inps sujs0 (dz -, d) {de} sg eSs
