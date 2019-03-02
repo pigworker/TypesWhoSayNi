@@ -214,9 +214,9 @@ module _ where
   Reduct (e , T , t , Ty , re , rT , rt) =
     Term ([] , cons (cons (chkSuj t) Ty) (elimSuj e)) [] lib chk
 
-  redexes : Bwd EliminationRule -> Bwd FormationRule -> Bwd CheckingRule ->
+  wellTypedRedexes : Bwd EliminationRule -> Bwd FormationRule -> Bwd CheckingRule ->
     Bwd Redex
-  redexes ez Tz tz = help (elimTypeMatches ez Tz)
+  wellTypedRedexes ez Tz tz = help (elimTypeMatches ez Tz)
     where
       help : _ -> _
       help [] = []
@@ -281,13 +281,16 @@ record TypeTheory : Set where
     checking    : Bwd CheckingRule
     elimination : Bwd EliminationRule
     universe    : Bwd UniverseRule
-    reducts     : All Reduct (redexes elimination formation checking)
+  redexes : Bwd Redex
+  redexes = wellTypedRedexes elimination formation checking
+  field
+    reducts     : All Reduct redexes
     formationUnambiguous   : Apart typeSuj formation
     checkingUnambiguous    : Apart (\ r -> cons (chkInp r) (chkSuj r)) checking
     eliminationUnambiguous : Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
     universeUnambiguous    : Apart uniInp universe
   computation : Bwd BetaRule
-  computation = betaRules (redexes elimination formation checking) reducts
+  computation = betaRules redexes reducts
 
 module TYPETHEORY (TH : TypeTheory) where
   open TypeTheory TH
