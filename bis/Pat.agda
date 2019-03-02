@@ -22,6 +22,9 @@ pattern \\\_ q = abst q
 infixr 40 _-_
 infixr 45 \\\_
 
+??? : forall {ga} -> Pat ga
+??? = hole oi
+
 PatNoConf : forall {G}(p0 p1 : Pat G) -> Set -> Set
 PatNoConf (atom a0) (atom a1) P = a0 == a1 -> P
 PatNoConf (cons p0 q0) (cons p1 q1) P = p0 == p1 -> q0 == q1 -> P

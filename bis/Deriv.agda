@@ -14,6 +14,10 @@ open import Hull
 
 pattern NIL = atom 0
 
+??_ : forall {M G}(x : G <P- snd M) -> Term M G lib chk
+?? x = x ?- idsb
+infixr 60 ??_
+
 module _ (M : Meta) where
 
   Chk Syn : Nat -> Set

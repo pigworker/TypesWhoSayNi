@@ -28,7 +28,7 @@ formation ML71 =
     }
   -,
   record
-    { typeSuj   = PI - hole oi - \\\ hole oi - NIL
+    { typeSuj   = PI - ??? - \\\ ??? - NIL
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -36,7 +36,7 @@ formation ML71 =
     }
   -,
   record
-    { typeSuj   = SG - hole oi - \\\ hole oi - NIL
+    { typeSuj   = SG - ??? - \\\ ??? - NIL
     ; typePrems = []
         -, type (_ , cdr (car hole) , oi)
         -, ((cdr (cdr hole) ?- []) !-
@@ -47,44 +47,44 @@ checking ML71 =
   [] -,
   record
     { chkInp   = U
-    ; chkSuj   = hole oi
+    ; chkSuj   = ???
     ; chkPrems = [] -, type (_ , hole , oi)
     }
   -,
   record
-    { chkInp   = PI - hole oi - \\\ hole oi - NIL
-    ; chkSuj   = abst (hole oi)
-    ; chkPrems = [] -, ((car (cdr (car hole)) ?- []) !-
-                         ((car (cdr (cdr (car (abst hole)))) ?- ([] -, # (oe su)))
+    { chkInp   = PI - ??? - \\\ ??? - NIL
+    ; chkSuj   = \\\ ???
+    ; chkPrems = [] -, (?? car (cdr (car hole)) !-
+                        (?? car (cdr (cdr (car (abst hole))))
                            :> (_ , abst hole , oi))) }
   -,
   record
-    { chkInp   = SG - hole oi - \\\ hole oi - NIL
-    ; chkSuj   = cons (hole oi) (hole oi)
+    { chkInp   = SG - ??? - \\\ ??? - NIL
+    ; chkSuj   = ??? - ???
     ; chkPrems = []
-        -, ((car (cdr (car hole)) ?- [])
+        -, (?? car (cdr (car hole))
              :> (_ , car hole , oi))
         -, ((car (cdr (cdr (car (abst hole)))) ?-
-               ([] -, ((cdr (cdr hole) ?- []) :: (car (cdr (car hole)) ?- []))))
+               ([] -, (?? cdr (cdr hole) :: ?? car (cdr (car hole)))))
              :> (_ , cdr hole , oi))
     }
     
 elimination ML71 = [] -,
   record
-    { trgType   = PI - hole oi - \\\ hole oi - NIL
-    ; elimSuj   = hole oi
-    ; elimPrems = [] -, ((car (cdr (car hole)) ?- []) :> (_ , hole , oi))
+    { trgType   = PI - ??? - \\\ ??? - NIL
+    ; elimSuj   = ???
+    ; elimPrems = [] -, (?? car (cdr (car hole)) :> (_ , hole , oi))
     ; resType   = car (cdr (cdr (car (abst hole)))) ?- ([] -, (
-                    (cdr (cdr hole) ?- []) :: (car (cdr (car hole)) ?- []))) }
+                    (?? cdr (cdr hole) :: ?? car (cdr (car hole))))) }
   -,
   record
-    { trgType   = SG - hole oi - \\\ hole oi - NIL
+    { trgType   = SG - ??? - \\\ ??? - NIL
     ; elimSuj   = CAR
     ; elimPrems = []
-    ; resType   = car (cdr (car hole)) ?- [] }
+    ; resType   = ?? car (cdr (car hole)) }
   -,
   record
-    { trgType   = SG - hole oi - \\\ hole oi - NIL
+    { trgType   = SG - ??? - \\\ ??? - NIL
     ; elimSuj   = CDR
     ; elimPrems = []
     ; resType   = car (cdr (cdr (car (abst hole)))) ?-
@@ -96,10 +96,10 @@ universe ML71 = [] -, record { uniInp = U ; uniPrems = [] }
 reducts ML71 = 
   [] -,
   (car (car (abst hole)) ?-
-                   ([] -, ((cdr hole ?- []) :: (car (cdr (cdr (car hole))) ?- []))))
+                   ([] -, (?? cdr hole :: ?? car (cdr (cdr (car hole))))))
   -,
-  (car (car (car hole)) ?- [])
+  ?? car (car (car hole))
   -,
-  (car (car (cdr hole)) ?- [])
+  ?? car (car (cdr hole))
 
 unambiguous ML71 = _

@@ -26,24 +26,29 @@ formation STLC = [] -,
      [] -, type (_ , cdr (car hole) , oi)
         -, type (_ , cdr (cdr (car hole)) , oi)
   }
+  
 checking STLC = [] -,
   record
   { chkInp = ARROW - hole oi - hole oi - NIL
-  ; chkSuj = abst (hole oi)
-  ; chkPrems = [] -, ((car (cdr (car hole)) ?- [])
-                     !- ((car (cdr (cdr (car hole))) ?- [])
-                       :> (_ , abst hole , oi)))
+  ; chkSuj = \\\ ???
+  ; chkPrems = [] -, (?? car (cdr (car hole))
+                      !- ((car (cdr (cdr (car hole))) ?- [])
+                         :> (_ , abst hole , oi)))
   }
+  
 elimination STLC = [] -,
   record
   { trgType = ARROW - hole oi - hole oi - NIL 
-  ; elimSuj = hole oi
-  ; elimPrems = [] -, ((car (cdr (car hole)) ?- [])
-                      :> (_ , hole , oi))
-  ; resType = car (cdr (cdr (car hole))) ?- [] }
+  ; elimSuj = ???
+  ; elimPrems = [] -, (?? car (cdr (car hole))
+                       :> (_ , hole , oi))
+  ; resType = ?? car (cdr (cdr (car hole))) }
+  
 universe STLC = []
+
 reducts STLC  = [] -,
   (car (car (abst hole)) ?-
-    ([] -, ((cdr hole ?- []) ::
-            (car (cdr (cdr (cdr (car hole)))) ?- []))))
+    ([] -, (?? cdr hole ::
+            ?? car (cdr (cdr (cdr (car hole)))))))
+            
 unambiguous STLC = _
