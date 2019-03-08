@@ -180,60 +180,60 @@ module _ where
   open CheckingRule
   open EliminationRule
 
-  trgTypeMatches : (e : EliminationRule) -> Bwd FormationRule ->
-    Bwd (Sg FormationRule \ T ->
-         Sg (Pat []) \ uT ->
-         (uT <P= trgType e) * (uT <P= typeSuj T))
-  trgTypeMatches e [] = []
-  trgTypeMatches e (Tz -, T) with unify (trgType e) (typeSuj T)
-  trgTypeMatches e (Tz -, T) | fail , u = trgTypeMatches e Tz
-  trgTypeMatches e (Tz -, T) | [ uT ]M , er , Tr =
-    trgTypeMatches e Tz -, (T , uT , er , Tr)
+  Redex = Sg CheckingRule \ t -> Sg EliminationRule \ e ->
+          chkInp t ~~ trgType e
 
-  elimTypeMatches : Bwd EliminationRule -> Bwd FormationRule ->
-    Bwd (Sg EliminationRule \ e -> Sg FormationRule \ T ->
-         Sg (Pat []) \ uT ->
-         (uT <P= trgType e) * (uT <P= typeSuj T))
-  elimTypeMatches [] Tz = []
-  elimTypeMatches (ez -, e) Tz =
-    elimTypeMatches ez Tz -+
-    bwd (e ,_) (trgTypeMatches e Tz)
+  redPat : Redex -> Pat []
+  redPat (t , e , Ty , _) = cons (cons (chkSuj t) Ty) (elimSuj e)
 
-  introTypeMatches :
-    (x : Sg EliminationRule \ e -> Sg FormationRule \ T ->
-         Sg (Pat []) \ uT ->
-         (uT <P= trgType e) * (uT <P= typeSuj T)) ->
-    let e , T , uT , uTe , uTT = x in
-    Bwd CheckingRule ->
-    Bwd (Sg CheckingRule \ t -> Sg (Pat []) \ vT ->
-      (vT <P= uT) * (vT <P= chkInp t))
-  introTypeMatches (e , T , uT , uTe , uTT) [] = []
-  introTypeMatches (e , T , uT , uTe , uTT) (tz -, t) with unify uT (chkInp t)
-  ... | fail , _ = introTypeMatches (e , T , uT , uTe , uTT) tz
-  ... | [ vT ]M , r0 , r1
-    =  introTypeMatches (e , T , uT , uTe , uTT) tz
-    -, (t , vT , r0 , r1)
-
-  Redex = Sg EliminationRule \ e -> Sg FormationRule \ T -> Sg CheckingRule \ t ->
-     Sg (Pat []) \ Ty ->
-     (Ty <P= trgType e) * (Ty <P= typeSuj T) * (Ty <P= chkInp t)
+  getRedexes : Bwd CheckingRule -> Bwd EliminationRule -> Bwd Redex
+  getRedexes tz ez = 
+    tz >>= \ t ->
+    ez >>= \ e ->
+    guard (unify? (chkInp t) (trgType e)) >>= \ u ->
+    [] -, (t , e , u)
 
   Reduct : Redex -> Set
-  Reduct (e , T , t , Ty , re , rT , rt) =
+  Reduct (t , e , Ty , rt , re) =
     Term ([] , cons (cons (chkSuj t) Ty) (elimSuj e)) [] lib chk
 
-  wellTypedRedexes : Bwd EliminationRule -> Bwd FormationRule -> Bwd CheckingRule ->
-    Bwd Redex
-  wellTypedRedexes ez Tz tz = help (elimTypeMatches ez Tz)
-    where
-      help : _ -> _
-      help [] = []
-      help (mz -, m@(e , T , u , r0 , r1)) =
-        help mz -+
-        bwd (\ { (t , Ty , r2 , r3) -> 
-               e , T , t , Ty , (r2 -<P=- r0) , (r2 -<P=- r1) , r3 })
-          (introTypeMatches m tz)
-
+  noOverlap : (tz : Bwd CheckingRule)(ez : Bwd EliminationRule) ->
+    Pairwise (\ x y -> cons (chkInp x) (chkSuj x) ~~ cons (chkInp y) (chkSuj y) -> Zero) tz ->
+    Pairwise (\ x y -> cons (trgType x) (elimSuj x) ~~ cons (trgType y) (elimSuj y) -> Zero) ez ->
+    Pairwise (\ x y -> redPat x ~~ redPat y -> Zero)
+       (getRedexes tz ez)
+  noOverlap tz ez tzA ezA th u with inBind tz _ th
+  noOverlap tz ez tzA ezA ._ u | isInBind yzz thz q with findPairJoin yzz (thinQ q)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz with bwdRThin thz ti
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, r with inBind ez _ r
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, r | isInBind yzz1 thz1 q1 with findPairJoin yzz1 (ejz -< thinQ q1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #0 , zz , si , ekz with bwdRThin thz1 si
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #0 , zz , si , ekz | ([] -, e) , ph , [] -, s with unify? (chkInp t) (trgType e)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #0 , .[] , si , () | [] -, e , ph , [] -, ze | #0 , v
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #0 , zz , si , bad0 | [] -, e , ph , [] -, bad1 | #1 , v
+    = busted (bad0 -< bad1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi with bwdRThin thz1 si
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | ([] -, e0 -, e1) , th' , [] -, x0 -, x1 with ezA th'
+  ... | n with unify? (chkInp t) (trgType e0) | unify? (chkInp t) (trgType e1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #0 , d0 | b1 , d1 = busted (ri -< x0)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #1 , d0 | #0 , d1 = busted (qi -< x1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #1 , d0 , f0 , g0 | #1 , d1 , f1 , g1 with ri -< x0 | qi -< x1
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #1 , d0 , f0 , g0 | #1 , d1 , f1 , g1 | () no | j
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #1 , d0 , f0 , g0 | #1 , d1 , f1 , g1 | ze su | () no
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) (.((_ - _) - _) , cons (cons h0 h2) h1 , cons (cons h4 h5) h3) | isInBind yzz thz q | #0 , yz , ti , ejz | [] -, t , th , [] -, .(bind^ _ thz1 q1) | isInBind yzz1 thz1 q1 | #1 , zz , zz' , si , ri , qi | [] -, e0 -, e1 , th' , [] -, x0 -, x1 | n | #1 , d0 , f0 , g0 | #1 , d1 , f1 , g1 | ze su | ze su = n (_ , cons (h2 -<P=- g0) h1 , cons (h5 -<P=- g1) h3)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , yz , zz , ti , si , ri with bwdRThin thz ti
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , yz , zz , ti , si , ri | ([] -, t0 -, t1) , th' , [] -, x0 -, x1 with inBind ez _ x0 | inBind ez _ x1
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , ._ , ._ , ti , si , ri | [] -, t0 -, t1 , th' , [] -, ._ -, ._ | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl with findOneJoin yzz1 si | findOneJoin yzz2 ri
+  ... | _ , f0 , g0 | _ , f1 , g1 with bwdRThin thz1 g0 | bwdRThin thz2 g1
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | ([] -, e0) , _ , [] -, x0 | ([] -, e1) , _ , [] -, x1 with unify? (chkInp t0) (trgType e0) | unify? (chkInp t1) (trgType e1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #0 , h0 | b1 , h1 = busted (f0 -< x0)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) u | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #1 , h0 | #0 , h1 = busted (f1 -< x1)
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) (_ , cons (cons h4 h6) h5 , cons (cons h8 h9) h7) | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #1 , _ , h0 , h1 | #1 , _ , h2 , h3 with f0 -< x0 | f1 -< x1
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) (.((_ - _) - _) , cons (cons h4 h6) h5 , cons (cons h8 h9) h7) | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #1 , _ , h0 , h1 | #1 , _ , h2 , h3 | () no | p1
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) (.((_ - _) - _) , cons (cons h4 h6) h5 , cons (cons h8 h9) h7) | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #1 , _ , h0 , h1 | #1 , _ , h2 , h3 | p0 su | () no
+  noOverlap tz ez tzA ezA .(bind^ _ thz q) (.((_ - _) - _) , cons (cons h4 h6) h5 , cons (cons h8 h9) h7) | isInBind yzz thz q | #1 , .(join yzz1) , .(join yzz2) , ti , si , ri | [] -, t0 -, t1 , th' , [] -, .(bind^ _ thz1 refl) -, .(bind^ _ thz2 refl) | isInBind yzz1 thz1 refl | isInBind yzz2 thz2 refl | _ , f0 , g0 | _ , f1 , g1 | [] -, e0 , _ , [] -, x0 | [] -, e1 , _ , [] -, x1 | #1 , _ , h0 , h1 | #1 , _ , h2 , h3 | p0 su | p1 su
+    = tzA th' (_ , cons (h6 -<P=- h0) h4 , cons (h9 -<P=- h2) h8)
+  
 record UniverseRule : Set where
   field
     uniInp    : Pat []
@@ -252,15 +252,13 @@ module _ where
   open BetaRule
 
   betaRules : (rz : Bwd Redex) -> All Reduct rz -> Bwd (BetaRule)
-  betaRules .[] [] = []
-  betaRules (rz -, (e , T , t , Ty , re , rT , rt)) (uz -, u)
-    with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
+  betaRules [] [] = []
+  betaRules (rz -, (t , e , Ty , rt , re)) (uz -, u) with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
        | refineMatch re (patEnv Ty [] (car ` cdr))
-  ... | rad | chi , _
-    with premises [] (elimPrems e) ([] -, rad) chi
+  ... | rad | chi , _ with premises [] (elimPrems e) ([] -, rad) chi
           (patEnv (elimSuj e) [] cdr)
-  ... | _ , pi , _ =
-    betaRules rz uz -, record
+  ... | _ , pi , _
+    = betaRules rz uz -, record
       { betaIntro = chkSuj t
       ; betaType  = Ty
       ; betaElim  = elimSuj e
@@ -268,26 +266,6 @@ module _ where
       ; redType   = resType e % (([] -, rad) , cons chi pi)
       }
 
-  betaRulesUnambiguous : (rz : Bwd Redex) ->
-    Apart (\ { (e , T , t , Ty , re , rT , rt) ->
-               cons (cons (chkSuj t) Ty) (elimSuj e) }) rz ->
-    (uz : All Reduct rz) ->
-    Apart (\ b -> cons (cons (betaIntro b) (betaType b)) (betaElim b))
-      (betaRules rz uz)
-  betaRulesUnambiguous .[] rza [] = _
-  betaRulesUnambiguous (rz -, (e , T , t , Ty , re , rT , rt)) (rza , a) (uz -, u)
-    = betaRulesUnambiguous rz rza uz , help rz a uz where
-    help : forall rz ->
-      Apartz (\ { (e , T , t , Ty , re , rT , rt)
-              -> cons (cons (chkSuj t) Ty) (elimSuj e) })
-          rz (cons (cons (chkSuj t) Ty) (elimSuj e)) ->
-      (uz : All Reduct rz) ->
-      Apartz (\ b -> cons (cons (betaIntro b) (betaType b)) (betaElim b))
-       (betaRules rz uz) _
-    help .[] a [] = _
-    help (rz -, (e' , T' , t' , Ty' , re' , rT' , rt')) (az , a) (uz -, u)
-       = help rz az uz , a
-       
 {-
 data Context : Nat -> Set where
   [] : Context []
@@ -309,7 +287,7 @@ record TypeTheory : Set where
     elimination : Bwd EliminationRule
     universe    : Bwd UniverseRule
   redexes : Bwd Redex
-  redexes = wellTypedRedexes elimination formation checking
+  redexes = getRedexes checking elimination
   field
     reducts     : All Reduct redexes
     {unambiguous} : Apart typeSuj formation
@@ -441,3 +419,4 @@ module TYPETHEORY (TH : TypeTheory) where
            All (Ga !=_) Jz
         ----------------------------------------------
         -> Ga != univ (uniInp %P Ts)
+

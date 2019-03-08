@@ -4,6 +4,9 @@ data   Zero : Set where
 record One  : Set where constructor <>
 data   Two  : Set where #0 #1 : Two
 
+naughty : forall {l}{X : Set l} -> Zero -> X
+naughty ()
+
 _<?>_ : forall {l}{P : Two -> Set l} -> P #0 -> P #1 -> (b : Two) -> P b
 (p0 <?> p1) #0 = p0
 (p0 <?> p1) #1 = p1

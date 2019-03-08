@@ -66,3 +66,18 @@ module _ where
   bwdId = \ {X} f q -> funId (BWD (ID{X} f q))
   bwdCo = \ {R}{S}{T} f g h q -> funCo (BWD (TRI{R}{S}{T} f g h q)) f01 f12
 
+_>>=_ : forall {X Y} -> Bwd X -> (X -> Bwd Y) -> Bwd Y
+[] >>= k = []
+(xz -, x) >>= k = (xz >>= k) -+ k x
+
+join : forall {X} -> Bwd (Bwd X) -> Bwd X
+join [] = []
+join (xzz -, xz) = join xzz -+ xz
+
+guard : forall {P} -> Dec P -> Bwd P
+guard (#0 , n) = []
+guard (#1 , y) = [] -, y
+
+data BwdR {X Y}(R : X -> Y -> Set) : Bwd X -> Bwd Y -> Set where
+  [] : BwdR R [] []
+  _-,_ : forall {xz yz x y} -> BwdR R xz yz -> R x y -> BwdR R (xz -, x) (yz -, y)

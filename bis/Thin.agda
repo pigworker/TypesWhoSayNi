@@ -23,16 +23,21 @@ module _ {X : Set} where
   oeU (th no) (ph no) = _no $= oeU th ph
   oeU ze      ze      = refl
 
-  thinEq? : forall {xz yz}(th ph : xz <= yz) -> Dec (th == ph)
+  
+  _=^=_ : forall {xz yz zz : Bwd X} -> xz <= zz -> yz <= zz -> Set
+  _=^=_ {xz = xz}{yz = yz} th ph = Sg (xz == yz) \ { refl -> th == ph }
+
+  thinEq? : forall {xz yz zz : Bwd X}(th : xz <= zz)(ph : yz <= zz) ->
+    Dec (th =^= ph)
   thinEq? (th no) (ph no) with thinEq? th ph
-  thinEq? (th no) (ph no)  | #0 , q = #0 , \ { refl -> q refl }
-  thinEq? (th no) (.th no) | #1 , refl = #1 , refl
-  thinEq? (th no) (ph su) = #0 , \ ()
-  thinEq? (th su) (ph no) = #0 , \ ()
+  thinEq? (th no) (ph no) | #0 , a = #0 , \ { (refl , refl) -> a (refl , refl) }
+  thinEq? (th no) (.th no) | #1 , refl , refl = #1 , refl , refl
+  thinEq? (th no) (ph su) = #0 , \ { (refl , ()) }
+  thinEq? (th su) (ph no) = #0 , \ { (refl , ()) }
   thinEq? (th su) (ph su) with thinEq? th ph
-  thinEq? (th su) (ph su)  | #0 , q = #0 , \ { refl -> q refl }
-  thinEq? (th su) (.th su) | #1 , refl = #1 , refl
-  thinEq? ze      ze      = #1 , refl
+  thinEq? (th su) (ph su) | #0 , a = #0 , \ { (refl , refl) -> a (refl , refl) }
+  thinEq? (th su) (.th su) | #1 , refl , refl = #1 , refl , refl
+  thinEq? ze ze = #1 , refl , refl
 
   _^+_ : forall {az bz cz dz}(th : az <= bz)(ph : cz <= dz) -> (az -+ cz) <= (bz -+ dz)
   th ^+ (ph no) = (th ^+ ph) no
@@ -55,6 +60,15 @@ module _ {X : Set} where
   ... | dz , ez , th0 , th1 , refl , refl = _ , _ , th0 , th1 no , refl , refl
   thinCatSplit (bz -, b) (th su) with thinCatSplit bz th
   ... | dz , ez , th0 , th1 , refl , refl = _ , _ , th0 , th1 su , refl , refl
+
+  thinSplitCat : forall {az bz} cz (th : az <= (bz -+ cz)) ->
+    Sg _ \ dz -> Sg _ \ ez -> Sg (dz <= bz) \ th0 -> Sg (ez <= cz) \ th1 ->
+    th =^= (th0 ^+ th1)
+  thinSplitCat [] th = _ , _ , th , ze , refl , refl
+  thinSplitCat (cz -, c) (th no) with thinSplitCat cz th
+  ... | _ , _ , th0 , th1 , refl , refl = _ , _ , th0 , th1 no , refl , refl
+  thinSplitCat (cz -, c) (th su) with thinSplitCat cz th
+  ... | _ , _ , th0 , th1 , refl , refl = _ , _ , th0 , th1 su , refl , refl
 
   module _ where
     open Cat
@@ -82,6 +96,9 @@ module _ {X : Set} where
 
     oi   = idC OPE
     _-<_ = coC OPE
+
+    thinQ : forall {xz yz : Bwd X} -> xz == yz -> xz <= yz
+    thinQ refl = oi
 
     OPEMON : Monoidal (MonoidBwd X) OPE
     _><_ OPEMON = _^+_
@@ -138,6 +155,11 @@ module _ {X : Set} where
   oiTri (th su) = oiTri th su
   oiTri ze = ze
 
+  triOi : forall {iz jz}(th : iz <= jz) -> Tri th oi th
+  triOi (th no) = triOi th nosuno
+  triOi (th su) = triOi th su
+  triOi ze      = ze
+
   triDet : forall {iz jz kz}{th : iz <= jz}{ph : jz <= kz}{ps0 ps1} ->
     Tri th ph ps0 -> Tri th ph ps1 -> ps0 == ps1
   triDet (t0 no) (t1 no) rewrite triDet t0 t1 = refl
@@ -152,10 +174,15 @@ module _ {X : Set} where
   triMono (t0 su) (t1 su) rewrite triMono t0 t1 = refl
   triMono ze ze = refl
 
-  thinMono : forall {iz jz kz}(th0 th1 : iz <= jz)(ph : jz <= kz) ->
+  thinMono : forall {hz iz jz kz}(th0 : hz <= jz)(th1 : iz <= jz)(ph : jz <= kz) ->
+    (th0 -< ph) =^= (th1 -< ph) -> th0 =^= th1
+  thinMono th0 th1 ph (refl , q) with mkTri th0 ph | mkTri th1 ph
+  ... | t0 | t1 rewrite q = refl , triMono t0 t1
+
+  qThinMono : forall {iz jz kz}(th0 th1 : iz <= jz)(ph : jz <= kz) ->
     (th0 -< ph) == (th1 -< ph) -> th0 == th1
-  thinMono th0 th1 ph q with mkTri th0 ph | mkTri th1 ph
-  ... | t0 | t1 rewrite q = triMono t0 t1
+  qThinMono th0 th1 ph q with thinMono th0 th1 ph (refl , q)
+  ... | refl , q' = q'
 
   thinrLemma : forall {az bz cz dz ez}(th : az <= bz)(ph : cz <= dz)(ps : bz <= ez) ->
     (thinr cz th -< (ph ^+ ps)) == thinr dz (th -< ps)
@@ -170,6 +197,52 @@ module _ {X : Set} where
   thinrAmmel (th no) (ph su) = _no $= thinrAmmel th ph
   thinrAmmel (th su) (ph su) = _su $= thinrAmmel th ph
   thinrAmmel ze ze = oeU _ _
+
+  _~su : forall {iz jz kz l}{th : iz <= kz}{ph : jz <= kz} ->
+    th =^= ph -> _=^=_ {_ -, l} (th su) (ph su)
+  (refl , q) ~su = refl , (_su $= q)
+
+  _~no : forall {iz jz kz l}{th : iz <= kz}{ph : jz <= kz} ->
+    th =^= ph -> _=^=_ {_}{_}{_ -, l} (th no) (ph no)
+  (refl , q) ~no = refl , (_no $= q)
+
+  thinrGrouse : forall {iz jz kz}(th : [] <= iz)(ph : jz <= kz) ->
+    (th ^+ ph) =^= thinr iz ph
+  thinrGrouse th (ph no) = thinrGrouse th ph ~no
+  thinrGrouse {iz}{jz}{kz} th (ph su) = thinrGrouse th ph ~su
+  thinrGrouse th ze = refl , oeU _ _
+
+  _+T_ : forall
+    {iz jz kz}{th0 : iz <= jz}{th1 : jz <= kz}{th2 : iz <= kz}(t : Tri th0 th1 th2)
+    {xz yz zz}{ph0 : xz <= yz}{ph1 : yz <= zz}{ph2 : xz <= zz}(t' : Tri ph0 ph1 ph2)
+    ->
+    Tri (th0 ^+ ph0) (th1 ^+ ph1) (th2 ^+ ph2)
+  t +T (t' no)     = (t +T t') no
+  t +T (t' nosuno) = (t +T t') nosuno
+  t +T (t' su)     = (t +T t') su
+  t +T ze          = t
+
+  fromCat : forall {z} xz yz (i : z <- (xz -+ yz)) ->
+      (Sg (z <- xz) \ j -> Tri j (thinl oi yz) i)
+    + (Sg (z <- yz) \ j -> Tri j (thinr xz oi) i)
+  fromCat xz yz i with thinSplitCat yz i
+  fromCat xz yz .(th0 ^+ th1) | .([] -, _) , [] , th0 , th1 , refl , refl
+    with triOi th0 +T oeTri th1
+  ... | t rewrite oeU th1 oe = #0 , th0 , t
+  fromCat xz yz .(th0 ^+ th1) | .[] , [] -, y , th0 , th1 , refl , refl
+    with oeU th0 oe | oeTri th0 +T triOi th1
+  fromCat xz yz .(oe ^+ th1) | .[] , [] -, y , .oe , th1 , refl , refl | refl | t
+    with [] -+ yz
+       | BWD.idcoC yz
+       | ze ^+ th1
+       | oe {xz = xz} ^+ oi {S = yz}
+       | thinrGrouse (oe {xz = xz}) (oi {S = yz})
+       | oe {xz = xz} ^+ th1
+  fromCat xz yz .(oe ^+ th1) | .[] , [] -, y , .oe , th1 , refl , refl
+    | refl | t | .yz | refl | ph0 | .(thinr xz (Cat.idC OPE))
+    | refl , refl | ph2
+    = #1 , ph0 , t
+  fromCat xz yz i | de , ez -, _ -, _ , th0 , th1 , () , r
 
 {-
   moco : forall {az bz cz dz ez fz}
@@ -245,11 +318,22 @@ module _ {X : Set} where
   pullbackU ze ze ze ze = ze , ze , ze
 
   pullbackEq : forall {iz jz}(th : iz <= jz) ->
-    
     pullback th th == (iz , oi , oi , th , oiTri th , oiTri th)
   pullbackEq (th no) rewrite pullbackEq th = refl
   pullbackEq (th su) rewrite pullbackEq th = refl
   pullbackEq ze = refl
+
+  pullbackOi : forall {iz jz}(th : iz <= jz) ->
+    pullback th oi == (iz , oi , th , th , oiTri th , triOi th)
+  pullbackOi (th no) rewrite pullbackOi th = refl
+  pullbackOi (th su) rewrite pullbackOi th = refl
+  pullbackOi ze = refl
+
+  pullbackOe : forall {iz jz}(th : iz <= jz) ->
+    pullback th oe == ([] , oe , oe , oe , oeTri th , oeTri oe)
+  pullbackOe (th no) rewrite pullbackOe th = refl
+  pullbackOe (th su) rewrite pullbackOe th = refl
+  pullbackOe ze = refl
 
   coproduct : forall {iz jz kz}(th : iz <= kz)(ph : jz <= kz) ->
     Sg _ \ hz ->
@@ -276,6 +360,103 @@ module _ {X : Set} where
     \ { (t2 su) (t3 su) -> let _ , t4 , t5 , t6 = u t2 t3 in _ , t4 su , t5 su , t6 su }
   coproduct ze ze = _ , _ , _ , _ , ze , ze , \ { ze ze -> _ , ze , ze , ze }
 
+  tscviapb : forall {iz jz} kz (th : iz <= (jz -+ kz)) ->
+    let ijz , th0 , th1 , th2 , t0 , t1 = pullback th (thinl (oi {S = jz}) kz)
+        ikz , ph0 , ph1 , ph2 , t2 , t3 = pullback th (thinr jz (oi {S = kz}))
+    in  th =^= (th1 ^+ ph1)
+  tscviapb {iz} {jz} [] th rewrite pullbackOi th | pullbackOe th = refl , refl
+  tscviapb {iz} {jz} (kz -, x) (th no) = tscviapb kz th ~no
+  tscviapb {.(_ -, x)} {jz} (kz -, x) (th su) = tscviapb kz th ~su
+{-
+  with pullback th (thinl (oi {S = jz}) kz)
+                    | pullback th (thinr jz (oi {S = kz}))
+  ... | ijz , th0 , th1 , th2 , t0 , t1 | ikz , ph0 , ph1 , ph2 , t2 , t3
+    = {!!}
+-}
+
+join^ : forall {X}{xzz xzz' : Bwd (Bwd X)} -> BwdR _<=_ xzz xzz' ->
+  join xzz <= join xzz'
+join^ [] = ze
+join^ (thz -, th) = join^ thz ^+ th
+
+bind^ : forall {X Y}(k : X -> Bwd Y){yz yzz xz} ->
+  BwdR (\ x yz -> yz <= k x) xz yzz ->
+  yz == join yzz ->
+  yz <= (xz >>= k)
+bind^ k [] refl = ze
+bind^ k (thz -, th) refl = bind^ k thz refl ^+ th
+
+data InBind {X Y}(xz : Bwd X)(k : X -> Bwd Y)
+    yz : yz <= (xz >>= k) -> Set where
+  isInBind : forall yzz (thz : BwdR (\ x yz -> yz <= k x) xz yzz) ->
+    (q : yz == join yzz) ->
+    InBind xz k yz (bind^ k thz q)
+
+bwdRThin : forall {X Y}{R : X -> Y -> Set}{xz' yz yz'} ->
+  BwdR R xz' yz' -> yz <= yz' ->
+  Sg _ \ xz -> xz <= xz' * BwdR R xz yz
+bwdRThin (rz -, r) (ph no) with bwdRThin rz ph
+... | _ , th , sz = _ , th no , sz
+bwdRThin (rz -, r) (ph su) with bwdRThin rz ph
+... | _ , th , sz = _ , th su , sz -, r
+bwdRThin [] ze = _ , ze , []
+
+inBind : forall {X Y}(xz : Bwd X)(k : X -> Bwd Y){yz}(th : yz <= (xz >>= k)) ->
+  InBind xz k yz th
+inBind [] k ze = isInBind _ [] refl
+inBind (xz -, x) k th with thinSplitCat (k x) th
+inBind (xz -, x) k .(th0 ^+ th1) | _ , _ , th0 , th1 , refl , refl with inBind xz k th0
+inBind (xz -, x) k .(bind^ k thz refl ^+ th1) | _ , _ , .(bind^ k thz refl) , th1 , refl , refl
+  | isInBind yzz thz refl = isInBind _ (thz -, th1) refl
+
+bwdThin : forall {X Y}(f : X -> Y)(xz' : Bwd X){yz}(th : yz <= bwd f xz') ->
+  Sg _ \ xz -> (xz <= xz') * (yz == bwd f xz)
+bwdThin f [] ze = [] , ze , refl
+bwdThin f (xz' -, x) (th no) with bwdThin f xz' th
+... | xz , ph , q = xz , ph no , q
+bwdThin f (xz' -, x) (th su) with bwdThin f xz' th
+... | xz , ph , q = xz -, x , ph su , (_-, _) $= q
+
+Longer : forall {X} -> Bwd X -> Bwd X -> Set
+Longer [] yz = Zero
+Longer (xz -, _) [] = One
+Longer (xz -, _) (yz -, _) = Longer xz yz
+
+evenLonger : forall {X} xz yz {z : X} -> Longer xz (yz -, z) -> Longer xz yz
+evenLonger [] yz ()
+evenLonger (xz -, x) [] l = <>
+evenLonger (xz -, _) (yz -, _) l = evenLonger xz yz l
+
+busted : forall {X}{xz yz : Bwd X}(th : xz <= yz){bad : Longer xz yz} -> Zero
+busted {xz = xz}{yz = yz -, _} (th no) {bad} = busted th {evenLonger xz yz bad}
+busted (th su) {bad} = busted th {bad}
+busted ze {()}
+
+narrowing : forall {X Y}{xz xz' : Bwd X}(th : xz <= xz')(k : X -> Bwd Y) ->
+  (xz >>= k) <= (xz' >>= k)
+narrowing {xz' = _ -, x} (th no) k = narrowing th k ^+ oe {xz = k x}
+narrowing {xz' = _ -, x} (th su) k = narrowing th k ^+ oi {S = k x}
+narrowing ze k = ze
+
+
+
+{-
+provenance : forall {X Y}(xz : Bwd X)(k : X -> Bwd Y){y}(i : y <- (xz >>= k)) ->
+  Sg X \ x -> (x <- xz) *
+  Sg (y <- k x) \ j -> Sg (k x <= (xz >>= k)) \ th -> Tri j th i
+provenance [] k ()
+provenance (xz -, x) k i with fromCat (xz >>= k) (k x) i
+provenance (xz -, x) k i | #0 , i' = {!!}
+provenance (xz -, x) k i | #1 , i' = _ , oe su , i' , thinr (xz >>= k) oi , {!!}
+-}
+
+{-
+provenance [] k ()
+provenance (xz -, x) k i with fromCat (xz >>= k) (k x) i
+provenance (xz -, x) k i | #0 , i' with provenance xz k i'
+... | x' , l , j = x' , l no , j
+provenance (xz -, x) k i | #1 , j = _ , oe su , j
+-}
 
 {-
   data Thin' (xz : Bwd X) : Bwd X -> Set

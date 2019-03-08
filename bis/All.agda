@@ -1,5 +1,6 @@
 module All where
 
+open import Basics
 open import Eq
 open import Fun
 open import Cats
@@ -51,6 +52,29 @@ module _ {I : Set} where
     selectPure (th no) p = selectPure th p
     selectPure (th su) p = (_-, _) $= selectPure th p
     selectPure ze      p = refl
+
+    filter : ((i : I) -> Dec (P i)) -> forall jz ->
+      Sg _ \ iz -> (iz <= jz) * All P iz
+    filter p [] = [] , ze , []
+    filter p (jz -, i) with p i | filter p jz
+    filter p (jz -, i) | #0 , n | iz , th , pz = iz , (th no) , pz
+    filter p (jz -, i) | #1 , y | iz , th , pz = iz -, i , (th su) , (pz -, y)
+
+    filterU : (p : (i : I) -> Dec (P i)) -> forall jz ->
+      let iz , th , pz = filter p jz in
+      forall {hz}(ph : hz <= jz)(qz : All P hz) ->
+      Sg (hz <= iz) \ th' -> Tri th' th ph
+    filterU p [] ze [] = ze , ze
+    filterU p (jz -, i) (ph no) qz with p i | filter p jz | filterU p jz ph qz
+    filterU p (jz -, i) (ph no) qz | #0 , a | iz , th , pz | th' , t
+      = th' , t no
+    filterU p (jz -, i) (ph no) qz | #1 , a | iz , th , pz | th' , t
+      = th' no , t nosuno
+    filterU p (jz -, i) (ph su) (qz -, q) with p i | filter p jz | filterU p jz ph qz
+    filterU p (jz -, i) (ph su) (qz -, q) | #0 , n | iz , th , pz | th' , t
+      = naughty (n q)
+    filterU p (jz -, i) (ph su) (qz -, q) | #1 , y | iz , th , pz | th' , t
+      = th' su , t su
 
   module _ {S T : I -> Set} where
   
@@ -214,3 +238,118 @@ module _ {I : Set} where
         chop iz jz (pz :+ qz) == chopped pz qz
       chopEq pz [] = refl
       chopEq pz (qz -, q) rewrite chopEq pz qz = refl
+
+  presence : forall iz -> All (_<- iz) iz
+  presence [] = []
+  presence (iz -, i) = all _no (presence iz) -, (oe su)
+
+
+joinThins : forall {X}(xzz : Bwd (Bwd X)) -> All (_<= join xzz) xzz
+joinThins [] = []
+joinThins (xzz -, xz) = all (_-< thinl oi xz) (joinThins xzz) -, thinr (join xzz) oi
+
+findPairCat : {X : Set}{x0 x1 : X}(xz yz : Bwd X)
+  (th : ([] -, x0 -, x1) <= (xz -+ yz)) ->
+  (([] -, x0 -, x1) <= xz) +
+  (((x0 <- xz) * (x1 <- yz)) +
+   (([] -, x0 -, x1) <= yz))
+findPairCat xz [] th = #0 , th
+findPairCat xz (yz -, x) (th no) with findPairCat xz yz th
+findPairCat xz (yz -, x) (th no) | #0 , ph = #0 , ph
+findPairCat xz (yz -, x) (th no) | #1 , #0 , ph0 , ph1 = #1 , #0 , ph0 , ph1 no
+findPairCat xz (yz -, x) (th no) | #1 , #1 , ph = #1 , #1 , ph no
+findPairCat xz (yz -, x) (th su) with fromCat xz yz th
+findPairCat xz (yz -, x) (th su) | #0 , ph , _ = #1 , #0 , ph , (oe su)
+findPairCat xz (yz -, x) (th su) | #1 , ph , _ = #1 , #1 , ph su
+
+findOneJoin : forall {X : Set}{x}(xzz : Bwd (Bwd X)) -> x <- join xzz ->
+  Sg _ \ xz -> (x <- xz) * (xz <- xzz)
+findOneJoin [] ()
+findOneJoin (xzz -, xz) th with fromCat (join xzz) xz th
+findOneJoin (xzz -, xz) th | #0 , th' , _ with findOneJoin xzz th'
+... | _ , ph0 , ph1 = _ , ph0 , ph1 no
+findOneJoin (xzz -, xz) th | #1 , ph , _ = _ , ph , (oe su)
+
+findPairJoin : {X : Set}{x0 x1 : X}(xzz : Bwd (Bwd X))
+  (th : ([] -, x0 -, x1) <= join xzz) ->
+  (Sg _ \ xz -> (xz <- xzz) * ([] -, x0 -, x1) <= xz)
+  +
+  (Sg _ \ xz0 -> Sg _ \ xz1 ->
+    (([] -, xz0 -, xz1) <= xzz) *
+    (x0 <- xz0) * (x1 <- xz1))
+findPairJoin [] ()
+findPairJoin (xzz -, xz) th with findPairCat (join xzz) xz th
+findPairJoin (xzz -, xz) th | #0 , th' with findPairJoin xzz th'
+findPairJoin (xzz -, xz) th | #0 , th' | #0 , _ , ph0 , ph1 = #0 , _ , ph0 no , ph1
+findPairJoin (xzz -, xz) th | #0 , th' | #1 , _ , _ , ph0 , ph1 , ph2 = #1 , _ , _ , ph0 no , ph1 , ph2
+findPairJoin (xzz -, xz) th | #1 , #0 , th0 , th1 with findOneJoin xzz th0
+... | _ , ph0 , ph1 = #1 , _ , _ , ph1 su , ph0 , th1
+findPairJoin (xzz -, xz) th | #1 , #1 , ph = #0 , _ , oe su , ph
+
+
+bindThins : forall {X Y}(xz : Bwd X)(k : X -> Bwd Y) ->
+  All (\ x -> k x <= (xz >>= k)) xz
+bindThins [] k = []
+bindThins (xz -, x) k =
+  all (_-< thinl oi (k x)) (bindThins xz k) -, thinr (xz >>= k) oi
+
+comprehension : forall {X Y}{S : X -> Set}{T : Y -> Set}
+  {xz : Bwd X} -> All S xz ->
+  (k : X -> Bwd Y) ->
+  ({x : X} -> S x -> All T (k x)) ->
+  All T (xz >>= k)
+comprehension []        k g = []
+comprehension (sz -, s) k g = comprehension sz k g :+ g s
+
+Some : {X : Set} -> (X -> Set) -> Set
+Some {X} P = Sg (Bwd X) \ xz -> All P xz
+
+_S>>=_ : forall {X Y}{S : X -> Set}{T : Y -> Set} ->
+  Some S -> ({x : X} -> S x -> Some T) -> Some T
+(.[] , []) S>>= k = [] , []
+(.(_ -, _) , (sz -, s)) S>>= k with (_ , sz) S>>= k | k s
+... | yz , tz | yz' , tz' = (yz -+ yz') , (tz :+ tz')
+
+{-
+join^ : forall {X}{yzz : Bwd (Bwd X)} -> All (\ yz -> Sg _ \ xz -> xz <= yz) yzz ->
+  Sg _ \ xz -> xz <= join yzz
+join^ [] = [] , ze
+join^ (thz -, (xz1 , th1)) with join^ thz
+... | xz0 , th0 = (xz0 -+ xz1) , (th0 ^+ th1)
+
+data InJoin^ {X}(yzz : Bwd (Bwd X)) : (Sg _ \ xz -> xz <= join yzz) -> Set where
+  isJoin^ : (thz : All (\ yz -> Sg _ \ xz -> xz <= yz) yzz) ->
+            InJoin^ yzz (join^ thz)
+
+inJoin^ : forall {X}(yzz : Bwd (Bwd X)){xz}(th : xz <= join yzz) ->
+          InJoin^ yzz (xz , th)
+inJoin^ [] ze = isJoin^ []
+inJoin^ (yzz -, yz) th with thinSplitCat yz th
+inJoin^ (yzz -, yz) .(th0 ^+ th1) | xz0 , xz1 , th0 , th1 , refl , refl
+  with inJoin^ yzz th0
+inJoin^ (yzz -, yz) .(snd (join^ thz) ^+ th1)
+  | .(fst (join^ thz)) , xz1 , .(snd (join^ thz)) , th1 , refl , refl
+  | isJoin^ thz
+  = isJoin^ (thz -, (_ , th1))
+
+
+cart : forall {X Y} -> Bwd X -> Bwd Y -> Bwd (X * Y)
+cart xz yz = xz >>= \ x -> yz >>= \ y -> [] -, (x , y)
+
+cartIx : forall {X Y}{x : X}{y : Y} xz yz -> (x , y) <- cart xz yz ->
+  (x <- xz) * (y <- yz)
+cartIx xz yz ij =
+  project ij (
+  comprehension (presence xz) (\ x -> yz >>= \ y -> [] -, (x , y))
+  \ {x} i ->
+    comprehension (presence yz) (\ y -> [] -, (x , y))
+    \ {y} j -> [] -, (i , j))
+
+ixCart : forall {X Y}{x : X}{y : Y}{xz yz} ->
+  (x <- xz) -> (y <- yz) -> (x , y) <- cart xz yz
+ixCart {x = x}{yz = yz} i j
+  with narrowing i (\ x -> yz >>= \ y -> [] -, (x , y))
+     | narrowing j (\ y -> [] -, (x , y))
+... | th | ph rewrite BWD.idcoC (yz >>= \ y -> [] -, (x , y))
+    = ph -< th
+-}
