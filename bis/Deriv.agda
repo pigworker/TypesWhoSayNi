@@ -302,7 +302,10 @@ module TYPETHEORY (TH : TypeTheory) where
 
   module _ {M : Meta} where
 
-    data _~>_ {ga} : forall {d}(t t' : Term M ga lib d) -> Set where
+    data _~>_ {ga} : forall {d}(t t' : Term M ga lib d) -> Set
+    data _~z>_ {ga} : forall {de : Nat}(ez ez' : All (\ _ -> Term M ga lib syn) de) -> Set
+
+    data _~>_ {ga} where
 
       car  : forall {s s' t} -> s ~> s' -> (s & t) ~> (s' & t)
       cdr  : forall {s t t'} -> t ~> t' -> (s & t) ~> (s & t')
@@ -312,6 +315,9 @@ module TYPETHEORY (TH : TypeTheory) where
       elim : forall {e s s'} -> s ~> s' -> (e $ s) ~> (e $ s')
       term : forall {t t' T} -> t ~> t' -> (t :: T) ~> (t' :: T)
       type : forall {t T T'} -> T ~> T' -> (t :: T) ~> (t :: T')
+      meta : forall {de}{x : de <P- snd M}
+        {ez ez' : All (\ _ -> Term M ga lib syn) de} ->
+        ez ~z> ez' -> (x ?- ez) ~> (x ?- ez')
       beta : forall {R}(x : R <- computation) -> let open BetaRule R in
         (ts : Env M (ga ,P betaIntro)) ->
         (Ts : Env M (ga ,P betaType)) ->
@@ -320,6 +326,55 @@ module TYPETHEORY (TH : TypeTheory) where
           ~>
         ((redTerm % ([] , cons (cons ts Ts) ss))
           :: (redType % ([] , cons (cons ts Ts) ss)))
+
+    data _~z>_ {ga} where
+    
+      llll : forall {de}{ez ez' : All _ de}{e} ->
+              ez ~z> ez' -> (ez -, e) ~z> (ez' -, e)
+      rrrr : forall {de}{ez : All _ de}{e e'} ->
+              e ~> e' -> (ez -, e) ~z> (ez -, e')
+
+    data _=>_ {ga} : forall {d}(t t' : Term M ga lib d) -> Set
+    data _=z>_ {ga} : forall {de}(ez ez' : All (\ _ -> Term M ga lib syn) de) -> Set
+    data _=P>_ {ga}{de} : forall {p : Pat de}(ts ts' : Env M (ga ,P p)) -> Set
+
+    data _=>_ {ga} where
+
+      atom : (a : Atom) -> (! a) => (! a)
+      cons : forall {s s' t t'} -> s => s' -> t => t' -> (s & t) => (s' & t')
+      abst : forall {t t'} -> t => t' -> (\\ t) => (\\ t')
+      thnk : forall {n e} -> essl n => e -> thnk n => [ e ]
+      vari : forall i -> (# i) => (# i)
+      mets : forall x -> essl (mets x) => essl (mets x)
+      elim : forall {e e' s s'} -> e => e' -> s => s' -> (e $ s) => (e' $ s')
+      radi : forall {t t' T T'} -> t => t' -> T => T' -> (t :: T) => (t' :: T')
+      _?-_ : forall {de}(x : de <P- snd M) ->
+             {ez ez' : All (\ _ -> Term M ga lib syn) de} ->
+             ez =z> ez' -> (x ?- ez) => (x ?- ez')
+      beta : forall {R}(x : R <- computation) -> let open BetaRule R in
+        {ts ts' : Env M (ga ,P betaIntro)} ->
+        {Ts Ts' : Env M (ga ,P betaType)} ->
+        {ss ss' : Env M (ga ,P betaElim)} ->
+        ts =P> ts' -> Ts =P> Ts' -> ss =P> ss' ->
+        (((betaIntro %P ts) :: (betaType %P Ts)) $ (betaElim %P ss))
+          =>
+        ((redTerm % ([] , cons (cons ts' Ts') ss'))
+          :: (redType % ([] , cons (cons ts' Ts') ss')))
+
+    data _=z>_ {ga} where
+
+      [] : [] =z> []
+      _-,_ : forall {de}{ez ez' : All _ de}{e e'} -> ez =z> ez' -> e => e' ->
+             (ez -, e) =z> (ez' -, e')
+
+    data _=P>_ {ga}{de} where
+
+      atom : (a : Atom) -> atom a =P> atom a
+      cons : forall {p q : Pat de}{tp tp' : Env M (ga ,P p)}{tq tq' : Env M (ga ,P q)}
+             -> tp =P> tp' -> tq =P> tq' -> cons tp tq =P> cons tp' tq'
+      abst : forall {q}{tq tq' : Env M (ga ,P q)} -> tq =P> tq' -> abst tq =P> abst tq'
+      hole : forall {de'}{th : de' <= de}{t t'} -> t => t' ->
+             _=P>_ {p = hole th} (hole t) (hole t')
 
 
     data _!=_ {ga : Nat}(Ga : Context M ga) : Judgement M ga -> Set where

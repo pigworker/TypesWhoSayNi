@@ -78,8 +78,12 @@ module STABTHIN (TH : TypeTheory) where
   open TYPETHEORY TH
   open BetaRule
   
-  redThin : forall {ga d}{t t' : Term ([] , NIL) ga lib d} -> t ~> t' ->
+  redThin : forall {M ga d}{t t' : Term M ga lib d} -> t ~> t' ->
             forall {de}(th : ga <= de) -> (t ^ th) ~> (t' ^ th)
+  redThinz : forall {M ga ga'}{ez ez' : All (\ _ -> Term M ga lib syn) ga'} ->
+             ez ~z> ez' ->
+            forall {de}(th : ga <= de) ->
+            Act.actz THIN ez (refl , th) ~z> Act.actz THIN ez' (refl , th)
   redThin (car t) th = car (redThin t th)
   redThin (cdr t) th = cdr (redThin t th)
   redThin (abst t) th = abst (redThin t (th su))
@@ -89,6 +93,7 @@ module STABTHIN (TH : TypeTheory) where
   redThin (elim s) th = elim (redThin s th)
   redThin (term t) th = term (redThin t th)
   redThin (type T) th = type (redThin T th)
+  redThin (meta ez) th = meta (redThinz ez th)
   redThin (beta {R} x ts Ts ss) th
     rewrite plugThinLemma (betaIntro R) ts th
           | plugThinLemma (betaType R) Ts th
@@ -96,9 +101,15 @@ module STABTHIN (TH : TypeTheory) where
           | instThinLemma (redTerm R) [] (cons (cons ts Ts) ss) th
           | instThinLemma (redType R) [] (cons (cons ts Ts) ss) th
           = beta {R = R} x _ _ _
+  redThinz (llll ez) th = llll (redThinz ez th)
+  redThinz (rrrr e) th = rrrr (redThin e th)
 
-  redSbst : forall {ga d}{t t' : Term ([] , NIL) ga lib d} -> t ~> t' ->
-            forall {de}(sg : [ [] , NIL ! ga ]/ de) -> (t / sg) ~> (t' / sg)
+  redSbst : forall {M ga d}{t t' : Term M ga lib d} -> t ~> t' ->
+            forall {de}(sg : [ M ! ga ]/ de) -> (t / sg) ~> (t' / sg)
+  redSbstz : forall {M ga ga'}{ez ez' : All (\ _ -> Term M ga lib syn) ga'} ->
+             ez ~z> ez' ->
+            forall {de}(sg : [ M ! ga ]/ de) ->
+            Act.actz SBST ez (refl , sg) ~z> Act.actz SBST ez' (refl , sg)
   redSbst (car t) sg = car (redSbst t sg)
   redSbst (cdr t) sg = cdr (redSbst t sg)
   redSbst (abst t) sg = abst (redSbst t (wksb sg))
@@ -109,6 +120,7 @@ module STABTHIN (TH : TypeTheory) where
   redSbst (elim s) sg = elim (redSbst s sg)
   redSbst (term t) sg = term (redSbst t sg)
   redSbst (type T) sg = type (redSbst T sg)
+  redSbst (meta ez) sg = meta (redSbstz ez sg)
   redSbst (beta {R} x ts Ts ss) sg
     rewrite plugSbstLemma0 (betaIntro R) ts sg
           | plugSbstLemma0 (betaType R) Ts sg
@@ -116,6 +128,8 @@ module STABTHIN (TH : TypeTheory) where
           | instSbstLemma0 (redTerm R) [] (cons (cons ts Ts) ss) sg
           | instSbstLemma0 (redType R) [] (cons (cons ts Ts) ss) sg
           = beta {R = R} x _ _ _
+  redSbstz (llll ez) sg = llll (redSbstz ez sg)
+  redSbstz (rrrr e) sg = rrrr (redSbst e sg)
 
   open FormationRule
   open CheckingRule
