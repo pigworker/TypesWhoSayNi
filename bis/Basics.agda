@@ -26,6 +26,10 @@ _*_ _+_ : Set -> Set -> Set
 S * T = Sg S \ _ -> T
 S + T = Sg Two (S <?> T)
 
+_?>=_ : forall {X Y} -> One + X -> (X -> One + Y) -> One + Y
+(#0 , _) ?>= _ = #0 , _
+(#1 , x) ?>= k = k x
+
 un : forall {l}{S T}{P : Sg S T -> Set l} ->
      ((s : S)(t : T s) -> P (s , t)) -> (x : Sg S T) -> P x
 un f (s , t) = f s t

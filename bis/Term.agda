@@ -171,7 +171,6 @@ record Act (A : Meta * Nat -> Meta * Nat -> Set) : Set where
   actThunk (t :: T) al = refl
 
 
-
 ------------------------------------------------------------------------------
 -- ACTIONS ON FREE OBJECT VARIABLES
 ------------------------------------------------------------------------------
@@ -342,3 +341,46 @@ patTerm : forall {ga M}(p : Pat []) ->
           (forall {de} -> de <P- p -> de <P- snd M) ->
           Term M ga lib chk
 patTerm p v = p %P patEnv p _ v
+
+
+------------------------------------------------------------------------------
+-- THICKENING
+------------------------------------------------------------------------------
+
+thickTerm? : forall {M de ga l d}(th : de <= ga)(t : Term M ga l d) ->
+  One + Sg _ \ t' -> t == (t' ^ th)  -- lazy bastard; decide this!
+thickTermz? : forall {M de ga n}(th : de <= ga)
+  (ez : All (\ _ -> Term M ga lib syn) n) ->
+  One + Sg _ \ ez' -> ez == Act.actz THIN ez' (refl , th)
+thickTerm? th (atom a) = #1 , atom a , refl
+thickTerm? th (cons s t) =
+  thickTerm? th s ?>= \ { (s' , refl) ->
+    thickTerm? th t ?>= \ { (t' , refl) ->
+      #1 , cons s' t' , refl } }
+thickTerm? th (abst t) =
+  thickTerm? (th su) t ?>= \ { (t' , refl) -> #1 , abst t' , refl }
+thickTerm? th (vari i) with thick? th i
+thickTerm? th (vari i) | #0 , a = #0 , _
+thickTerm? th (vari .(j -< th)) | #1 , j , refl = #1 , vari j , refl
+thickTerm? th (elim e s) =
+  thickTerm? th e ?>= \ { (e' , refl) ->
+    thickTerm? th s ?>= \ { (s' , refl) ->
+      #1 , elim e' s' , refl } }
+thickTerm? {d = chk} th (essl t) =
+  thickTerm? th t ?>= \ { (t' , refl) -> #1 , essl t' , refl }
+thickTerm? {d = syn} th (essl t) =
+  thickTerm? th t ?>= \ { (t' , refl) -> #1 , essl t' , refl }
+thickTerm? th (thnk n) =
+  thickTerm? th n ?>= \ { (n' , refl) -> #1 , thnk n' , refl }
+thickTerm? th (t :: T) =
+  thickTerm? th t ?>= \ { (t' , refl) ->
+    thickTerm? th T ?>= \ { (T' , refl) ->
+      #1 , t' :: T' , refl } }
+thickTerm? th (x ?- ez) =
+  thickTermz? th ez ?>= \ { (ez' , refl) -> #1 , (x ?- ez') , refl }
+thickTerm? th (mets x) = #1 , mets x , refl
+thickTermz? th [] = #1 , [] , refl
+thickTermz? th (ez -, e) =
+  thickTermz? th ez ?>= \ { (ez' , refl) ->
+    thickTerm? th e ?>= \ { (e' , refl) ->
+      #1 , ez' -, e' , refl } }

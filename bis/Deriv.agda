@@ -251,20 +251,28 @@ module _ where
   open EliminationRule
   open BetaRule
 
-  betaRules : (rz : Bwd Redex) -> All Reduct rz -> Bwd (BetaRule)
-  betaRules [] [] = []
-  betaRules (rz -, (t , e , Ty , rt , re)) (uz -, u) with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
+  betaRules : (rz : Bwd Redex) -> All Reduct rz ->
+    Sg (Bwd (BetaRule)) \ bz ->
+    BwdR (\ { (t , e , Ty , rt , re) b ->
+        betaIntro b == chkSuj t
+      * betaType  b == Ty
+      * betaElim  b == elimSuj e })
+      rz bz
+  betaRules [] [] = [] , []
+  betaRules (rz -, (t , e , Ty , rt , re)) (uz -, u)
+    with betaRules rz uz
+  ... | bz , rbz with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
        | refineMatch re (patEnv Ty [] (car ` cdr))
   ... | rad | chi , _ with premises [] (elimPrems e) ([] -, rad) chi
           (patEnv (elimSuj e) [] cdr)
   ... | _ , pi , _
-    = betaRules rz uz -, record
+    = bz -, record
       { betaIntro = chkSuj t
       ; betaType  = Ty
       ; betaElim  = elimSuj e
       ; redTerm   = u
       ; redType   = resType e % (([] -, rad) , cons chi pi)
-      }
+      } , rbz -, (refl , refl , refl)
 
 {-
 data Context : Nat -> Set where
@@ -295,7 +303,25 @@ record TypeTheory : Set where
                   * Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
                   * Apart uniInp universe
   computation : Bwd BetaRule
-  computation = betaRules redexes reducts
+  computation = fst (betaRules redexes reducts)
+  computationUnambiguous :
+    Pairwise (\ x y -> (cons (cons (betaIntro x) (betaType x)) (betaElim x))
+                    ~~ (cons (cons (betaIntro y) (betaType y)) (betaElim y))
+                    -> Zero) computation
+  computationUnambiguous th u
+    with getRedexes checking elimination
+       | betaRules redexes reducts
+       | noOverlap checking elimination
+         (trapa (\ r -> cons (chkInp r) (chkSuj r)) checking (fst (snd unambiguous)))
+         (trapa (\ r -> cons (trgType r) (elimSuj r)) elimination
+           (fst (snd (snd (unambiguous)))))
+  ... | rz | bz , rbz | rzA with bwdRThin rbz th
+  computationUnambiguous
+    th u
+    | rz | bz , rbz | rzA
+    | ([] -, (t0 , e0 , Ty0 , _) -, (t1 , e1 , Ty1 , _)) , ph
+      , [] -, (refl , refl , refl) -, (refl , refl , refl)
+    = rzA ph u
 
 module TYPETHEORY (TH : TypeTheory) where
   open TypeTheory TH
@@ -474,4 +500,5 @@ module TYPETHEORY (TH : TypeTheory) where
            All (Ga !=_) Jz
         ----------------------------------------------
         -> Ga != univ (uniInp %P Ts)
+
 

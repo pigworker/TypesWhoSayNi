@@ -367,12 +367,8 @@ module _ {X : Set} where
   tscviapb {iz} {jz} [] th rewrite pullbackOi th | pullbackOe th = refl , refl
   tscviapb {iz} {jz} (kz -, x) (th no) = tscviapb kz th ~no
   tscviapb {.(_ -, x)} {jz} (kz -, x) (th su) = tscviapb kz th ~su
-{-
-  with pullback th (thinl (oi {S = jz}) kz)
-                    | pullback th (thinr jz (oi {S = kz}))
-  ... | ijz , th0 , th1 , th2 , t0 , t1 | ikz , ph0 , ph1 , ph2 , t2 , t3
-    = {!!}
--}
+
+  
 
 join^ : forall {X}{xzz xzz' : Bwd (Bwd X)} -> BwdR _<=_ xzz xzz' ->
   join xzz <= join xzz'
