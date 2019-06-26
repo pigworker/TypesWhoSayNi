@@ -318,10 +318,10 @@ unifyEq (hole th) | .(_ , oi , oi , th , oiTri th , oiTri th) | refl
   = sgIrr ([_]M $= (hole $= idcoC _))
   \ { a (r0 , r1) (r2 , r3) -> _,_ $= mpatRIrr r0 r2 =$= mpatRIrr r1 r3 }   
 
-_=/=_ : forall {ga}(p q : Pat ga) -> Set
+_=/=_ : forall {ga}(p q : Pat ga) -> Two
 p =/= q with unify p q
-... | fail , _ = One
-... | [ _ ]M , _ = Zero
+... | fail , _ = #1
+... | [ _ ]M , _ = #0
 
 _~~_ : forall {ga}(p q : Pat ga) -> Set
 p ~~ q = Sg _ \ r -> r <P= p * r <P= q
@@ -336,65 +336,35 @@ sym~~ p q pq with unify? q p
 sym~~ p q (r , rp , rq) | #0 , n = naughty (n (r , rq , rp))
 sym~~ p q pq | #1 , y = y
 
-boom : forall {ga}(p q : Pat ga) -> p =/= q -> p ~~ q -> Zero
+boom : forall {ga}(p q : Pat ga) -> So (p =/= q) -> p ~~ q -> Zero
 boom p q n y with unify p q | unifyU p q
 boom p q n (r , r0 , r1) | fail , _ , _ | u = u [ r ]M r0 r1
 boom p q n y | [ x ]M , r0 , r1 | _ = n
 
-moob : forall {ga}(p q : Pat ga) -> (p ~~ q -> Zero) -> p =/= q
+moob : forall {ga}(p q : Pat ga) -> (p ~~ q -> Zero) -> So (p =/= q)
 moob p q n with unify p q
 moob p q n | fail , _ = <>
 moob p q n | [ r ]M , r0 , r1 = n (r , r0 , r1)
 
-{-
-asunder : forall {ga}{p' p q' q : Pat ga} ->
-            p' <P= p -> q' <P= q -> p =/= q -> p' =/= q'
-asunder {ga}{p'}{p}{q'}{q} r0 r1 a with unify p q | unifyU p q | unify p' q'
-asunder {ga} {p'} {p} {q'} {q} r0 r1 a | fail , r2 , r3 | z | fail , r4 , r5 = <>
-asunder {ga} {p'} {p} {q'} {q} r0 r1 a | fail , r2 , r3 | z | [ U ]M , r4 , r5
-  = z _ (r4 -<P=- r0) (r5 -<P=- r1)
-asunder {ga} {p'} {p} {q'} {q} r0 r1 () | [ x ]M , r2 , r3 | z | u' , r4 , r5
--}
+Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Pat ga -> Two
+Apartz f [] p = #1
+Apartz f (xz -, y) p = Apartz f xz p /\ (f y =/= p)
 
-Apartz : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Pat ga -> Set
-Apartz f [] p = One
-Apartz f (xz -, y) p = Apartz f xz p * (f y =/= p)
-
-Apart : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Set
-Apart f [] = One
-Apart f (xz -, x) = Apart f xz * Apartz f xz (f x)
+Apart : forall {X ga} -> (X -> Pat ga) -> Bwd X -> Two
+Apart f [] = #1
+Apart f (xz -, x) = Apart f xz /\ Apartz f xz (f x)
 
 Pairwise : forall {X}(R : X -> X -> Set) -> Bwd X -> Set
 Pairwise R xz = forall {x y} -> ([] -, x -, y) <= xz -> R x y
 
-apartz : forall {X ga}(f : X -> Pat ga)(xz : Bwd X)(p : Pat ga) ->
-  (forall {y}(i : y <- xz) -> f y ~~ p -> Zero) ->
-  Apartz f xz p
-apartz f [] p m = <>
-apartz f (xz -, x) p m
-  = apartz f xz p (m ` _no)
-  , moob (f x) p (m (oe su))
-
 ztrapa : forall {X ga}(f : X -> Pat ga)(xz : Bwd X)(p : Pat ga) ->
-  Apartz f xz p ->
+  So (Apartz f xz p) ->
   forall {y}(i : y <- xz) -> f y ~~ p -> Zero
-ztrapa f .(_ -, _) p (xaz , _) (th no) u = ztrapa f _ p xaz th u
-ztrapa f .(_ -, _) p (_ , xa) (th su) u = boom _ _ xa u
-
-apart : forall {X ga}(f : X -> Pat ga)(xz : Bwd X) ->
-  Pairwise (\ x y -> f x ~~ f y -> Zero) xz -> Apart f xz
-apart f [] pw = <>
-apart f (xz -, x) pw = apart f xz (pw ` _no) , apartz f xz (f x) (pw ` _su)
+ztrapa f .(_ -, _) p apa (th no) u = ztrapa f _ p (soOutl apa) th u
+ztrapa f .(_ -, _) p apa (th su) u = boom _ _ (soOutr apa) u
 
 trapa : forall {X ga}(f : X -> Pat ga)(xz : Bwd X) ->
-  Apart f xz -> Pairwise (\ x y -> f x ~~ f y -> Zero) xz
+  So (Apart f xz) -> Pairwise (\ x y -> f x ~~ f y -> Zero) xz
 trapa f [] <> () 
-trapa f (xz -, x) (xza , xaz) (th no) = trapa f xz xza th
-trapa f (xz -, x) (xza , xaz) (th su) = ztrapa f xz (f x) xaz th 
-
-{-
-cartApart : forall {X Y ga}
-  (f : X -> Pat ga)(xz : Bwd X)(g : Y -> Pat ga)(yz : Bwd Y) ->
-  Apart f xz -> Apart g yz -> Apart (\ { (x , y) -> cons (f x) (g y)}) (cart xz yz)
-cartApart f xz g yz xzA yzA = {!!}
--}
+trapa f (xz -, x) apa (th no) = trapa f xz (soOutl apa) th
+trapa f (xz -, x) apa (th su) = ztrapa f xz (f x) (soOutr apa) th 

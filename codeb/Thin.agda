@@ -164,6 +164,13 @@ triComp : forall {ga0 ga1 ga2 ga3}
 triComp v xi with assocTri v (mkTri _ xi)
 ... | phxi' , u0 , u1 rewrite triFun u1 (mkTri _ xi) = u0
 
+compTri : forall {ga0 ga1 ga2 ga3}
+  (xi : ga0 <= ga1){th : ga1 <= ga2}{ph : ga2 <= ga3}{ps : ga1 <= ga3}
+  (v : Tri th ph ps) ->
+  Tri (xi -<- th) ph (xi -<- ps)
+compTri xi v with cossaTri (mkTri xi _) v
+... | _ , u0 , u1 rewrite triFun u0 (mkTri xi _) = u1
+
 _-idth : forall {ga de}(th : ga <= de) -> (th -<- idth) == th
 th -idth = triFun (mkTri th idth) (triId th)
 
@@ -402,9 +409,37 @@ pairThin : forall
   Pair (s ^< th) (t ^< th) (st ^< th)
 pairThin (mkPair s t lv c rv) th = mkPair s t (triComp lv th) c (triComp rv th)
 
+pairInj : forall {S T}{ga}{s0 s1 : S ^^ ga}{t0 t1 : T ^^ ga}
+  {st : (S ^*^ T) ^^ ga} ->
+  Pair s0 t0 st -> Pair s1 t1 st -> (s0 == s1) * (t0 == t1)
+pairInj (mkPair s0 t0 lv c rv) (mkPair .s0 .t0 lu .c ru)
+  rewrite triFun lv lu | triFun rv ru = refl , refl
+
+pairFun : forall {S T}{ga}{s : S ^^ ga}{t : T ^^ ga}
+  {st0 st1 : (S ^*^ T) ^^ ga} ->
+  Pair s t st0 -> Pair s t st1 -> st0 == st1
+pairFun (mkPair s t lv c rv) (mkPair .s .t lu b ru)
+  with copQ (cop _ lv c rv) (cop _ lu b ru)
+... | refl = refl
+
 data Null : Bwd X -> Set where
   null : Null []
 
 data Sole (x : X) : Bwd X -> Set where
   sole : Sole x ([] -, x)
 
+_<Yo_ : Bwd X -> Bwd X -> Set
+ga <Yo de = forall {xi} -> xi <= ga -> xi <= de
+
+thyo : forall {ga de} -> ga <Yo de -> ga <= de
+thyo yo = yo idth
+
+yoth : forall {ga de} -> ga <= de -> ga <Yo de
+yoth th ph = ph -<- th
+
+_-Yo,_ : forall {ga de} -> ga <Yo de -> forall b -> (ga -, b) <Yo (de -, b)
+(f -Yo, b) (th -, .b) = f th -, b
+(f -Yo, b) (th -^ .b) = f th -^ b
+
+_-Yo^_ : forall {ga de} -> ga <Yo de -> forall b -> ga <Yo (de -, b)
+(f -Yo^ b) th = f th -^ b

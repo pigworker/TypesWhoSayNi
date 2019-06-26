@@ -33,3 +33,6 @@ module _ {X : Set} where
     env g (env f pz) == env h pz
   envComp f g h q [] = refl
   envComp f g h q (pz -, p) = rf _-,_ =$= envComp f g h q pz =$= q p
+
+  env0 : forall {P : X -> Set}{xz yz : Env P []} -> xz == yz
+  env0 {xz = []} {[]} = refl

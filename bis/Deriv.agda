@@ -18,6 +18,9 @@ pattern NIL = atom 0
 ?? x = x ?- idsb
 infixr 60 ??_
 
+target : forall {p} -> Term ([] -, <> , p) [] lib syn
+target = essl (mets (oe su))
+
 module _ (M : Meta) where
 
   Chk Syn : Nat -> Set
@@ -193,9 +196,21 @@ module _ where
     guard (unify? (chkInp t) (trgType e)) >>= \ u ->
     [] -, (t , e , u)
 
+  data [_::_]_~>?::_ : (p P q : Pat []) ->
+                        Term ([] , cons (cons p P) q) [] lib chk -> Set where
+    [_::_]_~>_::_ : forall p P q ->
+                    Term ([] , cons (cons p P) q) [] lib chk ->
+                    forall T ->
+                    [ p :: P ] q ~>?:: T
+
   Reduct : Redex -> Set
-  Reduct (t , e , Ty , rt , re) =
-    Term ([] , cons (cons (chkSuj t) Ty) (elimSuj e)) [] lib chk
+  Reduct (t , e , Ty , rt , re)
+    with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
+       | refineMatch re (patEnv Ty [] (car ` cdr))
+  ...  | rad | chi , _ with premises [] (elimPrems e) ([] -, rad) chi
+          (patEnv (elimSuj e) [] cdr)
+  ...  | _ , pi , _ =
+    [ chkSuj t :: Ty ] elimSuj e ~>?:: (resType e % (([] -, rad) , cons chi pi))
 
   noOverlap : (tz : Bwd CheckingRule)(ez : Bwd EliminationRule) ->
     Pairwise (\ x y -> cons (chkInp x) (chkSuj x) ~~ cons (chkInp y) (chkSuj y) -> Zero) tz ->
@@ -259,20 +274,17 @@ module _ where
       * betaElim  b == elimSuj e })
       rz bz
   betaRules [] [] = [] , []
-  betaRules (rz -, (t , e , Ty , rt , re)) (uz -, u)
+  betaRules (rz -, r) (uz -, ([ p :: P ] q ~> t :: T))
     with betaRules rz uz
-  ... | bz , rbz with (patTerm (chkSuj t) (car ` car) :: patTerm Ty (car ` cdr))
-       | refineMatch re (patEnv Ty [] (car ` cdr))
-  ... | rad | chi , _ with premises [] (elimPrems e) ([] -, rad) chi
-          (patEnv (elimSuj e) [] cdr)
-  ... | _ , pi , _
-    = bz -, record
-      { betaIntro = chkSuj t
-      ; betaType  = Ty
-      ; betaElim  = elimSuj e
-      ; redTerm   = u
-      ; redType   = resType e % (([] -, rad) , cons chi pi)
-      } , rbz -, (refl , refl , refl)
+  ... | bz , rbz
+      = (bz -, record
+          { betaIntro = p
+          ; betaType  = P
+          ; betaElim  = q
+          ; redTerm   = t
+          ; redType   = T
+          })
+      , rbz -, (refl , refl , refl)
 
 {-
 data Context : Nat -> Set where
@@ -298,10 +310,14 @@ record TypeTheory : Set where
   redexes = getRedexes checking elimination
   field
     reducts     : All Reduct redexes
-    {unambiguous} : Apart typeSuj formation
-                  * Apart (\ r -> cons (chkInp r) (chkSuj r)) checking
-                  * Apart (\ r -> cons (trgType r) (elimSuj r)) elimination
-                  * Apart uniInp universe
+    {unambiguousFormation} :
+      So (Apart typeSuj formation)
+    {unambiguousChecking} :
+      So (Apart (\ r -> cons (chkInp r) (chkSuj r)) checking)
+    {unambiguousElimination} :
+      So (Apart (\ r -> cons (trgType r) (elimSuj r)) elimination)
+    {unambiguousUniverse} :
+      So (Apart uniInp universe)
   computation : Bwd BetaRule
   computation = fst (betaRules redexes reducts)
   computationUnambiguous :
@@ -312,16 +328,13 @@ record TypeTheory : Set where
     with getRedexes checking elimination
        | betaRules redexes reducts
        | noOverlap checking elimination
-         (trapa (\ r -> cons (chkInp r) (chkSuj r)) checking (fst (snd unambiguous)))
-         (trapa (\ r -> cons (trgType r) (elimSuj r)) elimination
-           (fst (snd (snd (unambiguous)))))
+           (trapa (\ r -> cons (chkInp r) (chkSuj r)) checking
+             unambiguousChecking)
+           (trapa (\ r -> cons (trgType r) (elimSuj r)) elimination
+             unambiguousElimination)
   ... | rz | bz , rbz | rzA with bwdRThin rbz th
-  computationUnambiguous
-    th u
-    | rz | bz , rbz | rzA
-    | ([] -, (t0 , e0 , Ty0 , _) -, (t1 , e1 , Ty1 , _)) , ph
-      , [] -, (refl , refl , refl) -, (refl , refl , refl)
-    = rzA ph u
+  ... | ([] -, (t0 , e0 , Ty0 , _) -, (t1 , e1 , Ty1 , _)) , ph
+      , [] -, (refl , refl , refl) -, (refl , refl , refl) = rzA ph u
 
 module TYPETHEORY (TH : TypeTheory) where
   open TypeTheory TH
@@ -329,7 +342,8 @@ module TYPETHEORY (TH : TypeTheory) where
   module _ {M : Meta} where
 
     data _~>_ {ga} : forall {d}(t t' : Term M ga lib d) -> Set
-    data _~z>_ {ga} : forall {de : Nat}(ez ez' : All (\ _ -> Term M ga lib syn) de) -> Set
+    data _~z>_ {ga} : forall {de : Nat}
+                      (ez ez' : All (\ _ -> Term M ga lib syn) de) -> Set
 
     data _~>_ {ga} where
 
@@ -500,5 +514,4 @@ module TYPETHEORY (TH : TypeTheory) where
            All (Ga !=_) Jz
         ----------------------------------------------
         -> Ga != univ (uniInp %P Ts)
-
 
