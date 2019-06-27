@@ -36,5 +36,16 @@ module _ {X : Set} where
   envComp f g h q [] = refl
   envComp f g h q (pz -, p) = rf _-,_ =$= envComp f g h q pz =$= q p
 
+  envComps : forall {P Q R S : X -> Set}{xz}(pz : Env P xz)
+    {f : forall {x} -> P x -> Q x}{g : forall {x} -> Q x -> S x}
+    {h : forall {x} -> P x -> R x}{k : forall {x} -> R x -> S x}
+    (q : forall {x}(p : P x) -> g (f p) == k (h p)) ->
+    env g (env f pz) == env k (env h pz)
+  envComps pz {f}{g}{h}{k} q =
+    env g (env f pz) =[ envComp _ _ _ (\ _ -> refl) pz >=
+    env (\ p -> g (f p)) pz =[ envExt _ _ q pz >=
+    env (\ p -> k (h p)) pz =< envComp _ _ _ (\ _ -> refl) pz ]=
+    env k (env h pz) [QED]
+  
   env0 : forall {P : X -> Set}{xz yz : Env P []} -> xz == yz
   env0 {xz = []} {[]} = refl

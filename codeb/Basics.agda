@@ -49,6 +49,12 @@ module _ {k l}{X : Set k}{Y : Set l} where
  _$=_ : {a b : X}             (f : X -> Y) -> a == b -> f a == f b
  f $= q = rf f =$= q
 
+ module _ {m}{Z : Set m} where
+  extComp : (f : X -> Y){g h : Y -> Z}
+    (q : (y : Y) -> g y == h y) ->
+    (x : X) -> g (f x) == h (f x)
+  extComp f q x = q (f x)
+
 record Sg (S : Set)(T : S -> Set) : Set where
   constructor _,_
   field

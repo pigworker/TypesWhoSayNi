@@ -66,17 +66,18 @@ module _ {B S : Set} where
      _-$^_ = env (_^^^ b) sg      ;  _-$,_ = _-$^_ -, #0
 
    infix 4 _/_ _/^_
-   _/_  : forall k {ga de} -> (M ! k) ga  -> (M :/ ga) de -> (M !^ k) de
-   _/^_ : forall k {ga de} -> (M !^ k) ga -> (M :/ ga) de -> (M !^ k) de
-   (:S _ / #)          (_ -, t) = t
-   (:S _ / c - td)           sg = (c -_) ^$ (:D Ds c / td) sg
-   (:S _ / _%_ {xi} m rh)    sg = (m %_) ^$ (:D spine xi / rh) sg
-   (:D un'    / null)        sg = null ^ noth
-   (:D D *' E / d <^ c ^> e) sg = (:D D /^ d &^ c) sg ^,^ (:D E /^ c ^& e) sg
-   (:D b >' D / ll d)        sg = sco ((:D D / d) (sg -$, b))
-   (:D b >' D / kk d)        sg = kk ^$ (:D D / d) sg
-   (:D ` s    / t)           sg = (:S s / t) sg
-   (k /^ t ^ th)             sg = (k / t) (th <? sg)
+   _/_  : forall k {ga de} -> (M :/ ga) de -> (M ! k) ga  -> (M !^ k) de
+   _/^_ : forall k {ga de} -> (M :/ ga) de -> (M !^ k) ga -> (M !^ k) de
+   (:S _ / sg)        (c - td) = (c -_) ^$ (:D Ds c / sg) td
+   (:S _ / sg) (_%_ {xi} m rh) = (m %_) ^$ (:D spine xi / sg) rh
+   (:S _ / (_ -, t))         # = t
+   (:D un'    / sg) null = null ^ noth
+   (:D D *' E / sg) (d <^ c ^> e) =
+     (:D D /^ sg) (d &^ c) ^,^ (:D E /^ sg) (c ^& e)
+   (:D b >' D / sg) (ll d) = sco ((:D D / sg -$, b) d)
+   (:D b >' D / sg) (kk d) = kk ^$ (:D D / sg) d
+   (:D ` s    / sg) t = (:S s / sg) t
+   (k /^ sg) (t ^ th) = (k / th <? sg) t
 
    data Sb {ga de} : (k : Sort) ->
      (M !^ k) ga -> (M :/ ga) de -> (M !^ k) de -> Set
@@ -152,7 +153,7 @@ module _ {B S : Set} where
    sbRelv (tmSb p) i q = sbRelv p i q
 
    sb : forall k {ga0 ga de}(t : (M ! k) ga0)(th : ga0 <= ga)
-        (sg : (M :/ ga) de) -> Sb k (t ^ th) sg ((k /^ t ^ th) sg)
+        (sg : (M :/ ga) de) -> Sb k (t ^ th) sg ((k /^ sg) (t ^ th))
    sb (:S _) # i sg  with i <? sg | \ t -> vaSb i {sg} {t}
    ... | [] -, t | h = h _ refl
    sb (:S _) (c - td) th sg = cnSb c (sb (:D Ds c) td th sg)
@@ -166,10 +167,14 @@ module _ {B S : Set} where
    ... | h with sbRelv h (noth -, b) (_-,_ $= env0 =$= refl)
    ... | ph , v with th <? env (_^^^ b) sg | env (_^^^ b) (th <? sg)
                    | naturalSelection (_^^^ b) th sg
-   ... | sg0 | _ | refl with (:D D / d) (sg0 -, #0)
+   ... | sg0 | _ | refl with (:D D / sg0 -, #0) d
    sb (:D b >' D) (ll d) th sg | h | _ , (v -, _) | _ | _ | refl | _ = llSb h
    sb (:D b >' D) (kk d) th sg = kkSb (sb (:D D) d th sg)
    sb (:D ` s) t th sg = tmSb (sb (:S s) t th sg)
+
+   sb^ : forall k {ga de}(t : (M !^ k) ga)(sg : (M :/ ga) de) ->
+     Sb k t sg ((k /^ sg) t)
+   sb^ k (t ^ th) = sb k t th
 
    thsb : forall {ga de} -> ga <= de -> (M :/ ga) de
    thsb []        = []
@@ -207,107 +212,77 @@ module _ {B S : Set} where
    thsbLemma (:D ` s)    t v = tmSb (thsbLemma _ t v)
 
    _-$-_ : forall {ga de xi} -> (M :/ ga) de -> (M :/ de) xi -> (M :/ ga) xi
-   sg01 -$- sg12 = env (\ t -> (:S _ /^ t) sg12) sg01
-   
-{-
+   sg -$- ta = env (:S _ /^ ta) sg
 
+   sbthLemma : forall {k ga de}{t : (M !^ k) ga}{sg}{t' : (M !^ k) de} ->
+     Sb k t sg t' -> forall {xi}(th : de <= xi) ->
+     Sb k t (env (\ e -> e ^< th) sg) (t' ^< th)
+   sbthLemma {sg = sg}{t'} (vaSb i q) th = vaSb i (
+     (i <? env (_^< th) sg)  =[ naturalSelection _ i sg >=
+     env (_^< th) (i <? sg)  =[ env (_^< th) $= q >=
+     ([] -, (t' ^< th))      [QED])
+   sbthLemma (cnSb c p) th = cnSb c (sbthLemma p th)
+   sbthLemma (meSb m p) th = meSb m (sbthLemma p th)
+   sbthLemma unSb th rewrite nothU (noth -<- th) noth = unSb
+   sbthLemma (prSb de d e de') th = prSb de
+     (sbthLemma d th) (sbthLemma e th) (prThin de' th)
+   sbthLemma {:D b >' D} {sg = sg} (llSb p) th = llSb (sbthLemma p (th -, b)
+     [ Sb _ _ $=  (_-,_ $= envComps sg (\ _ -> refl)
+                       =$= ((# ^_) $= ((_-, b) $= nothU _ _)))
+             =$= refl >)
+   sbthLemma (kkSb p) th = kkSb (sbthLemma p th)
+   sbthLemma (tmSb p) th = tmSb (sbthLemma p th)
 
-    sbthLemma : forall {s ga de}{t : Tm s ga}{sg : ga => de}{t' : Tm s de} ->
-      Sb t sg t' -> forall {xi}(th : de <= xi) ->
-      Sb t (env (\ e -> e ^< th) sg) (t' ^< th)
-    sbthDLemma : forall D {ga de}
-      {t : Rlv D TmR ^^ ga}{sg : ga => de}{t' :  Rlv D TmR ^^ de} ->
-      SbD D t sg t' -> forall {xi}(th : de <= xi) ->
-      SbD D t (env (\ e -> e ^< th) sg) (t' ^< th)
-    sbthLemma {sg = sg}{t'} (vaSb {i = i} q) th = vaSb (
-      (i <? env (_^< th) sg)  =[ naturalSelection _ i sg >=
-      env (_^< th) (i <? sg)  =[ rf (env (_^< th)) =$= q >=
-      ([] -, (t' ^< th))      [QED])
-    sbthLemma (cnSb c p) th = cnSb c (sbthDLemma _ p th)
-    sbthDLemma .at' (atSb a) th rewrite nothU (noth -<- th) noth = atSb a
-    sbthDLemma .(_ *' _) (prSb de d e de') th =
-      prSb de (sbthDLemma _ d th) (sbthDLemma _ e th) (pairThin de' th)
-    sbthDLemma (b !-' D) {sg = sg} (llSb p) th = llSb (sbthDLemma D p (th -, b)
-      [ rf (SbD D _)
-        =$= (rf _-,_
-          =$= (env (_^< (th -, b)) (sg -$^ b)
-                 =[ envComp _ _ _ (\ _ -> refl) sg >=
-               env (_^< (th -^ b)) sg
-                 =< envComp _ _ _ (\ _ -> refl) sg ]=
-               (env (_^< th) sg -$^ b)
-                 [QED])
-          =$= (rf (va sole refl ^_) =$= (rf (_-, b) =$= nothU _ _)) )
-        =$= refl >)
-    sbthDLemma .(_ !-' _) (kkSb p) th = kkSb (sbthDLemma _ p th)
-    sbthDLemma .([ _ ]') (tmSb p) th = tmSb (sbthLemma p th)
+   cowkLemma : forall {ga de xi}(sg : (M :/ ga) de)(ta : (M :/ de) xi) b ->
+     ((sg -$, b) -$- (ta -$, b)) == ((sg -$- ta) -$, b)
+   cowkLemma sg ta b = (_-, _) $= 
+     ((sg -$^ b) -$- (ta -$, b))  =[ (envComps sg \ t ->
+       (:S _ /^ ta -$^ b) t
+         =[ (\ z -> (:S _ /^ z) t) $= envExt _ _ (\ t -> 
+              (thing t ^_) $= ((_-^ b) $= triFun (triId _) (_ -v- _))) ta >=
+       (:S _ /^ env (_^< (idth -^ b)) ta) t
+         =[ funSb (sb^ (:S _) t _) (sbthLemma (sb^ _ t ta) (idth -^ b)) >=
+       ((:S _ /^ ta) t ^< (idth -^ b))
+         =[ (thing ((:S _ /^ ta) t) ^_)
+            $= ((_-^ b) $= triFun (_ -v- _) (triId _)) >=
+       ((:S _ /^ ta) t ^^^ b)       [QED]) >=
+     ((sg -$- ta) -$^ b)          [QED]
 
-    cowkLemma : forall {ga0 ga1 ga2}(sg01 : ga0 => ga1)(sg12 : ga1 => ga2) b ->
-      ((sg01 -$, b) -$- (sg12 -$, b)) == ((sg01 -$- sg12) -$, b)
-    cowkLemma sg01 sg12 b = rf (_-, _)
-      =$= ((sg01 -$^ b) -$- (sg12 -$, b))
-            =[ envComp _ _ _ (\ _ -> refl) sg01 >=
-          (sg01 -$- (sg12 -$^ b))
-            =[ envExt _ _ (\ t -> 
-               (t $^ (sg12 -$^ b))
-                 =[ rf (t $^_)
-                    =$= envExt _ _ (\ { (t ^ th) ->
-                      rf (t ^_)
-                        =$= (rf (_-^ b)
-                              =$= triFun (triId _) (mkTri _ _)) }) sg12 >=
-               (t $^ env (_^< (idth -^ b)) sg12)
-                 =[ funSb (sb^ t _) (sbthLemma (sb^ t sg12) (idth -^ b)) >=
-               ((t $^ sg12) ^< (idth -^ b))
-                 =[ rf (thing (t $^ sg12) ^_)
-                    =$= (rf (_-^ b) =$= triFun (mkTri _ _) (triId _)) >=
-               ((t $^ sg12) ^^^ b)
-                 [QED]) sg01 >=
-          env (\ t -> (t $^ sg12) ^^^ b) sg01
-            =< envComp _ _ _ (\ _ -> refl) sg01 ]=
-          ((sg01 -$- sg12) -$^ b)
-            [QED] 
-
-    sbComp : forall {s ga0 ga1 ga2}
-      {t0 : Tm s ga0}{t1 : Tm s ga1}{t2 : Tm s ga2} ->
-      {sg01 : ga0 => ga1}{sg12 : ga1 => ga2} ->
-      Sb t0 sg01 t1 -> Sb t1 sg12 t2 -> Sb t0 (sg01 -$- sg12) t2
-    sbDComp : forall D {ga0 ga1 ga2}
-      {t0 : Rlv D TmR ^^ ga0}{t1 : Rlv D TmR ^^ ga1}{t2 : Rlv D TmR ^^ ga2} ->
-      {sg01 : ga0 => ga1}{sg12 : ga1 => ga2} ->
-      SbD D t0 sg01 t1 -> SbD D t1 sg12 t2 -> SbD D t0 (sg01 -$- sg12) t2
-    sbComp {t1 = t1}{t2}{sg01} {sg12} (vaSb {i = i} q) p12 = vaSb
-      ((i <? (sg01 -$- sg12))
-         =[ naturalSelection _ i sg01 >=
-       env (_$^ sg12) (i <? sg01)
-         =[ rf (env (_$^ sg12)) =$= q >=
-       ([] -, (t1 $^ sg12))
-         =[ rf ([] -,_) =$= funSb (sb _ _ sg12) p12 >=
-       ([] -, t2)
-         [QED])
-    sbComp (cnSb c p01) (cnSb .c p12) = cnSb c (sbDComp _ p01 p12)
-    sbDComp .at' (atSb a) (atSb .a) = atSb a
-    sbDComp .(_ *' _) (prSb de0 d01 e01 de1) (prSb de1' d12 e12 de2)
-      with pairInj de1 de1'
-    ... | refl , refl = prSb de0 (sbDComp _ d01 d12) (sbDComp _ e01 e12) de2
-    sbDComp (b !-' _) {sg01 = sg01}{sg12} (llSb p01) (llSb p12)
-      with sbDComp _ p01 p12
-    ... | h rewrite cowkLemma sg01 sg12 b = llSb h
-    sbDComp .(_ !-' _) (kkSb p01) (kkSb p12) = kkSb (sbDComp _ p01 p12)
-    sbDComp .([ _ ]') (tmSb p01) (tmSb p12) = tmSb (sbComp p01 p12)
-
+   sbComp : forall {k ga de xi sg ta}
+     {t0 : (M !^ k) ga}{t1 : (M !^ k) de}{t2 : (M !^ k) xi} ->
+     Sb k t0 sg t1 -> Sb k t1 ta t2 -> Sb k t0 (sg -$- ta) t2
+   sbComp {sg = sg}{ta}{t1 = s}{t} (vaSb i q) r = vaSb i (
+     (i <? (sg -$- ta))          =[ naturalSelection _ i sg >=
+     env (:S _ /^ ta) (i <? sg)  =[ env (:S _ /^ ta) $= q >=
+     ([] -, (:S _ /^ ta) s)      =[ ([] -,_) $= funSb (sb^ _ _ ta) r >=
+     ([] -, t)                   [QED])
+   sbComp (cnSb c p) (cnSb .c r) = cnSb c (sbComp p r)
+   sbComp (meSb m p) (meSb .m r) = meSb m (sbComp p r)
+   sbComp unSb unSb = unSb
+   sbComp (prSb a p q b) (prSb c r s d) with prInj b c ; ... | refl , refl =
+     prSb a (sbComp p r) (sbComp q s) d
+   sbComp {:D b >' D}{sg = sg}{ta} (llSb p) (llSb r) =
+     llSb (sbComp p r [ Sb _ _ $= cowkLemma sg ta b =$= refl >)
+   sbComp (kkSb p) (kkSb r) = kkSb (sbComp p r)
+   sbComp (tmSb p) (tmSb r) = tmSb (sbComp p r)
 
 -----------------------------------
--- B = One; S = Dir
-data Dir : Set where chk syn : Dir
-data Tag : Dir -> Set where
-  em am cs ab : Tag chk
-  ra el : Tag syn
-BiD : (d : Dir) -> Tag d -> Syn One Dir
-BiD .chk em = [ syn ]'
-BiD .chk am = at'
-BiD .chk cs = [ chk ]' *' [ chk ]'
-BiD .chk ab = <> !-' [ chk ]'
-BiD .syn ra = [ chk ]' *' [ chk ]'
-BiD .syn el = [ syn ]' *' [ chk ]'
+module BIDI (Atom : Set) where
 
-open TERM Tag BiD (\ _ -> syn)
--}
+  data Dir : Set where chk syn : Dir
+  
+  data Tag : Dir -> Set where
+    em cs ab : Tag chk
+    am : Atom -> Tag chk
+    ra el : Tag syn
+    
+  BiD : {d : Dir} -> Tag d -> Syn One Dir
+  --   sort  tag      arity
+  BiD {.chk} em     = ` syn
+  BiD {.chk} cs     = ` chk *' ` chk
+  BiD {.chk} ab     = <> >' ` chk
+  BiD {.chk} (am a) = un'
+  BiD {.syn} ra     = ` chk *' ` chk
+  BiD {.syn} el     = ` syn *' ` chk
+
+  open TERM Tag BiD (\ _ -> syn)
