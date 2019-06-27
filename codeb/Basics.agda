@@ -12,6 +12,7 @@ Dec X = (X -> Zero) + X
 
 module _ {l}{X : Set l} where
 
+  infix 3 _==_
   data _==_ (x : X) : X -> Set l where
     refl : x == x
 
@@ -20,6 +21,9 @@ module _ {l}{X : Set l} where
 
   sym : forall {x y : X} -> x == y -> y == x
   sym refl = refl
+
+  _=-=_ : forall {x y z} -> x == y -> y == z -> x == z
+  refl =-= q = q
 
   _=[_>=_ : forall x {y z} -> x == y -> y == z -> x == z
   x =[ refl >= q = q
@@ -38,12 +42,12 @@ module _ {l}{X : Set l} where
 _[_> : forall {l}{S T : Set l}(s : S)(Q : S == T) -> T
 s [ refl > = s
 
-_=$=_ : forall {k l}{X : Set k}{Y : Set l}{f g : X -> Y}{a b : X} ->
-  f == g -> a == b -> f a == g b
-refl =$= refl = refl
-
-infixl 2 _=$=_
-
+module _ {k l}{X : Set k}{Y : Set l} where
+ infixl 2 _=$=_ _$=_
+ _=$=_ : {f g : X -> Y}{a b : X} -> f == g -> a == b -> f a == g b
+ refl =$= refl = refl
+ _$=_ : {a b : X}             (f : X -> Y) -> a == b -> f a == f b
+ f $= q = rf f =$= q
 
 record Sg (S : Set)(T : S -> Set) : Set where
   constructor _,_
@@ -53,4 +57,4 @@ record Sg (S : Set)(T : S -> Set) : Set where
 open Sg public
 _*_ : Set -> Set -> Set
 S * T = Sg S \ _ -> T
-infixr 4 _,_ _*_
+infixr 2 _,_ _*_

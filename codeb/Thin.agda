@@ -6,19 +6,24 @@ open import Bwd
 data _<=_ : Bwd X -> Bwd X -> Set where
   [] : [] <= []
   _-,_ : forall {xz yz} ->
-    xz <= yz -> forall x -> (xz -, x) <= (yz -, x)
+    xz <= yz -> forall x ->  xz -, x  <=  yz -, x
   _-^_ : forall {xz yz} ->
-    xz <= yz -> forall x ->  xz       <= (yz -, x)
+    xz <= yz -> forall x ->  xz       <=  yz -, x
+
+infix 4 _<=_
+infixl 8 _-^_
 
 idth : forall {xz} -> xz <= xz
 idth {[]} = []
 idth {xz -, x} = idth -, x
 
 _-<-_ : forall {ga0 ga1 ga2} -> ga0 <= ga1 -> ga1 <= ga2 -> ga0 <= ga2
-th -<- (ph -^ x) = (th -<- ph) -^ x
-(th -, .x) -<- (ph -, x) = (th -<- ph) -, x
-(th -^ .x) -<- (ph -, x) = (th -<- ph) -^ x
-[] -<- [] = []
+th       -<- (ph -^ x) = th -<- ph -^ x
+th -, .x -<- (ph -, x) = th -<- ph -, x
+th -^ .x -<- (ph -, x) = th -<- ph -^ x
+[]       -<- [] = []
+
+infixl 8 _-<-_
 
 antisym : forall {xz yz}(th : xz <= yz)(ph : yz <= xz) ->
   Sg (xz == yz) \ { refl -> (th == idth) * (ph == idth) }
@@ -33,6 +38,7 @@ antisym (th -^ x) ph with antisym th ((idth -^ _) -<- ph)
 antisym (th -^ x) (ph -, .x) | refl , p , ()
 antisym (th -^ x) (ph -^ _) | refl , p , ()
 
+infixr 6 _<?_
 _<?_ : forall {P xz yz} -> xz <= yz -> Env P yz -> Env P xz
 []        <? [] = []
 (th -, x) <? (pz -, p) = (th <? pz) -, p
@@ -54,6 +60,7 @@ nothU : forall {xz}(th ph : [] <= xz) -> th == ph
 nothU [] [] = refl
 nothU (th -^ x) (ph -^ .x) rewrite nothU th ph = refl
 
+infixl 8 _-^,_
 data Tri : forall {iz jz kz}
   (th : iz <= jz)(ph : jz <= kz)(ps : iz <= kz) -> Set where
   [] : Tri [] [] []
@@ -70,12 +77,13 @@ data Tri : forall {iz jz kz}
    Tri th ph ps -> forall x ->
    Tri th (ph -^ x) (ps -^ x)
 
-mkTri : forall {ga0 ga1 ga2}(th : ga0 <= ga1)(ph : ga1 <= ga2) ->
+infixl 8 _-v-_
+_-v-_ : forall {ga0 ga1 ga2}(th : ga0 <= ga1)(ph : ga1 <= ga2) ->
   Tri th ph (th -<- ph)
-mkTri th (ph -^ x) = mkTri th ph -^ x
-mkTri (th -, .x) (ph -, x) = mkTri th ph -, x
-mkTri (th -^ .x) (ph -, x) = mkTri th ph -^, x
-mkTri [] [] = []
+th       -v- (ph -^ x) = th -v- ph -^ x
+th -, .x -v- (ph -, x) = th -v- ph -, x
+th -^ .x -v- (ph -, x) = th -v- ph -^, x
+[]       -v- []        = []
 
 triId : forall {ga de}(th : ga <= de) -> Tri th idth th
 triId [] = []
@@ -161,18 +169,18 @@ triComp : forall {ga0 ga1 ga2 ga3}
   {th : ga0 <= ga1}{ph : ga1 <= ga2}{ps : ga0 <= ga2}
   (v : Tri th ph ps)(xi : ga2 <= ga3) ->
   Tri th (ph -<- xi) (ps -<- xi)
-triComp v xi with assocTri v (mkTri _ xi)
-... | phxi' , u0 , u1 rewrite triFun u1 (mkTri _ xi) = u0
+triComp v xi with assocTri v (_ -v- xi)
+... | phxi' , u0 , u1 rewrite triFun u1 (_ -v- xi) = u0
 
 compTri : forall {ga0 ga1 ga2 ga3}
   (xi : ga0 <= ga1){th : ga1 <= ga2}{ph : ga2 <= ga3}{ps : ga1 <= ga3}
   (v : Tri th ph ps) ->
   Tri (xi -<- th) ph (xi -<- ps)
-compTri xi v with cossaTri (mkTri xi _) v
-... | _ , u0 , u1 rewrite triFun u0 (mkTri xi _) = u1
+compTri xi v with cossaTri (xi -v- _) v
+... | _ , u0 , u1 rewrite triFun u0 (xi -v- _) = u1
 
 _-idth : forall {ga de}(th : ga <= de) -> (th -<- idth) == th
-th -idth = triFun (mkTri th idth) (triId th)
+th -idth = triFun (th -v- idth) (triId th)
 
 compSel : forall {P xz yz zz}{th : xz <= yz}{ph : yz <= zz}{ps : xz <= zz}
   (t : Tri th ph ps)(pz : Env P zz) ->
@@ -302,25 +310,29 @@ copComp : forall {iz jz kz lz}(th : iz <= kz)(ph : jz <= kz)(ps : kz <= lz) ->
    cop (ps' -<- ps) (triComp lv ps) c (triComp rv ps))
 copComp th ph ps = copQ _ _
 
-record _^^_ (T : Bwd X -> Set)(scope : Bwd X) : Set where
+infixl 3 _:^_
+infix 5 _^_
+record _:^_ (T : Bwd X -> Set)(scope : Bwd X) : Set where
   constructor _^_
   field
     {support} : Bwd X
     thing     : T support
     thinning  : support <= scope
-open _^^_ public
+open _:^_ public
 
+
+infixl 3 _^$_
 _^$_ : forall {S T : Bwd X -> Set}(f : forall {xz} -> S xz -> T xz) ->
-  forall {xz} -> S ^^ xz -> T ^^ xz
+  forall {xz} -> S :^ xz -> T :^ xz
 f ^$ (s ^ th) = f s ^ th
 
-_^^^_ : forall {T xz} -> T ^^ xz -> forall x -> T ^^ (xz -, x)
-(t ^ th) ^^^ x = t ^ (th -^ x)
+_^^^_ : forall {T xz} -> T :^ xz -> forall x -> T :^ (xz -, x)
+(t ^ th) ^^^ x = t ^ th -^ x
 
-_^<_ : forall {T xz yz}(t : T ^^ xz)(th : xz <= yz) -> T ^^ yz
-(t ^ th) ^< ph = t ^ (th -<- ph)
+_^<_ : forall {T xz yz}(t : T :^ xz)(th : xz <= yz) -> T :^ yz
+(t ^ th) ^< ph = t ^ th -<- ph
 
-thin1Lemma : forall {T xz x}(t : T ^^ xz) ->
+thin1Lemma : forall {T xz x}(t : T :^ xz) ->
   (t ^< (idth -^ x)) == (t ^^^ x)
 thin1Lemma (t ^ th) = rf (t ^_) =$= (rf (_-^ _) =$= (th -idth))
 
@@ -344,7 +356,7 @@ data Scope (T : Bwd X -> Set)(x : X)(xz : Bwd X) : Set where
   ll : T (xz -, x) -> Scope T x xz
   kk : T xz -> Scope T x xz
 
-sco : forall {T x xz} -> T ^^ (xz -, x) -> Scope T x ^^ xz
+sco : forall {T x xz} -> T :^ (xz -, x) -> Scope T x :^ xz
 sco (t ^ (th -, x)) = ll t ^ th
 sco (t ^ (th -^ x)) = kk t ^ th
 
@@ -356,16 +368,24 @@ mkExt : forall {ga de x}(th : ga <= (de -, x)) ->
 mkExt (th -, x) = _ , llex , th , (idTri th -, x)
 mkExt (th -^ x) = _ , kkex , th , (idTri th -^, x)
 
-sco' : forall {T x xz} -> T ^^ (xz -, x) -> Scope' T x ^^ xz
+sco' : forall {T x xz} -> T :^ (xz -, x) -> Scope' T x :^ xz
 sco' (t ^ th) = let ga , ex , ph , _ = mkExt th in scop t ex ^ ph
 
 
 scoLemma : forall {T ga de x}
-  (t : T ^^ (ga -, x))(ph : ga <= de) ->
+  (t : T :^ (ga -, x))(ph : ga <= de) ->
   sco (t ^< (ph -, x)) == (sco t ^< ph)
 scoLemma (t ^ (th -, x)) ph = refl
 scoLemma (t ^ (th -^ x)) ph = refl
 
+data Null : Bwd X -> Set where
+  null : Null []
+
+data Sole (x : X) : Bwd X -> Set where
+  sole : Sole x ([] -, x)
+
+infixl 4 _^*^_
+infix 6 _<^_^>_
 record _^*^_ (S T : Bwd X -> Set)(scope : Bwd X) : Set where
   constructor _<^_^>_
   field
@@ -376,57 +396,57 @@ record _^*^_ (S T : Bwd X -> Set)(scope : Bwd X) : Set where
     cover : Cover lthin rthin
     outr  : T rsupp
 
-pair : forall {S T xz} -> (S ^^ xz) * (T ^^ xz) -> (S ^*^ T) ^^ xz
-pair ((s ^ th) , (t ^ ph)) with coproduct th ph
-pair ((s ^ th) , (t ^ ph)) | cop ps ltri covering rtri = (s <^ covering ^> t) ^ ps
+infixl 2 _^,^_
+_^,^_ : forall {S T xz} -> S :^ xz -> T :^ xz -> S ^*^ T :^ xz
+s ^ th ^,^ t ^ ph with coproduct th ph
+s ^ th ^,^ t ^ ph | cop ps lv c rv = s <^ c ^> t ^ ps
 
-pout : forall {S T xz} -> (S ^*^ T) ^^ xz -> (S ^^ xz) * (T ^^ xz)
-pout ((s <^ c ^> t) ^ th) = (s ^ (lcov c -<- th)) , (t ^ (rcov c -<- th))
+infix 5 _**^_
+_**^_ : (X -> Bwd X -> Set) -> Bwd X -> Bwd X -> Set
+P **^ []       = Null
+P **^ xz -, x  = P **^ xz ^*^ P x
 
-pairEta : forall {S T xz}(p : (S ^*^ T) ^^ xz) -> pair (pout p) == p
-pairEta ((s <^ c ^> t) ^ th)
-  rewrite copUnique (mkTri (lcov c) th) c (mkTri (rcov c) th)
-        = refl
+module _ {S lz mz rz}{th : lz <= mz}{ph : rz <= mz} where
+ infix 5 _&^_  _^&_
+ _&^_ : S lz -> Cover th ph -> S :^ mz ; _^&_ : Cover th ph -> S rz -> S :^ mz
+ s &^ c = s ^ th                       ; c ^& s = s ^ ph
 
-data Pair {S T xz} :
-  S ^^ xz -> T ^^ xz -> (S ^*^ T) ^^ xz -> Set
-  where
-  mkPair : forall {iz jz kz} ->
-    {th : iz <= kz}{ph : jz <= kz}{ps : kz <= xz}
-    {th' : iz <= xz}{ph' : jz <= xz}
-    (s : S iz)(t : T jz)
-    (lv : Tri th ps th')(c : Cover th ph)(rv : Tri ph ps ph') ->
-    Pair (s ^ th') (t ^ ph') ((s <^ c ^> t) ^ ps)
+module _ {S T : Bwd X -> Set} where
+ data Pr {xz} :
+   S :^ xz -> T :^ xz -> S ^*^ T :^ xz -> Set
+   where
+   mkPr : forall {iz jz kz} ->
+     {th : iz <= kz}{ph : jz <= kz}{ps : kz <= xz}
+     {th' : iz <= xz}{ph' : jz <= xz}
+     {s : S iz}{t : T jz}
+     (lv : Tri th ps th')(c : Cover th ph)(rv : Tri ph ps ph') ->
+     Pr (s ^ th') (t ^ ph') (s <^ c ^> t ^ ps)
 
-pairPair : forall {S T xz}(s : S ^^ xz)(t : T ^^ xz) ->
-  Pair s t (pair (s , t))
-pairPair (s ^ th) (t ^ ph) with coproduct th ph
-pairPair (s ^ th) (t ^ ph) | cop ps lv c rv = mkPair s t lv c rv
+ covPr : forall {iz jz kz xz}{th : iz <= kz}{ph : jz <= kz}{ps : kz <= xz}
+   {s : S iz}{t : T jz}(c : Cover th ph) ->
+   Pr (s ^ (th -<- ps)) (t ^ (ph -<- ps)) (s <^ c ^> t ^ ps)
+ covPr c = mkPr (_ -v- _) c (_ -v- _)
 
-pairThin : forall
-  {S T xz}{s : S ^^ xz}{t : T ^^ xz}{st : (S ^*^ T) ^^ xz} ->
-  Pair s t st -> forall {yz}(th : xz <= yz) ->
-  Pair (s ^< th) (t ^< th) (st ^< th)
-pairThin (mkPair s t lv c rv) th = mkPair s t (triComp lv th) c (triComp rv th)
+ prPr : forall {xz}(s : S :^ xz)(t : T :^ xz) -> Pr s t (s ^,^ t)
+ prPr (s ^ th) (t ^ ph) with coproduct th ph
+ prPr (s ^ th) (t ^ ph) | cop ps lv c rv = mkPr lv c rv
 
-pairInj : forall {S T}{ga}{s0 s1 : S ^^ ga}{t0 t1 : T ^^ ga}
-  {st : (S ^*^ T) ^^ ga} ->
-  Pair s0 t0 st -> Pair s1 t1 st -> (s0 == s1) * (t0 == t1)
-pairInj (mkPair s0 t0 lv c rv) (mkPair .s0 .t0 lu .c ru)
-  rewrite triFun lv lu | triFun rv ru = refl , refl
+ prThin : forall {xz}{s : S :^ xz}{t : T :^ xz}{st : (S ^*^ T) :^ xz} ->
+   Pr s t st -> forall {yz}(th : xz <= yz) ->
+   Pr (s ^< th) (t ^< th) (st ^< th)
+ prThin (mkPr lv c rv) th = mkPr (triComp lv th) c (triComp rv th)
 
-pairFun : forall {S T}{ga}{s : S ^^ ga}{t : T ^^ ga}
-  {st0 st1 : (S ^*^ T) ^^ ga} ->
-  Pair s t st0 -> Pair s t st1 -> st0 == st1
-pairFun (mkPair s t lv c rv) (mkPair .s .t lu b ru)
-  with copQ (cop _ lv c rv) (cop _ lu b ru)
-... | refl = refl
+ prInj : forall {ga}{s0 s1 : S :^ ga}{t0 t1 : T :^ ga}
+   {st : (S ^*^ T) :^ ga} ->
+   Pr s0 t0 st -> Pr s1 t1 st -> (s0 == s1) * (t0 == t1)
+ prInj (mkPr lv c rv) (mkPr lu .c ru)
+   rewrite triFun lv lu | triFun rv ru = refl , refl
 
-data Null : Bwd X -> Set where
-  null : Null []
-
-data Sole (x : X) : Bwd X -> Set where
-  sole : Sole x ([] -, x)
+ prFun : forall {ga}{s : S :^ ga}{t : T :^ ga}{st0 st1 : (S ^*^ T) :^ ga} ->
+   Pr s t st0 -> Pr s t st1 -> st0 == st1
+ prFun (mkPr lv c rv) (mkPr lu b ru)
+   with copQ (cop _ lv c rv) (cop _ lu b ru)
+ ... | refl = refl
 
 _<Yo_ : Bwd X -> Bwd X -> Set
 ga <Yo de = forall {xi} -> xi <= ga -> xi <= de
