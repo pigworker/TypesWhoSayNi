@@ -22,9 +22,6 @@ module PAT
  data PatR s ga where
    hole : Pat (` s) ga
    _-_  : (c : Pc s)(pr : Pat (Ds (pc c)) ga) -> Pat (` s) ga
-   nope : PatR s ga
-
- 
 
  module _ (s : S)(de : Bwd B) where
   data Hole : (D : Sort){ga : Bwd B}(p : Pat D ga) -> Set where
@@ -60,7 +57,6 @@ module PAT
     _-_  : (c : Pc s){pr : Pat (Ds (pc c)) ga} ->
            Stan (Ds (pc c)) pr ->
            Stan (` s) (c - pr)
-    nope : Stan (` s) nope
 
   get : forall {D : Sort}{ga}{p : Pat D ga}(m : Stan D p)
         {k} -> Meta D p k -> (M !^ ` fst k) (snd k)
