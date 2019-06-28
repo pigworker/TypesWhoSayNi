@@ -15,48 +15,44 @@ data Syn (B S : Set) : Set where
 
 module _ {B S : Set} where
 
- infix 6 :S_ :D_
- data Sort : Set where
-   :S_ : S -> Sort
-   :D_ : Syn B S -> Sort
+ Sort = Syn B S
 
- Rlv : Syn B S -> (S -> Bwd B -> Set) -> (Bwd B -> Set)
+ Rlv : Sort -> (S -> Bwd B -> Set) -> (Bwd B -> Set)
  Rlv un'       Tm ga       = Null ga
  Rlv (D *' E)  Tm ga       = (Rlv D Tm ^*^ Rlv E Tm) ga 
  Rlv (b >' D)  Tm ga       = Scope (Rlv D Tm) b ga
  Rlv (` s)     Tm ga       = Tm s ga
 
- module TERM (Cn : S -> Set)(Ds : {s : S} -> Cn s -> Syn B S)(b2s : B -> S)
+ module TERM (Cn : S -> Set)(Ds : {s : S} -> Cn s -> Sort)(b2s : B -> S)
   where
 
   spine : Bwd B -> Syn B S
   spine [] = un'
   spine (ga -, b) = spine ga *' ` b2s b
 
-  data TmR (M : S -> Bwd B -> Set)(s : S)(ga : Bwd B) : Set
+  data TmR (M : S * Bwd B -> Set)(s : S)(ga : Bwd B) : Set
 
   infix 4 _!_ _!^_
-  _!_ _!^_ : (M : S -> Bwd B -> Set) -> Sort -> Bwd B -> Set
+  _!_ _!^_ : (M : S * Bwd B -> Set) -> Sort -> Bwd B -> Set
   (M !^ k)    = ((M ! k) :^_)
-  (M ! :S s)  = TmR M s
-  (M ! :D D)  = Rlv D (TmR M)
+  (M ! D)  = Rlv D (TmR M)
 
   infix 5 _-_ _%_
   data TmR M s ga where
-    va  : {b : B}(z : Sole b ga)(q : b2s b == s)              -> (M ! :S s) ga
-    _-_ : (c : Cn s)(td : (M ! :D Ds c) ga)                   -> (M ! :S s) ga
-    _%_ : {xi : Bwd B}(m : M s xi)(rh : (M ! :D spine xi) ga) -> (M ! :S s) ga
+    va  : {b : B}(z : Sole b ga)(q : b2s b == s)               -> (M ! ` s) ga
+    _-_ : (c : Cn s)(td : (M ! Ds c) ga)                       -> (M ! ` s) ga
+    _%_ : {xi : Bwd B}(m : M (s , xi))(rh : (M ! spine xi) ga) -> (M ! ` s) ga
 
   pattern # = va sole refl
 
-  #0 : forall {M ga b} -> (M !^ :S b2s b) (ga -, b)
+  #0 : forall {M ga b} -> (M !^ ` b2s b) (ga -, b)
   #0 = # ^ noth -, _
 
   infix 4 _:/_
-  _:/_ : (M : S -> Bwd B -> Set) -> Bwd B -> Bwd B -> Set
-  (M :/ ga) de = Env (\ b -> (M !^ :S (b2s b)) de) ga
-
-  module _ {M : S -> Bwd B -> Set} where
+  _:/_ : (M : S * Bwd B -> Set) -> Bwd B -> Bwd B -> Set
+  (M :/ ga) de = Env (\ b -> (M !^ ` b2s b) de) ga
+  
+  module _ {M : S * Bwd B -> Set} where
 
    module _ {ga de : Bwd B} (sg : (M :/ ga) de) where
     dom = ga ; cod = de
@@ -68,43 +64,38 @@ module _ {B S : Set} where
    infix 4 _/_ _/^_
    _/_  : forall k {ga de} -> (M :/ ga) de -> (M ! k) ga  -> (M !^ k) de
    _/^_ : forall k {ga de} -> (M :/ ga) de -> (M !^ k) ga -> (M !^ k) de
-   (:S _ / sg)        (c - td) = (c -_) ^$ (:D Ds c / sg) td
-   (:S _ / sg) (_%_ {xi} m rh) = (m %_) ^$ (:D spine xi / sg) rh
-   (:S _ / (_ -, t))         # = t
-   (:D un'    / sg) null = null ^ noth
-   (:D D *' E / sg) (d <^ c ^> e) =
-     (:D D /^ sg) (d &^ c) ^,^ (:D E /^ sg) (c ^& e)
-   (:D b >' D / sg) (ll d) = sco ((:D D / sg -$, b) d)
-   (:D b >' D / sg) (kk d) = kk ^$ (:D D / sg) d
-   (:D ` s    / sg) t = (:S s / sg) t
-   (k /^ sg) (t ^ th) = (k / th <? sg) t
+   (` _ / sg)        (c - td) = (c -_) ^$ (Ds c / sg) td
+   (` _ / sg) (_%_ {xi} m rh) = (m %_) ^$ (spine xi / sg) rh
+   (` _ / (_ -, t))         # = t
+   (un'    / sg) null = null ^ noth
+   (D *' E / sg) (d <^ c ^> e) = (D /^ sg) (d &^ c) ^,^ (E /^ sg) (c ^& e)
+   (b >' D / sg) (ll d) = sco ((D / sg -$, b) d)
+   (b >' D / sg) (kk d) = kk ^$ (D / sg) d
+   (D /^ sg) (t ^ th) = (D / th <? sg) t
 
    data Sb {ga de} : (k : Sort) ->
      (M !^ k) ga -> (M :/ ga) de -> (M !^ k) de -> Set
      where
      vaSb : forall {b}(i : ([] -, b) <= ga){sg t'} ->
             (i <? sg) == ([] -, t') ->
-            Sb (:S _) (# ^ i) sg t'
+            Sb (` _) (# ^ i) sg t'
      cnSb : forall {s}(c : Cn s){tr sg tr'} ->
-            Sb (:D Ds c) tr sg tr' -> 
-            Sb (:S _) ((c -_) ^$ tr) sg ((c -_) ^$ tr')
-     meSb : forall {s xi}(m : M s xi){rh sg rh'} ->
-            Sb (:D spine xi) rh sg rh' ->
-            Sb (:S s) ((m %_) ^$ rh) sg ((m %_) ^$ rh')
+            Sb (Ds c) tr sg tr' -> 
+            Sb (` _) ((c -_) ^$ tr) sg ((c -_) ^$ tr')
+     meSb : forall {s xi}(m : M (s , xi)){rh sg rh'} ->
+            Sb (spine xi) rh sg rh' ->
+            Sb (` s) ((m %_) ^$ rh) sg ((m %_) ^$ rh')
      unSb : forall {sg} ->
-            Sb (:D un') (null ^ noth) sg (null ^ noth)
+            Sb (un') (null ^ noth) sg (null ^ noth)
      prSb : forall {D E sg d d' e e' de de'} ->         Pr d e de ->
-            Sb (:D D) d sg d' -> Sb (:D E) e sg e' ->   Pr d' e' de' ->
-            Sb (:D D *' E) de sg de'
+            Sb D d sg d' -> Sb E e sg e' ->   Pr d' e' de' ->
+            Sb (D *' E) de sg de'
      llSb : forall {b D sg ga0 de0 d d'}{th : ga0 <= ga}{ph : de0 <= de} ->
-            Sb (:D D) (d ^ (th -, b)) (sg -$, b) (d' ^ (ph -, b)) ->
-            Sb (:D b >' D) (ll d ^ th) sg (ll d' ^ ph)
+            Sb D (d ^ (th -, b)) (sg -$, b) (d' ^ (ph -, b)) ->
+            Sb (b >' D) (ll d ^ th) sg (ll d' ^ ph)
      kkSb : forall {b D sg d d'} ->
-            Sb (:D D) d sg d' ->
-            Sb (:D b >' D) (kk ^$ d) sg (kk ^$ d')
-     tmSb : forall {s t t' sg} ->
-            Sb (:S s) t sg t' ->
-            Sb (:D ` s) t sg t'
+            Sb D d sg d' ->
+            Sb (b >' D) (kk ^$ d) sg (kk ^$ d')
 
    funSb : forall {k ga de}{t : (M !^ k) ga}{sg}{t0 t1 : (M !^ k) de} ->
      Sb k t sg t0 -> Sb k t sg t1 -> t0 == t1
@@ -117,7 +108,6 @@ module _ {B S : Set} where
      prFun y0 y1
    funSb (llSb p0) (llSb p1) with funSb p0 p1         ; ... | refl = refl
    funSb (kkSb p0) (kkSb p1) with funSb p0 p1         ; ... | refl = refl
-   funSb (tmSb p0) (tmSb p1) with funSb p0 p1         ; ... | refl = refl
 
    module _ {ga0 ga de0 de}(th : ga0 <= ga)(sg : (M :/ ga) de)(ph : de0 <= de)
     where
@@ -143,34 +133,32 @@ module _ {B S : Set} where
      with cossaTri v rv | sbRelv e j
    ... | _ , v0 , v1 | eh rewrite compSel v0 sg | compSel v1 sg =
      let _ , u = eh q ; _ , _ , v = assocTri' u ru in _ , v
-   sbRelv {:D b >' D} {th = th}{sg} (llSb p) i {t} q with sbRelv p (i -^ b) (
+   sbRelv {b >' D} {th = th}{sg} (llSb p) i {t} q with sbRelv p (i -^ b) (
        (i <? th <? (sg -$^ b))    =[ (i <?_) $= naturalSelection _ th sg >=
        (i <? ((th <? sg) -$^ b))  =[ naturalSelection _ i (th <? sg) >=
        ((i <? th <? sg) -$^ b)    =[ (_-$^ b) $= q >=
        ([] -, (t ^^^ b))          [QED])
    ... | _ , (v -^, .b) = _ , v
    sbRelv (kkSb p) i q = sbRelv p i q
-   sbRelv (tmSb p) i q = sbRelv p i q
 
    sb : forall k {ga0 ga de}(t : (M ! k) ga0)(th : ga0 <= ga)
         (sg : (M :/ ga) de) -> Sb k (t ^ th) sg ((k /^ sg) (t ^ th))
-   sb (:S _) # i sg  with i <? sg | \ t -> vaSb i {sg} {t}
+   sb (` _) # i sg  with i <? sg | \ t -> vaSb i {sg} {t}
    ... | [] -, t | h = h _ refl
-   sb (:S _) (c - td) th sg = cnSb c (sb (:D Ds c) td th sg)
-   sb (:S _) (_%_ {xi} m rh) th sg = meSb m (sb (:D spine xi) rh th sg)
-   sb (:D un') null th sg rewrite nothU th noth = unSb
-   sb (:D D *' E) (d <^ c ^> e) th sg
+   sb (` _) (c - td) th sg = cnSb c (sb (Ds c) td th sg)
+   sb (` _) (_%_ {xi} m rh) th sg = meSb m (sb (spine xi) rh th sg)
+   sb (un') null th sg rewrite nothU th noth = unSb
+   sb (D *' E) (d <^ c ^> e) th sg
      with lcov c -<- th | lcov c -v- th | rcov c -<- th | rcov c -v- th
    ... | ph | lv | ps | rv rewrite compSel lv sg | compSel rv sg =
-     prSb (mkPr lv c rv) (sb (:D D) d ph sg) (sb (:D E) e ps sg) (prPr _ _)
-   sb (:D b >' D) {de = de} (ll d) th sg with sb (:D D) d (th -, b) (sg -$, b)
+     prSb (mkPr lv c rv) (sb D d ph sg) (sb E e ps sg) (prPr _ _)
+   sb (b >' D) {de = de} (ll d) th sg with sb D d (th -, b) (sg -$, b)
    ... | h with sbRelv h (noth -, b) (_-,_ $= env0 =$= refl)
    ... | ph , v with th <? env (_^^^ b) sg | env (_^^^ b) (th <? sg)
                    | naturalSelection (_^^^ b) th sg
-   ... | sg0 | _ | refl with (:D D / sg0 -, #0) d
-   sb (:D b >' D) (ll d) th sg | h | _ , (v -, _) | _ | _ | refl | _ = llSb h
-   sb (:D b >' D) (kk d) th sg = kkSb (sb (:D D) d th sg)
-   sb (:D ` s) t th sg = tmSb (sb (:S s) t th sg)
+   ... | sg0 | _ | refl with (D / sg0 -, #0) d
+   sb (b >' D) (ll d) th sg | h | _ , (v -, _) | _ | _ | refl | _ = llSb h
+   sb (b >' D) (kk d) th sg = kkSb (sb D d th sg)
 
    sb^ : forall k {ga de}(t : (M !^ k) ga)(sg : (M :/ ga) de) ->
      Sb k t sg ((k /^ sg) t)
@@ -197,22 +185,21 @@ module _ {B S : Set} where
 
    thsbLemma : forall k {ga de xi}(t : (M ! k) ga) {th ph ps} ->
      Tri {_}{ga}{de}{xi} th ph ps -> Sb k (t ^ th) (thsb ph) (t ^ ps)
-   thsbLemma (:S _) # {th}{ph}{ps} v
+   thsbLemma (` _) # {th}{ph}{ps} v
      with soleLemma ps | vaSb th {thsb ph}{# ^ ps}
    ... | q | h rewrite thsbTri v = h q
-   thsbLemma (:S _) (c - td) v = cnSb c (thsbLemma _ td v)
-   thsbLemma (:S _) (m % rh) v = meSb m (thsbLemma _ rh v)
-   thsbLemma (:D un') null {th}{_}{ps} v
+   thsbLemma (` _) (c - td) v = cnSb c (thsbLemma _ td v)
+   thsbLemma (` _) (m % rh) v = meSb m (thsbLemma _ rh v)
+   thsbLemma (un') null {th}{_}{ps} v
      rewrite nothU th noth | nothU ps noth = unSb
-   thsbLemma (:D D *' E) (d <^ c ^> e) v =
+   thsbLemma (D *' E) (d <^ c ^> e) v =
      prSb (covPr c) (thsbLemma _ d (compTri (lcov c) v))
                     (thsbLemma _ e (compTri (rcov c) v)) (covPr c)
-   thsbLemma (:D b >' D) (ll d) v = llSb (thsbLemma _ d (v -, b))
-   thsbLemma (:D b >' D) (kk d) v = kkSb (thsbLemma _ d v)
-   thsbLemma (:D ` s)    t v = tmSb (thsbLemma _ t v)
+   thsbLemma (b >' D) (ll d) v = llSb (thsbLemma _ d (v -, b))
+   thsbLemma (b >' D) (kk d) v = kkSb (thsbLemma _ d v)
 
    _-$-_ : forall {ga de xi} -> (M :/ ga) de -> (M :/ de) xi -> (M :/ ga) xi
-   sg -$- ta = env (:S _ /^ ta) sg
+   sg -$- ta = env (` _ /^ ta) sg
 
    sbthLemma : forall {k ga de}{t : (M !^ k) ga}{sg}{t' : (M !^ k) de} ->
      Sb k t sg t' -> forall {xi}(th : de <= xi) ->
@@ -226,26 +213,25 @@ module _ {B S : Set} where
    sbthLemma unSb th rewrite nothU (noth -<- th) noth = unSb
    sbthLemma (prSb de d e de') th = prSb de
      (sbthLemma d th) (sbthLemma e th) (prThin de' th)
-   sbthLemma {:D b >' D} {sg = sg} (llSb p) th = llSb (sbthLemma p (th -, b)
+   sbthLemma {b >' D} {sg = sg} (llSb p) th = llSb (sbthLemma p (th -, b)
      [ Sb _ _ $=  (_-,_ $= envComps sg (\ _ -> refl)
                        =$= ((# ^_) $= ((_-, b) $= nothU _ _)))
              =$= refl >)
    sbthLemma (kkSb p) th = kkSb (sbthLemma p th)
-   sbthLemma (tmSb p) th = tmSb (sbthLemma p th)
 
    cowkLemma : forall {ga de xi}(sg : (M :/ ga) de)(ta : (M :/ de) xi) b ->
      ((sg -$, b) -$- (ta -$, b)) == ((sg -$- ta) -$, b)
    cowkLemma sg ta b = (_-, _) $= 
      ((sg -$^ b) -$- (ta -$, b))  =[ (envComps sg \ t ->
-       (:S _ /^ ta -$^ b) t
-         =[ (\ z -> (:S _ /^ z) t) $= envExt _ _ (\ t -> 
+       (` _ /^ ta -$^ b) t
+         =[ (\ z -> (` _ /^ z) t) $= envExt _ _ (\ t -> 
               (thing t ^_) $= ((_-^ b) $= triFun (triId _) (_ -v- _))) ta >=
-       (:S _ /^ env (_^< (idth -^ b)) ta) t
-         =[ funSb (sb^ (:S _) t _) (sbthLemma (sb^ _ t ta) (idth -^ b)) >=
-       ((:S _ /^ ta) t ^< (idth -^ b))
-         =[ (thing ((:S _ /^ ta) t) ^_)
+       (` _ /^ env (_^< (idth -^ b)) ta) t
+         =[ funSb (sb^ (` _) t _) (sbthLemma (sb^ _ t ta) (idth -^ b)) >=
+       ((` _ /^ ta) t ^< (idth -^ b))
+         =[ (thing ((` _ /^ ta) t) ^_)
             $= ((_-^ b) $= triFun (_ -v- _) (triId _)) >=
-       ((:S _ /^ ta) t ^^^ b)       [QED]) >=
+       ((` _ /^ ta) t ^^^ b)       [QED]) >=
      ((sg -$- ta) -$^ b)          [QED]
 
    sbComp : forall {k ga de xi sg ta}
@@ -253,36 +239,35 @@ module _ {B S : Set} where
      Sb k t0 sg t1 -> Sb k t1 ta t2 -> Sb k t0 (sg -$- ta) t2
    sbComp {sg = sg}{ta}{t1 = s}{t} (vaSb i q) r = vaSb i (
      (i <? (sg -$- ta))          =[ naturalSelection _ i sg >=
-     env (:S _ /^ ta) (i <? sg)  =[ env (:S _ /^ ta) $= q >=
-     ([] -, (:S _ /^ ta) s)      =[ ([] -,_) $= funSb (sb^ _ _ ta) r >=
+     env (` _ /^ ta) (i <? sg)  =[ env (` _ /^ ta) $= q >=
+     ([] -, (` _ /^ ta) s)      =[ ([] -,_) $= funSb (sb^ _ _ ta) r >=
      ([] -, t)                   [QED])
    sbComp (cnSb c p) (cnSb .c r) = cnSb c (sbComp p r)
    sbComp (meSb m p) (meSb .m r) = meSb m (sbComp p r)
    sbComp unSb unSb = unSb
    sbComp (prSb a p q b) (prSb c r s d) with prInj b c ; ... | refl , refl =
      prSb a (sbComp p r) (sbComp q s) d
-   sbComp {:D b >' D}{sg = sg}{ta} (llSb p) (llSb r) =
+   sbComp {b >' D}{sg = sg}{ta} (llSb p) (llSb r) =
      llSb (sbComp p r [ Sb _ _ $= cowkLemma sg ta b =$= refl >)
    sbComp (kkSb p) (kkSb r) = kkSb (sbComp p r)
-   sbComp (tmSb p) (tmSb r) = tmSb (sbComp p r)
 
 -----------------------------------
 module BIDI (Atom : Set) where
 
-  data Dir : Set where chk syn : Dir
+ data Dir : Set where chk syn : Dir
   
-  data Tag : Dir -> Set where
-    em cs ab : Tag chk
-    am : Atom -> Tag chk
-    ra el : Tag syn
+ data Tag : Dir -> Set where
+   em cs ab : Tag chk
+   am : Atom -> Tag chk
+   ra el : Tag syn
     
-  BiD : {d : Dir} -> Tag d -> Syn One Dir
-  --   sort  tag      arity
-  BiD {.chk} em     = ` syn
-  BiD {.chk} cs     = ` chk *' ` chk
-  BiD {.chk} ab     = <> >' ` chk
-  BiD {.chk} (am a) = un'
-  BiD {.syn} ra     = ` chk *' ` chk
-  BiD {.syn} el     = ` syn *' ` chk
+ BiD : {d : Dir} -> Tag d -> Syn One Dir
+ --   sort  tag      arity
+ BiD {.chk} em     = ` syn
+ BiD {.chk} cs     = ` chk *' ` chk
+ BiD {.chk} ab     = <> >' ` chk
+ BiD {.chk} (am a) = un'
+ BiD {.syn} ra     = ` chk *' ` chk
+ BiD {.syn} el     = ` syn *' ` chk
 
-  open TERM Tag BiD (\ _ -> syn)
+ open TERM Tag BiD (\ _ -> syn)
