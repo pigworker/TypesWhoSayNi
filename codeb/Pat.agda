@@ -9,7 +9,7 @@ module PAT
  {B S : Set}
  (Cn : S -> Set)(Ds : {s : S} -> Cn s -> Syn B S)(b2s : B -> S)
  (Pc : S -> Set)(pc : {s : S} -> Pc s -> Cn s)
- (cq? : {s : S}(b c : Cn s) -> Dec (b == c))
+ (cq? : {s : S}(b c : Cn s) -> Dec (b ~ c))
  where
 
  open TERM Cn Ds b2s
@@ -29,11 +29,11 @@ module PAT
     _-_  : {r : S}{ga : Bwd B}(c : Pc r){pr : Pat (Ds (pc c)) ga} ->
            Hole (Ds (pc c)) pr -> Hole (` r) (c - pr)
     inl  : forall {D E}{ga0 ga1 ga}{th0 : ga0 <= ga}{th1 : ga1 <= ga}
-           {d : Pat D ga0}{c : Cover th0 th1}{e : Pat E ga1} ->
-           Hole D d -> Hole (D *' E) (d <^ c ^> e)
+           {d : Pat D ga0}{c : th0 /u\ th1}{e : Pat E ga1} ->
+           Hole D d -> Hole (D *' E) (d </ c \> e)
     inr  : forall {D E}{ga0 ga1 ga}{th0 : ga0 <= ga}{th1 : ga1 <= ga}
-           {d : Pat D ga0}{c : Cover th0 th1}{e : Pat E ga1} ->
-           Hole E e -> Hole (D *' E) (d <^ c ^> e)
+           {d : Pat D ga0}{c : th0 /u\ th1}{e : Pat E ga1} ->
+           Hole E e -> Hole (D *' E) (d </ c \> e)
     kk   : forall {b D}{ga}{p : Pat D ga} ->
            Hole D p -> Hole (b >' D) (kk p)
     ll   : forall {b D}{ga}{p : Pat D (ga -, b)} ->
@@ -47,19 +47,19 @@ module PAT
   data StanR {s : S}{ga : Bwd B} : (p : Pat (` s) ga) -> Set
   Stan : forall (k : Sort){ga : Bwd B}(p : Pat k ga) -> Set
   Stan (un') null = One
-  Stan (D *' E) (d <^ c ^> e) = Stan D d * Stan E e
+  Stan (D *' E) (d </ c \> e) = Stan D d * Stan E e
   Stan (b >' D) (ll d) = Stan D d
   Stan (b >' D) (kk d) = Stan D d
   Stan (` s) p = StanR p
   
   data StanR {s} {ga} where
-    val  : (M !^ ` s) ga -> Stan (` s) hole
+    val  : (M !< ` s) ga -> Stan (` s) hole
     _-_  : (c : Pc s){pr : Pat (Ds (pc c)) ga} ->
            Stan (Ds (pc c)) pr ->
            Stan (` s) (c - pr)
 
   get : forall {D : Sort}{ga}{p : Pat D ga}(m : Stan D p)
-        {k} -> Meta D p k -> (M !^ ` fst k) (snd k)
+        {k} -> Meta D p k -> (M !< ` fst k) (snd k)
   get (val t) hole = t
   get (.c - m) (c - x) = get m x
   get (m , _) (inl x) = get m x
