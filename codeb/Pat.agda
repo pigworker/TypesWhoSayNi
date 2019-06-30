@@ -66,3 +66,12 @@ module PAT
   get (_ , m) (inr x) = get m x
   get m (kk x) = get m x
   get m (ll x) = get m x
+
+  stan : forall D {ga}(p : Pat D ga)(pi : Stan D p) -> (M !< D) ga
+  stan un'      null           <> = null ^ []
+  stan (D *' E) (p </ c \> r)  (pi , rh) =
+    stan D p pi :- u/ c /,\ stan E r rh :- u\ c
+  stan (b >' D) (ll p)         pi = b \\ stan D p pi
+  stan (b >' D) (kk p)         pi = kk :$ stan D p pi
+  stan (` s)    hole      (val t) = t
+  stan (` s)    (c - p) (.c - pi) = (pc c -_) :$ stan (Ds (pc c)) p pi
