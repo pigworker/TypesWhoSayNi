@@ -1,51 +1,50 @@
 module Bwd where
 
+open import Agda.Primitive
 open import Basics
 
-data Bwd (X : Set) : Set where
+infixl 8 _-,_
+data Bwd {l}(X : Set l) : Set l where
   [] : Bwd X
   _-,_ : Bwd X -> X -> Bwd X
 
-infixl 8 _-,_
-
 module _ {X : Set} where
 
-  data Env (P : X -> Set) : Bwd X -> Set where
-    [] : Env P []
-    _-,_ : forall {xz x} -> Env P xz -> P x -> Env P (xz -, x)
+ data Null : Bwd X -> Set where
+   null : Null []
 
-  env : forall {P Q} -> (forall {x} -> P x -> Q x) ->
-          forall {xz} -> Env P xz -> Env Q xz
-  env f [] = []
-  env f (pz -, p) = env f pz -, f p
+ data Sole (x : X) : Bwd X -> Set where
+   sole : Sole x ([] -, x)
 
-  envExt : forall {P Q : X -> Set} ->
-           (f g : forall {x} -> P x -> Q x) ->
-           (q : forall {x}(p : P x) -> f p == g p) ->
-           forall {xz}(pz : Env P xz) -> env f pz == env g pz
-  envExt f g q [] = refl
-  envExt f g q (pz -, p) = rf _-,_ =$= envExt f g q pz =$= q p
+ data Env (P : X -> Set) : Bwd X -> Set where
+   []   : Env P []
+   _-,_ : forall {xz x} -> Env P xz -> P x -> Env P (xz -, x)
 
-  envComp : forall {P Q R : X -> Set}
-    (f : forall {x} -> P x -> Q x)
-    (g : forall {x} -> Q x -> R x)
-    (h : forall {x} -> P x -> R x)
-    (q : forall {x}(p : P x) -> g (f p) == h p)
-    {xz}(pz : Env P xz) ->
-    env g (env f pz) == env h pz
-  envComp f g h q [] = refl
-  envComp f g h q (pz -, p) = rf _-,_ =$= envComp f g h q pz =$= q p
+ env : forall {P Q} -> [ P -:> Q ] -> [ Env P -:> Env Q ]
+ env f [] = []
+ env f (pz -, p) = env f pz -, f p
 
-  envComps : forall {P Q R S : X -> Set}{xz}(pz : Env P xz)
-    {f : forall {x} -> P x -> Q x}{g : forall {x} -> Q x -> S x}
-    {h : forall {x} -> P x -> R x}{k : forall {x} -> R x -> S x}
-    (q : forall {x}(p : P x) -> g (f p) == k (h p)) ->
-    env g (env f pz) == env k (env h pz)
-  envComps pz {f}{g}{h}{k} q =
-    env g (env f pz) =[ envComp _ _ _ (\ _ -> refl) pz >=
-    env (\ p -> g (f p)) pz =[ envExt _ _ q pz >=
-    env (\ p -> k (h p)) pz =< envComp _ _ _ (\ _ -> refl) pz ]=
-    env k (env h pz) [QED]
+ envExt : forall {P Q : X -> Set}{xz}(pz : Env P xz){f g : [ P -:> Q ]} ->
+   (forall {x}(p : P x) -> f p ~ g p) -> env f pz ~ env g pz
+ envExt []        q = r~
+ envExt (pz -, p) q = _-,_ $~ envExt pz q ~$~ q p
+
+ envComp : forall {P Q R : X -> Set}{xz}(pz : Env P xz)
+   {f : [ P -:> Q ]}{g : [ Q -:> R ]}{h : [ P -:> R ]} ->
+   (forall {x}(p : P x) -> (f >> g) p ~ h p) ->
+   (env f >> env g) pz ~ env h pz
+ envComp []        q = r~
+ envComp (pz -, p) q = _-,_ $~ envComp pz q ~$~ q p
+
+ envComps : forall {P Q R S : X -> Set}{xz}(pz : Env P xz)
+   {f : [ P -:> Q ]}{g : [ Q -:> S ]}{h : [ P -:> R ]}{k : [ R -:> S ]}
+   (q : forall {x}(p : P x) -> (f >> g) p ~ (h >> k) p) ->
+   (env f >> env g) pz ~ (env h >> env k) pz
+ envComps pz {f}{g}{h}{k} q =
+   env g (env f pz)          ~[ envComp pz (\ _ -> r~) >
+   env (\ p -> g (f p)) pz   ~[ envExt pz q >
+   env (\ p -> k (h p)) pz   < envComp pz (\ _ -> r~) ]~
+   env k (env h pz) [QED]
   
-  env0 : forall {P : X -> Set}{xz yz : Env P []} -> xz == yz
-  env0 {xz = []} {[]} = refl
+ env0 : forall {P : X -> Set}{xz yz : Env P []} -> xz ~ yz
+ env0 {xz = []} {[]} = r~
