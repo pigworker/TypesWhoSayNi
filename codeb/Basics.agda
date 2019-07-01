@@ -62,24 +62,25 @@ module _ {k l}{X : Set k}{Y : Set l} where
  _$~_ : {a b : X}             (f : X -> Y) -> a ~ b -> f a ~ f b
  f $~ q = rf f ~$~ q
 
-infixr 2 !_ _,_ _*_
-record Sg (S : Set)(T : S -> Set) : Set where
+infixr 2 !_ _,_ _*_ _*\_
+record _*\_ (S : Set)(T : S -> Set) : Set where
   constructor _,_
   field
     fst : S
     snd : T fst
-open Sg public
+
+open _*\_ public
 infixl 40 _??
 _?? = snd
 _*_ : Set -> Set -> Set
-S * T = Sg S \ _ -> T
+S * T = S *\ \ _ -> T
 pattern !_ t = _ , t
 infix 5 _^_
 pattern _^_ t th = ! t , th
 
-infixr 1 /\_
-/\_ : forall {l}{S : Set}{T : S -> Set}{P : Sg S T -> Set l} ->
-      ((s : S)(t : T s) -> P (s , t)) -> (x : Sg S T) -> P x
+infixr 2 /\_
+/\_ : forall {l}{S : Set}{T : S -> Set}{P : S *\ T -> Set l} ->
+      ((s : S)(t : T s) -> P (s , t)) -> (x : S *\ T) -> P x
 (/\ f) (s , t) = f s t
 
 PI Pi : (S : Set)(T : S -> Set) -> Set
@@ -98,7 +99,13 @@ module _ {X : Set} where
 
  [_] <_> : (T : X -> Set) -> Set
  [ T ] = Pi _ T
- < T > = Sg _ T
+ < T > = _ *\ T
+
+ infixr 2 <>\_
+ <>\_ : forall {l}{S T : X -> Set}{P : < S :* T > -> Set l} ->
+        ({x : X}(s : S x)(t : T x) -> P (s ^ t)) ->
+        (st : < S :* T >) -> P st
+ (<>\ f) (s ^ t) = f s t
 
  YAN Yan : (S : X -> Set) -> ({x : X} -> S x -> Set) -> Set
  YAN S T = forall {x}(s : S x) -> T s
@@ -120,3 +127,10 @@ data Nat : Set where
 {-# BUILTIN NATURAL Nat #-}
 
 
+data Maybe (X : Set) : Set where
+  yes : X -> Maybe X
+  no  : Maybe X
+
+_>>M=_ : forall {A B} -> Maybe A -> (A -> Maybe B) -> Maybe B
+yes a >>M= k = k a
+no    >>M= k = no

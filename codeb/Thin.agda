@@ -36,7 +36,7 @@ module _ {X : Set} where
  infixl 8 _-<-_
 
  antisym : forall {xz yz}(th : xz <= yz)(ph : yz <= xz) ->
-   Sg (xz ~ yz) \ { r~ -> (th ~ idth) * (ph ~ idth) }
+   xz ~ yz *\ \ { r~ -> (th ~ idth) * (ph ~ idth) }
  antisym [] [] = r~ , r~ , r~
  antisym (th -, x) (ph -, .x) with antisym th ph
  antisym (.idth -, x) (.idth -, .x)
@@ -243,7 +243,7 @@ module _ {X : Set} where
 
  module _ {iz jz kz}(th : iz <= kz)(ph : jz <= kz) where
   Cop : Set
-  Cop = Sg <(iz <=_) :* (_<= kz) :* (jz <=_)> \ { (! th' , ps , ph') ->
+  Cop = <(iz <=_) :* (_<= kz) :* (jz <=_)> *\ \ { (! th' , ps , ph') ->
         th' & ps =< th * ph' & ps =< ph * th' /u\ ph' }
 
  infix 7 _/+\_
@@ -347,7 +347,6 @@ module _ {X : Set} where
   s ^ th /,\ t ^ ph = let (! _ , ps , _) , _ , _ , u = th /+\ ph
                       in  s </ u \> t ^ ps
 
-
   data Pr {xz}(s : S :< xz)(t : T :< xz) : S /*\ T :< xz -> Set
     where
     mkPr : {x : <(_ <=_) :* (_<= xz) :* (_ <=_)>} -> let ! th , ps , ph = x in
@@ -382,22 +381,22 @@ module _ {X : Set} where
   Square = let th0 ^ ph0 = a ; th1 ^ ph1 = b in
     <(th0 & ph0 =<_) :* (th1 & ph1 =<_)>
 
- data IsPull : forall {ga de}{a b : <(ga <=_) :* (_<= de)>} -> Square a b ->
+ data Pullback : forall {ga de}{a b : <(ga <=_) :* (_<= de)>} -> Square a b ->
    Set where
-   [] : IsPull ([] ^ [])
+   [] : Pullback ([] ^ [])
    _-,_ : forall {ga de}{a b : <(ga <=_) :* (_<= de)>}{s : Square a b} ->
-     let v ^ w = s in IsPull s -> (x : X) -> IsPull (v -, x  ^ w -, x)
+     let v ^ w = s in Pullback s -> (x : X) -> Pullback (v -, x  ^ w -, x)
    _-^,_ : forall {ga de}{a b : <(ga <=_) :* (_<= de)>}{s : Square a b} ->
-     let v ^ w = s in IsPull s -> (x : X) -> IsPull (v -^ x  ^ w -^, x)
+     let v ^ w = s in Pullback s -> (x : X) -> Pullback (v -^ x  ^ w -^, x)
    _-,^_ : forall {ga de}{a b : <(ga <=_) :* (_<= de)>}{s : Square a b} ->
-     let v ^ w = s in IsPull s -> (x : X) -> IsPull (v -^, x ^ w -^ x)
+     let v ^ w = s in Pullback s -> (x : X) -> Pullback (v -^, x ^ w -^ x)
    _-^_ : forall {ga de}{a b : <(ga <=_) :* (_<= de)>}{s : Square a b} ->
-     let v ^ w = s in IsPull s -> (x : X) -> IsPull (v -^ x  ^ w -^ x)
+     let v ^ w = s in Pullback s -> (x : X) -> Pullback (v -^ x  ^ w -^ x)
 
  infix 7 _\^/_
  _\^/_ : forall {ga1 ga2} -> TAN (ga1 <=_) (ga2 <=_) \ th1 th2 ->
-   Sg <(_<= ga1) :* (_<= ga2)> \ { (ph1 ^ ph2) ->
-   Sg (Square (ph1 ^ th1) (ph2 ^ th2)) IsPull }
+   <(_<= ga1) :* (_<= ga2)> *\ \ { (ph1 ^ ph2) ->
+   Square (ph1 ^ th1) (ph2 ^ th2) *\ Pullback }
  [] \^/ [] = ! ! []
  ph13 -, x \^/ ph23 -, .x = ! ! (ph13 \^/ ph23) ?? ?? -, x
  ph13 -, x \^/ ph23 -^ .x = ! ! (ph13 \^/ ph23) ?? ?? -,^ x
@@ -408,7 +407,7 @@ module _ {X : Set} where
   {a b : <(_<= ga1) :* (_<= ga2)>} -> let ph1 ^ ph2 = a ; ch1 ^ ch2 = b in
   {x   : <(ga1 <=_) :* (ga2 <=_)>} -> let th1 ^ th2 = x in
   Square (ch1 ^ th1) (ch2 ^ th2) ->
-  {z : Square (ph1 ^ th1) (ph2 ^ th2)} -> IsPull z ->
+  {z : Square (ph1 ^ th1) (ph2 ^ th2)} -> Pullback z ->
     <(_& ph1 =< ch1) :* (_& ph2 =< ch2)>
  pullU ([]       ^ [])        []         =                []       ^ []
  pullU (v1 -, x  ^ v2 -, .x)  (p -, .x)  = 
@@ -421,3 +420,21 @@ module _ {X : Set} where
                        let w1 ^ w2 = pullU (v1 ^ v2) p in w1       ^ w2 -^ x
  pullU (v1 -^ x  ^ v2 -^ .x)  (p -^ .x)  = 
                        let w1 ^ w2 = pullU (v1 ^ v2) p in w1       ^ w2
+
+ infix 7 _<u_
+ _<u_ : forall {ga0 ga1 ga}{th0 : ga0 <= ga}{th1 : ga1 <= ga} ->
+   th0 /u\ th1 -> forall {de}(ps : ga <= de) ->
+   (<(ga0 <=_) :* (_<= de)> * <(ga1 <=_) :* (_<= de)>) *\
+   /\ <>\ \ ps0 ph0 -> <>\ \ ps1 ph1 -> ph0 /u\ ph1 *
+   (Square (th0 ^ ps) (ps0 ^ ph0) * Square (th1 ^ ps) (ps1 ^ ph1)) *\
+   /\ \ s0 s1 -> Pullback s0 * Pullback s1
+ u        <u th -^ x = let ! u       , ! a       , b       = u <u th
+                       in  ! u -, x  , ! a -^, x , b -^, x
+ u -,^ .x <u th -, x = let ! u       , ! a       , b       = u <u th
+                       in  ! u -,^ x , ! a -, x  , b -,^ x
+ u -^, .x <u th -, x = let ! u       , ! a       , b       = u <u th
+                       in  ! u -^, x , ! a -,^ x , b -, x 
+ u -, .x  <u th -, x = let ! u       , ! a       , b       = u <u th
+                       in  ! u -, x  , ! a -, x  , b -, x
+ []       <u []      =     ! []      , ! []      , []
+
