@@ -132,6 +132,19 @@ module PAT
            {t : (M !< D) (ga -, b)} ->
            Match D p pi t -> Match (b >' D) (ll p) pi (b \\ t) -- green slime
 
+  _~Ma~_ : forall {D ga}{p : Pat D ga}{pi : Stan D p}{t0 t1 : (M !< D) ga} ->
+           Match D p pi t0 -> Match D p pi t1 -> t0 ~ t1
+  hoMa ~Ma~ hoMa = r~
+  cnMa c m ~Ma~ cnMa .c n with m ~Ma~ n ; ... | r~ = r~
+  unMa ~Ma~ unMa = r~
+  prMa ad md ae me ~Ma~ prMa bd nd be ne with md ~Ma~ nd | me ~Ma~ ne
+  prMa {tu = au} (avd ^ awd)  md (ave ^ awe) me ~Ma~
+    prMa {tu = bu} (bvd ^ bwd) nd (bve ^ bwe) ne | r~ | r~
+    with awd ~&~ bwd | awe ~&~ bwe ; ... | r~ | r~
+    with copQ (! avd , ave , au) (! bvd , bve , bu) ; ... | r~ = r~
+  kkMa m ~Ma~ kkMa n with m ~Ma~ n ; ... | r~ = r~
+  llMa m ~Ma~ llMa n with m ~Ma~ n ; ... | r~ = r~
+
   stanMa : forall D {ga}(p : Pat D ga) pi -> Match D p pi (stan D p pi)
   stanMa un' null <> = unMa
   stanMa (D *' E) (pd </ pu \> pe) (pid , pie)
@@ -145,15 +158,30 @@ module PAT
   stanMa (` s) hole (val t) = hoMa
   stanMa (` s) (c - p) (.c - pi) = cnMa c (stanMa _ p pi)
 
-
-  Stam : forall D {ga} (p : Pam D ga) -> Set
+  Stam : forall D {ga}(p : Pam D ga) -> Set
   Stam D no            = Zero
   Stam D (yes (p ^ _)) = Stan D p
 
-  -- this is insufficiently coherent
-  reifine : forall D {ga}(r p : Pam D ga) ->
-    Refine D r p -> Stam D r -> Stam D p
-  reifine D no p rp ()
-  reifine D (yes x) no () rh
-  reifine D (yes r) (yes p) rp rh = {!!}
- 
+  Mam : forall D {ga}(p : Pam D ga)(pi : Stam D p)(t : (M !< D) ga) -> Set
+  Mam D (yes (p ^ ph)) pi (t ^ th) = 
+    _ *\ \ ps -> ps & ph =< th * Match D p pi (t ^ ps)
+  Mam D no () t
+
+  {-
+  refinyMam : forall D -> Tri \ {ga1}{ga0}{ga} ch ps th -> ch & ps =< th ->
+    forall {r : Pat D ga0}{rh}{t : (M ! D) ga1}(m : Match D r rh (t ^ ch))
+    {de}(p : Pat D de){ph : de <= ga} -> Refiny D (r ^ ps) (p ^ ph) ->
+    Stan D p *\ \ pi -> Mam D (yes (p ^ ph)) pi (t ^ th)
+  refinyMam un' v m p rp = {!!}
+  refinyMam (D *' D₁) v m p rp = {!!}
+  refinyMam (x >' D) v m p rp = {!!}
+  refinyMam (` s) v m hole rp = {!!}
+  refinyMam (` s) v m (c - pr) rp = {!!}
+
+  refineMam : forall {D ga}
+    (r : Pam D ga){rh : Stam D r}{t : (M !< D) ga} -> Mam D r rh t ->
+    (p : Pam D ga) -> Refine D r p -> Stam D p *\ \ pi -> Mam D p pi t
+  refineMam (yes (r ^ ps)) (v ^ m) (yes (p ^ ph)) rp = refinyMam _ v m p rp
+  refineMam (yes r) (v ^ m) no ()
+  refineMam no {()} m p rp
+  -}
