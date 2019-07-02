@@ -310,11 +310,14 @@ module _ {X : Set} where
  _:$_ : forall {S T} -> [ S -:> T ] -> [(S :<_) -:> (T :<_)]
  f :$ (s ^ th) = f s ^ th
 
- infixl 7 _:-_ _:^_
+ infixl 7 _:-_ _:^_ _:&_
  _:-_ : forall {S xz}(s : S :< xz) -> [(xz <=_) -:> (S :<_)]
  (s ^ th) :- ph = s ^ th -<- ph
  _:^_ : forall {S xz} -> S :< xz -> forall x -> S :< (xz -, x)
  (t ^ th) :^ x = t ^ th -^ x
+ _:&_ : forall {ga T}(t : T :< ga){de}{ph : ga <= de}{ps} ->
+        thin t & ph =< ps -> T :< de
+ _:&_ (t ^ th) {ps = ps} v = t ^ ps
 
  thin1 : forall {S xz}(s : S :< xz) x -> s :- idth -^ x ~ s :^ x
  thin1 (s ^ th) x = (s ^_) $~ ((_-^ x) $~ th <id)
@@ -380,6 +383,18 @@ module _ {X : Set} where
   Square : Set
   Square = let th0 ^ ph0 = a ; th1 ^ ph1 = b in
     <(th0 & ph0 =<_) :* (th1 & ph1 =<_)>
+
+ stkSq : Tri \ th0 th1 th -> th0 & th1 =< th ->
+         Tri \ ph0 ph1 ph -> ph0 & ph1 =< ph ->
+   forall {ps0 ps1 ps2} ->
+   Square (ps0 ^ ph0) (th0 ^ ps1) -> Square (ps1 ^ ph1) (th1 ^ ps2) ->
+   Square (ps0 ^ ph) (th ^ ps2)
+ stkSq x y (v0 ^ v1) (v2 ^ v3)
+   with assoc03 (x ^ v3) | assoc03 (v1 ^ v2) | assoc03 (v0 ^ y)
+ ... | ch0 , v4 , v5 | ch1 , v6 , v7 | ch2 , v8 , v9
+   with v4 ~&~ v6 | v7 ~&~ v9
+ ... | r~ | r~ = v8 ^ v5
+ 
 
  data Pullback : forall {ga de}{a b : <(ga <=_) :* (_<= de)>} -> Square a b ->
    Set where
