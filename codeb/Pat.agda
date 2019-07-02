@@ -10,6 +10,7 @@ module PAT
  (Cn : S -> Set)(Ds : {s : S} -> Cn s -> Syn B S)(b2s : B -> S)
  (Pc : S -> Set)(pc : {s : S} -> Pc s -> Cn s)
  (cq? : {s : S}(b c : Cn s) -> Dec (b ~ c))
+ (pci : {s : S}(b c : Pc s) -> pc b ~ pc c -> b ~ c)
  where
 
  open TERM Cn Ds b2s
@@ -23,24 +24,61 @@ module PAT
    hole : Pat (` s) ga
    _-_  : (c : Pc s)(pr : Pat (Ds (pc c)) ga) -> Pat (` s) ga
 
- data RefineR {s ga de}(ph : ga <= de) : Pat (` s) ga -> Pat (` s) de -> Set
+ data RfnR {s ga de}(ph : ga <= de) : Pat (` s) de -> Pat (` s) ga -> Set
  
- Refine : forall D {ga de}(ph : ga <= de) ->
-          Pat D ga -> Pat D de -> Set
- Refine un' ph r p = One
- Refine (D *' E) ph (rd </ ru \> re) (pd </ pu \> pe) =
-   (_ *\ \ ph0 -> Refine D ph0 rd pd * Square (ph0 ^ u/ pu) (u/ ru ^ ph)) *
-   (_ *\ \ ph1 -> Refine E ph1 re pe * Square (ph1 ^ u\ pu) (u\ ru ^ ph))
- Refine (b >' D) ph (ll r) (ll p) = Refine D (ph -, b) r p
- Refine (b >' D) ph (ll r) (kk p) = Zero
- Refine (b >' D) ph (kk r) (ll p) = Refine D (ph -^ b) r p
- Refine (b >' D) ph (kk r) (kk p) = Refine D ph r p
- Refine (` s) ph r p = RefineR ph r p
+ Rfn : forall D {ga de}(ph : ga <= de) -> Pat D de -> Pat D ga -> Set
+ Rfn un'      ph p      r      = One
+ Rfn (D *' E) ph (pd </ pu \> pe) (rd </ ru \> re) =
+   (_ *\ \ ph0 -> Rfn D ph0 pd rd * Square (ph0 ^ u/ pu) (u/ ru ^ ph)) *
+   (_ *\ \ ph1 -> Rfn E ph1 pe re * Square (ph1 ^ u\ pu) (u\ ru ^ ph))
+ Rfn (b >' D) ph (ll p) (ll r) = Rfn D (ph -, b) p r
+ Rfn (b >' D) ph (kk p) (ll r) = Zero
+ Rfn (b >' D) ph (ll p) (kk r) = Rfn D (ph -^ b) p r
+ Rfn (b >' D) ph (kk p) (kk r) = Rfn D ph p r
+ Rfn (` s)    ph p      r      = RfnR ph p r
  
- data RefineR {s ga de} ph where
-   hole : forall {r} -> RefineR ph r hole
-   _-_  : forall c {r p} -> Refine (Ds (pc c)) ph r p ->
-          RefineR ph (c - r) (c - p)
+ data RfnR {s ga de} ph where
+   hole : forall {r} -> RfnR ph hole r
+   _-_  : forall c {p r} -> Rfn (Ds (pc c)) ph p r ->
+          RfnR ph (c - p) (c - r)
+
+ restrict : forall D {ga de}(ph : ga <= de)(p : Pat D de) -> < Rfn D ph p >
+ restrict un' [] null = null , <>
+ restrict (D *' E) ph (pd </ pu \> pe) = 
+   let ! ! (sd , _) , (se , _) , u = ph <u pu
+       rd , rpd = restrict D _ pd ; re , rpe = restrict E _ pe
+   in  rd </ u \> re , (! rpd , sd) , ! rpe , se
+ restrict (b >' D) ph (ll p) = let r , rp = restrict D (ph -, b) p in
+   ll r , rp
+ restrict (b >' D) ph (kk p) = let r , rp = restrict D ph p in kk r , rp
+ restrict (` s) ph hole = hole , hole
+ restrict (` s) ph (c - p) = let r , rp = restrict (Ds (pc c)) ph p in
+   c - r , c - rp
+
+ Mat : Sort -> Bwd B -> Set
+ Mat D ga = Maybe (Pat D :< ga)
+
+ MRfn : forall D {ga}(p r : Mat D ga) -> Set
+ MRfn D _              no             = One
+ MRfn D (yes (p ^ ph)) (yes (r ^ th)) =
+   _ *\ \ ps -> ps & ph =< th * Rfn D ps p r
+ MRfn D no             (yes r)        = Zero
+
+ unify : forall D {ga}(p q : Mat D ga) -> < MRfn D p :* MRfn D q >
+ unify^ : forall D {ga ga0 ga1 ga'}
+   {ph : ga0 <= ga}{ps : ga1 <= ga}{ph' : ga' <= ga0}{ps' : ga' <= ga1}
+   (p : Pat D ga0)(q : Pat D ga1){s : Square (ph' ^ ph) (ps' ^ ps)} ->
+   Pullback s -> < MRfn D (yes (p ^ ph)) :* MRfn D (yes (q ^ ps)) >
+ unify D no  _ = no , _
+ unify D _  no = no , _
+ unify D (yes (p ^ ph)) (yes (q ^ ps)) with ph \^/ ps
+ ... | ph' ^ ps' , s , s^ = unify^ D p q s^
+ unify^ un' {ph' = []} {[]} null null s^ =
+   (yes (null ^ noth)) , (no& _ ^ <> , no& _ ^ <>)
+ unify^ (D *' E) {ph = ph} {ps} (pd </ pu \> pe) (qd </ qu \> qe) s^
+   = {!!}
+ unify^ (b >' D) p q s^ = {!!}
+ unify^ (` s) p q s^ = {!!}
 
 {-
  module _ (s : S)(de : Bwd B) where
@@ -61,7 +99,6 @@ module PAT
 
  Meta : (D : Sort){ga : Bwd B}(p : Pat D ga) -> S * Bwd B -> Set
  Meta D p (s , de) = Hole s de D p
--}
 
  module _ (M : S * Bwd B -> Set) where
 
@@ -79,7 +116,6 @@ module PAT
            Stan (Ds (pc c)) pr ->
            Stan (` s) (c - pr)
 
-{-
   get : forall {D : Sort}{ga}{p : Pat D ga}(m : Stan D p)
         {k} -> Meta D p k -> (M !< ` fst k) (snd k)
   get (val t) hole = t
@@ -88,7 +124,6 @@ module PAT
   get (_ , m) (inr x) = get m x
   get m (kk x) = get m x
   get m (ll x) = get m x
--}
 
   stan : forall D {ga}(p : Pat D ga)(pi : Stan D p) -> (M !< D) ga
   stan un'      null           <> = null ^ []
@@ -146,33 +181,34 @@ module PAT
   stanMa (` s) hole (val t) = hoMa
   stanMa (` s) (c - p) (.c - pi) = cnMa c (stanMa _ p pi)
 
-  refine : forall D {ga}
+  rfn : forall D {ga}
            (r : Pat D ga){rh}{t : (M !< D) ga} -> Match D r rh t ->
-           forall {de}(ph : ga <= de)(p : Pat D de) -> Refine D ph r p ->
+           forall {de}(ph : ga <= de)(p : Pat D de) -> Rfn D ph r p ->
            _ *\ \ th -> Stan D p *\ \ pi ->
            thin t & ph =< th * Match D p pi (thing t ^ th)
-  refine un' null unMa [] null <> = ! ! [] , unMa
-  refine (D *' E) (rd </ ru \> re) {t = t}
+  rfn un' null unMa [] null <> = ! ! [] , unMa
+  rfn (D *' E) (rd </ ru \> re) {t = t}
     (prMa {td = td ^ th0} {te ^ th1}{_}{ps2}{ps3} vd ve
       (mkPr { ! ch0 , th , ch1} xd tu xe) md me)
     ph (pd </ pu \> pe) ((ph0 , rpd , ad ^ bd) , (ph1 , rpe , ae ^ be))
-    with refine D rd md ph0 pd rpd | refine E re me ph1 pe rpe | th -&- ph
+    with rfn D rd md ph0 pd rpd | rfn E re me ph1 pe rpe | th -&- ph
   ... | ps0 , pid , wd , dh | ps1 , pie , we , eh | y
     with stkSq wd y (xd ^ vd) (bd ^ ad) | stkSq we y (xe ^ ve) (be ^ ae)
   ... | fd ^ gd | fe ^ ge
     = ! (pid , pie) , y , prMa gd ge (mkPr fd tu fe) dh eh
-  refine (b >' D) (ll r) (llMa m) ph (ll p) rp
-    with refine D r m (ph -, b) p rp
+  rfn (b >' D) (ll r) (llMa m) ph (ll p) rp
+    with rfn D r m (ph -, b) p rp
   ... | .(_ -, b) , pi , w -, .b , h = ! ! w , llMa h
   ... | .(_ -^ b) , pi , w -^, .b , h = ! ! w , llMa h
-  refine (b >' D) (kk r) (kkMa m) ph (ll p) rp
-    with refine D r m (ph -^ b) p rp
+  rfn (b >' D) (kk r) (kkMa m) ph (ll p) rp
+    with rfn D r m (ph -^ b) p rp
   ... | .(_ -^ b) , pi , w -^ .b , h = ! ! w , llMa h
-  refine (b >' D) (kk r) (kkMa m) ph (kk p) rp
-    with refine D r m ph p rp ; ... | th , pi , w , h = ! ! w , kkMa h
-  refine (b >' D) (ll _) m ph (kk _) ()
-  refine (` s) r {t = t ^ th} m ph .hole hole = ! ! th -&- ph , hoMa
-  refine (` s) .(c - _) (cnMa .c m) ph .(c - _) (c - rp)
-    with refine (Ds (pc c)) _ m ph _ rp
+  rfn (b >' D) (kk r) (kkMa m) ph (kk p) rp
+    with rfn D r m ph p rp ; ... | th , pi , w , h = ! ! w , kkMa h
+  rfn (b >' D) (ll _) m ph (kk _) ()
+  rfn (` s) r {t = t ^ th} m ph .hole hole = ! ! th -&- ph , hoMa
+  rfn (` s) .(c - _) (cnMa .c m) ph .(c - _) (c - rp)
+    with rfn (Ds (pc c)) _ m ph _ rp
   ... | th , pi , w , h = ! ! w , cnMa c h
            
+-}
