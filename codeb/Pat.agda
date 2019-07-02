@@ -99,10 +99,19 @@ module PAT
      , peh ^ flipSq (stkSq (che -&- kae) (ch -&- ph') (we ^ wae) ae))
    , ( qdh ^ flipSq (stkSq (chd -&- lad) (ch -&- ps') (wd ^ wad) bd)
      , qeh ^ flipSq (stkSq (che -&- lae) (ch -&- ps') (we ^ wae) be))
- unify^ (b >' D) (ll p) (ll q) s^ = {!!}
- unify^ (b >' D) (ll p) (kk q) s^ = {!!}
- unify^ (b >' D) (kk p) (ll q) s^ = {!!}
- unify^ (b >' D) (kk p) (kk q) s^ = {!!}
+ unify^ (b >' D) (ll p) (ll q) s^ with unify^ D p q (s^ -, b)
+ ... | no , _ = no , _
+ ... | yes (r ^ (ch -, .b)) , g , h = yes (ll r ^ ch) , g , h
+ ... | yes (r ^ ch -^ .b) , g , h = yes (kk r ^ ch) , g , h
+ unify^ (b >' D) (ll p) (kk q) s^ with unify^ D p q (s^ -,^ b)
+ ... | no , _ = no , _
+ ... | yes r , g , h = yes (kk :$ r) , g , h
+ unify^ (b >' D) (kk p) (ll q) s^ with unify^ D p q (s^ -^, b)
+ ... | no , _ = no , _
+ ... | yes r , g , h = yes (kk :$ r) , g , h
+ unify^ (b >' D) (kk p) (kk q) s^ with unify^ D p q s^
+ ... | no , _ = no , _
+ ... | yes r , g , h = yes (kk :$ r) , g , h
  unify^ (` s) {ps' = ps'} hole q s^ with restrict (` s) ps' q
  ... | r , qr = yes (r ^ idth)
               , hole , (qr [ RfnR $~ sym (id< ps') ~$~ r~ ~$~ r~ >)
