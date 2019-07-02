@@ -64,6 +64,59 @@ module PAT
    _ *\ \ ps -> ps & ph =< th * Rfn D ps p r
  MRfn D no             (yes r)        = Zero
 
+ 
+
+ unify : forall D {ga}(p q : Mat D ga) -> < MRfn D p :* MRfn D q >
+ unify^ : forall D {ga ga0 ga1 ga'}
+   {ph : ga0 <= ga}{ps : ga1 <= ga}{ph' : ga' <= ga0}{ps' : ga' <= ga1}
+   (p : Pat D ga0)(q : Pat D ga1){s : Square (ph' ^ ph) (ps' ^ ps)} ->
+   Pullback s ->
+   Mat D ga' *\ \
+     { (yes (r ^ ch)) -> Rfn D (ch -<- ph') p r * Rfn D (ch -<- ps') q r
+     ; no -> One }
+ unify D no  _ = no , _
+ unify D _  no = no , _
+ unify D (yes (p ^ ph)) (yes (q ^ ps)) with ph \^/ ps
+ ... | ph' ^ ps' , s@(om , vp , vq) , s^ with unify^ D p q s^
+ ... | no , _ = no , _
+ ... | yes r , pr , qr
+     = yes (r :- fst s) , thin r <& vp ^ pr , thin r <& vq ^ qr
+ unify^ un' null null s^ = yes (null ^ noth) , _
+ unify^ (D *' E) {ph = ph}{ps}{ph'}{ps'} (pd </ pu \> pe) (qd </ qu \> qe) s^
+   with u/ pu -<- ph | u/ qu -<- ps | puller s^ (u/ pu -&- ph) (u/ qu -&- ps)
+      | u\ pu -<- ph | u\ qu -<- ps | puller s^ (u\ pu -&- ph) (u\ qu -&- ps)
+ ... | phd | psd | kad ^ lad , (mud , tdp , tdq)  , ds^ , omd , ad , xe , bd
+     | phe | pse | kae ^ lae , (mue , tep , teq) , es^ , ome , ae , ye , be
+   with unify^ D pd qd ds^ | unify^ E pe qe es^
+ ... | no , _ | _      = no , _
+ ... | _      | no , _ = no , _
+ ... | yes (rd ^ chd) , pdh , qdh | yes (re ^ che) , peh , qeh
+   with chd -<- omd | chd -&- omd | che -<- ome | che -&- ome
+      | chd -<- omd /+\ che -<- ome
+ ... | nud | wad | nue | wae | (! thrd , ch , thre) , wd , we , ru
+   = yes (rd </ ru \> re ^ ch)
+   , ( pdh ^ flipSq (stkSq (chd -&- kad) (ch -&- ph') (wd ^ wad) ad)
+     , peh ^ flipSq (stkSq (che -&- kae) (ch -&- ph') (we ^ wae) ae))
+   , ( qdh ^ flipSq (stkSq (chd -&- lad) (ch -&- ps') (wd ^ wad) bd)
+     , qeh ^ flipSq (stkSq (che -&- lae) (ch -&- ps') (we ^ wae) be))
+ unify^ (b >' D) (ll p) (ll q) s^ = {!!}
+ unify^ (b >' D) (ll p) (kk q) s^ = {!!}
+ unify^ (b >' D) (kk p) (ll q) s^ = {!!}
+ unify^ (b >' D) (kk p) (kk q) s^ = {!!}
+ unify^ (` s) {ps' = ps'} hole q s^ with restrict (` s) ps' q
+ ... | r , qr = yes (r ^ idth)
+              , hole , (qr [ RfnR $~ sym (id< ps') ~$~ r~ ~$~ r~ >)
+ unify^ (` s) {ph' = ph'} p hole s^ with restrict (` s) ph' p
+ ... | r , pr = yes (r ^ idth)
+              , (pr [ RfnR $~ sym (id< ph') ~$~ r~ ~$~ r~ >) , hole
+ unify^ (` s) (c - p) (d - q) s^ with cq? (pc c) (pc d)
+ unify^ (` s) (c - p) (d - q) s^ | inl _ = no , _
+ unify^ (` s) (c - p) (d - q) s^ | inr x with pci c d x
+ ... | r~ with unify^ (Ds (pc c)) p q s^
+ ... | no , _ = no , _
+ ... | yes r , g , h = yes ((c -_) :$ r) , (c - g) , (c - h)
+
+{-
  unify : forall D {ga}(p q : Mat D ga) -> < MRfn D p :* MRfn D q >
  unify^ : forall D {ga ga0 ga1 ga'}
    {ph : ga0 <= ga}{ps : ga1 <= ga}{ph' : ga' <= ga0}{ps' : ga' <= ga1}
@@ -72,13 +125,27 @@ module PAT
  unify D no  _ = no , _
  unify D _  no = no , _
  unify D (yes (p ^ ph)) (yes (q ^ ps)) with ph \^/ ps
- ... | ph' ^ ps' , s , s^ = unify^ D p q s^
+ ... | ph' ^ ps' , s , s^ = {!!}
  unify^ un' {ph' = []} {[]} null null s^ =
    (yes (null ^ noth)) , (no& _ ^ <> , no& _ ^ <>)
  unify^ (D *' E) {ph = ph} {ps} (pd </ pu \> pe) (qd </ qu \> qe) s^
-   = {!!}
+   with u/ pu -<- ph | u/ qu -<- ps | puller s^ (u/ pu -&- ph) (u/ qu -&- ps)
+      | u\ pu -<- ph | u\ qu -<- ps | puller s^ (u\ pu -&- ph) (u\ qu -&- ps)
+ ... | phd | psd | ! ! ds^ , ! ad , xe , bd
+     | phe | pse | ! ! es^ , ! ae , ye , be
+   with unify^ D pd qd ds^ | unify^ E pe qe es^
+ ... | no , _ | _      = no , _
+ ... | _      | no , _ = no , _
+ ... | yes (rd ^ chd) , vpd ^ prd , vqd ^ qrd
+     | yes (re ^ che) , vpe ^ pre , vqe ^ qre
+   with chd /+\ che
+ ... | (! _ , ch , _) , wd , we , ru
+   = yes (rd </ ru \> re ^ {!!})
+   , (! {!!} , prd ^ {!!} , pre ^ {!!})
+   , (! {!!} , qrd ^ {!!} , qre ^ {!!})
  unify^ (b >' D) p q s^ = {!!}
  unify^ (` s) p q s^ = {!!}
+-}
 
 {-
  module _ (s : S)(de : Bwd B) where

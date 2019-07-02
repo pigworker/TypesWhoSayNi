@@ -378,11 +378,16 @@ module _ {X : Set} where
   mkPr lv c rv ~Pr~ mkPr lu b ru with copQ (! lv , rv , c) (! lu , ru , b)
   ... | r~ = r~
 
- module _ {ga de}(a b : <(ga <=_) :* (_<= de)>) where
+ module _ {ga de : Bwd X} where
 
-  Square : Set
-  Square = let th0 ^ ph0 = a ; th1 ^ ph1 = b in
-    <(th0 & ph0 =<_) :* (th1 & ph1 =<_)>
+  module _ (a b : <(ga <=_) :* (_<= de)>) where
+
+   Square : Set
+   Square = let th0 ^ ph0 = a ; th1 ^ ph1 = b in
+     <(th0 & ph0 =<_) :* (th1 & ph1 =<_)>
+
+  flipSq : forall {a b} -> Square a b -> Square b a
+  flipSq (v ^ w) = w ^ v
 
  stkSq : Tri \ th0 th1 th -> th0 & th1 =< th ->
          Tri \ ph0 ph1 ph -> ph0 & ph1 =< ph ->
@@ -394,7 +399,7 @@ module _ {X : Set} where
  ... | ch0 , v4 , v5 | ch1 , v6 , v7 | ch2 , v8 , v9
    with v4 ~&~ v6 | v7 ~&~ v9
  ... | r~ | r~ = v8 ^ v5
- 
+
  data Pullback : forall {ga de}{a b : <(ga <=_) :* (_<= de)>} -> Square a b ->
    Set where
    [] : Pullback ([] ^ [])
@@ -423,20 +428,17 @@ module _ {X : Set} where
   (y : Square (ch1 ^ th1) (ch2 ^ th2)) ->
   {z : Square (ph1 ^ th1) (ph2 ^ th2)} -> Pullback z ->
     <(_& ph1 =< ch1) :* (_& fst z =< fst y) :* (_& ph2 =< ch2)>
- pullU (v1 ^ v2) p = {!!}
- {-
- pullU ([]       ^ [])        []         =                []       ^ []
- pullU (v1 -, x  ^ v2 -, .x)  (p -, .x)  = 
-                       let w1 ^ w2 = pullU (v1 ^ v2) p in w1 -, x  ^ w2 -, x
- pullU (v1 -^, x ^ v2 -^, .x) (p -, .x)  =
-                       let w1 ^ w2 = pullU (v1 ^ v2) p in w1 -^, x ^ w2 -^, x
- pullU (v1 -^, x ^ v2 -^ .x)  (p -,^ .x) =
-                       let w1 ^ w2 = pullU (v1 ^ v2) p in w1 -^ x  ^ w2
- pullU (v1 -^ x  ^ v2 -^, .x) (p -^, .x) =
-                       let w1 ^ w2 = pullU (v1 ^ v2) p in w1       ^ w2 -^ x
- pullU (v1 -^ x  ^ v2 -^ .x)  (p -^ .x)  = 
-                       let w1 ^ w2 = pullU (v1 ^ v2) p in w1       ^ w2
- -}
+ pullU ([] ^ []) [] = ! [] , [] , []
+ pullU (v1 -, x ^ v2 -, .x) (p -, .x) = 
+   let ! w1 , w2 , w3 = pullU (v1 ^ v2) p in ! w1 -, x  , w2 -, x  , w3 -, x
+ pullU (v1 -^, x ^ v2 -^, .x) (p -, .x) = 
+   let ! w1 , w2 , w3 = pullU (v1 ^ v2) p in ! w1 -^, x , w2 -^, x , w3 -^, x
+ pullU (v1 -^, x ^ v2 -^ .x) (p -,^ .x) = 
+   let ! w1 , w2 , w3 = pullU (v1 ^ v2) p in ! w1 -^ x  , w2 -^ x  , w3
+ pullU (v1 -^ x ^ v2 -^, .x) (p -^, .x) = 
+   let ! w1 , w2 , w3 = pullU (v1 ^ v2) p in ! w1       , w2 -^ x  , w3 -^ x
+ pullU (v1 -^ x ^ v2 -^ .x) (p -^ .x) = 
+   let ! w1 , w2 , w3 = pullU (v1 ^ v2) p in ! w1       , w2 -^ x  , w3
 
  infix 7 _u<_  -- not the ideal name for an infix operator
  _u<_ : forall {ga0 ga1 ga}{th0 : ga0 <= ga}{th1 : ga1 <= ga} ->
