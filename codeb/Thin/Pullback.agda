@@ -107,7 +107,7 @@ scope) and their commutativity.
 ------------------------------------------------------------------------------
 
  module _ {ga : Scope}(x y : Sub ga) where  -- fix two subscopes x and y
-  ga0 = x .fst ; th0 = x .snd ; ga1 = y .fst ; th1 = y .snd
+  private ga0 = x .fst ; th0 = x .snd ; ga1 = y .fst ; th1 = y .snd
   -- th0 and th1 are the top half of the perimeter
   
   Plb : Set  -- what is their pullback? we need

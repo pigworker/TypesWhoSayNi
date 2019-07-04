@@ -168,7 +168,7 @@ know it *is* the union.
 -}
 
  module _ {ga : Scope}(x y : Sub ga) where  -- fix two subscopes, x and y
-  ga0 = x .fst ; th = x .snd ; ga1 = y .fst ; ph = y .snd
+  private ga0 = x .fst ; th = x .snd ; ga1 = y .fst ; ph = y .snd
   
   Cop : Set  -- what is their coproduct?
   Cop = Sub ga >< /\ \ de ps              -- an object in Sub ga with...
