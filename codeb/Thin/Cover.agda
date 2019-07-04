@@ -152,3 +152,134 @@ If both, I incline to the left.
  ... | inr (! v) = inr (! v -^, b)
 
 
+------------------------------------------------------------------------------
+-- Coproduct diagrams
+------------------------------------------------------------------------------
+
+{-
+Selections from a given subscope are given by fixing the target, forming
+the slice category => / ga.
+-}
+
+ Sub : Scope -> Set
+ Sub ga = <(_<= ga)>
+
+{- Objects in Sub ga are given by (ga' , th) : <(_<= ga)>
+   Morphisms from (ga' , th) to (de , ps) are given by
+   (th' , v) : <(_& ps =< th)>.
+   The coproduct of (ga0 , th) and (ga1 , ph) is some (de , ps)
+   with injections (th' , v0) and (ph' , v1) such that th' and ph'
+   cover de.
+
+   In effect, ps is the union of the selections made by th and ph,
+   but we also know it *is* the union.
+-}
+
+ module _ {ga}(x y : Sub ga) where  -- fix two objects x and y in Sub ga
+  ga0 = x .fst ; th = x .snd ; ga1 = y .fst ; ph = y .snd
+  Cop : Set  -- what is their coproduct?
+  Cop = Sub ga >< /\ \ de ps              -- an object in Sub ga with...
+     -> (ga0 <= de      * ga1 <= de     ) >< /\ \ th' ph'
+     ->  th' & ps =< th * ph' & ps =< ph  -- ...morphisms from x and y...
+      * th' /u\ ph'                       -- ...which form a cover
+
+{-
+Now let's compute a coproduct diagram for any two thinnings with the same
+target.
+
+In essence, it's a fancification of bitwise or, recording the evidence
+that we really are computing a union.
+-}
+
+ infix 7 _/+\_
+ 
+ _/+\_ : forall {ga0 ga ga1}(th : ga0 <= ga)(ph : ga1 <= ga) ->
+         Cop (! th) (! ph)
+ []      /+\ []       =     ! ! []      , []      , []      
+ th -, b /+\ ph -, .b = let ! ! v       , w       , u       = th /+\ ph
+                        in  ! ! v -, b  , w -, b  , u -, b  
+ th -, b /+\ ph -^ .b = let ! ! v       , w       , u       = th /+\ ph
+                        in  ! ! v -, b  , w -^, b , u -,^ b 
+ th -^ b /+\ ph -, .b = let ! ! v       , w       , u       = th /+\ ph
+                        in  ! ! v -^, b , w -, b  , u -^, b 
+ th -^ b /+\ ph -^ .b = let ! ! v       , w       , u       = th /+\ ph
+                        in  ! ! v -^ b  , w -^ b  , u
+--   ^           ^                 ^^        ^^        ^^
+--   |           |                /  \      /  \      /  \
+--   X           Y               X   X|Y   Y   Y|X ; X    Y only if X|Y
+{-
+The left and right triangles record how the given element relates to its
+injection: included, excluded though present in the union, absent.
+The cover records the provenance of what is present in the union, but
+says nothing about what is absent.
+-}
+
+{-
+To show that this concrete definition of a coproduct diagram is rightly
+named, let us check that it satisfies the universal property of a
+coproduct. If we have morphisms in Sub ga from (ga0 , th) and (ga1 , ph)
+to any other (de' , ps'), then there must be a unique morphism from our
+(de , ps) to (de' , ps'). We get the uniqueness for free because such a
+morphism is given by <(_& ps' =< ps)>, and we know (thinnings are mono)
+that there is at most one such thing.
+-}
+
+ copU : forall {ga0 ga ga1}{th : ga0 <= ga}{ph : ga1 <= ga}
+   {de'}{ps' : de' <= ga}{th' ph'} -> th' & ps' =< th -> ph' & ps' =< ph ->
+   (c : Cop (! th) (! ph)) -> let (! ps) , _ , _ , _ , u = c in
+    <(u/ u &_=< th') :* (_& ps' =< ps) :* (u\ u &_=< ph')>
+  --         w0                 v                 w1
+    
+{-
+         _,-- --,_        Given v0 : th' & ps' =< th, v1 : ph' & ps' =< ph
+        /    |    \       then ps' must be *at least* the union of th and ph.
+       /     |ps'  \      
+    th/      |      \ph   That is, if we have any coproduct diagram for
+     /  v0  /!\  v1  \    th and ph, its "union", ps (the line up the middle)
+    |      /.!.\      |   must embed in ps' (triangle v, below) in a way
+    | th','..!..`,ph' |   that's consistent with th' and ph' (triangles w0 and
+    | ,-'w0_/u\_w1`-, |   w1).
+    |/..,-'     `-,..\|
+    |--'           '--|
+-}
+
+ copU [] [] (! ! [] , [] , []) = ! [] , [] , []
+ copU (v0 -, b)  (v1 -, .b)  (! ! wv0 -, .b  , wv1 -, .b  , u -, .b)  =
+   let ! w0       , v       , w1         = copU v0 v1 (! ! wv0 , wv1 , u)
+   in  ! w0 -, b  , v -, b  , w1 -, b
+ copU (v0 -, b)  (v1 -^, .b) (! ! wv0 -, .b  , wv1 -^, .b , u -,^ .b) = 
+   let ! w0       , v       , w1         = copU v0 v1 (! ! wv0 , wv1 , u)
+   in  ! w0 -, b  , v -, b  , w1 -^, b
+ copU (v0 -^, b) (v1 -, .b)  (! ! wv0 -^, .b , wv1 -, .b  , u -^, .b) = 
+   let ! w0       , v       , w1         = copU v0 v1 (! ! wv0 , wv1 , u)
+   in  ! w0 -^, b , v -, b  , w1 -, b
+ copU (v0 -^, b) (v1 -^, .b) (! ! wv0 -^ .b  , wv1 -^ .b  , u)        = 
+   let ! w0       , v       , w1         = copU v0 v1 (! ! wv0 , wv1 , u)
+   in  ! w0 -^ b  , v -^, b , w1 -^ b
+ copU (v0 -^ b)  (v1 -^ .b)  (! ! wv0 -^ .b  , wv1 -^ .b  , u)        = 
+   let ! w0       , v       , w1         = copU v0 v1 (! ! wv0 , wv1 , u)
+   in  ! w0       , v -^ b  , w1
+ copU (v0 -^, b) (v1 -^, .b) (! ! wv0 -^, .b , wv1 -^, .b , ())
+ copU (v0 -^ b)  (v1 -^ .b)  (! ! wv0 -^, .b , wv1 -^, .b , ())
+
+
+------------------------------------------------------------------------------
+-- Coproduct diagrams are unique
+------------------------------------------------------------------------------
+
+{-
+Note that the universal property applies to any coproduct diagram (not just
+that computed by /+\). In fact, there is exactly one such diagram, as a
+consequence of the universal property. 
+-}
+
+ copQ : forall {ga}{x y : Sub ga}(c0 c1 : Cop x y) -> c0 ~ c1
+ copQ c0@(_ , (th , ph) , v00 , v01 , u0) c1@((! ps) , _ , v10 , v11 , u1)
+   with copU v10 v11 c0 | copU v00 v01 c1
+ ... | ps0 , w0 , v0 , w1 | ps1 , _
+   with antisym ps0 ps1                  -- both mediating maps are idth
+ ... | r~ , r~ , r~
+   with w0 ~&~ th &id | v0 ~&~ id& ps | w1 ~&~ ph &id   -- splat
+ ... | r~ , r~ | r~ , r~ | r~ , r~
+   with v00 ~&~ v10 | v01 ~&~ v11 | u0 ~/u\~ u1         -- splat!
+ ... | r~ , r~ | r~ , r~ | r~ = r~
