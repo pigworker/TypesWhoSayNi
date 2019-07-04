@@ -157,26 +157,19 @@ If both, I incline to the left.
 ------------------------------------------------------------------------------
 
 {-
-Selections from a given subscope are given by fixing the target, forming
-the slice category => / ga.
+If we have two subscopes of ga, (ga0 , th) and (ga1 , ph), their union is
+given by the coproduct in the slice category, Sub ga.
+
+The coproduct of (ga0 , th) and (ga1 , ph) is some (de , ps) with injections
+(th' , v0) and (ph' , v1) such that th' and ph' cover de.
+
+In effect, ps is the union of the selections made by th and ph, but we also
+know it *is* the union.
 -}
 
- Sub : Scope -> Set
- Sub ga = <(_<= ga)>
-
-{- Objects in Sub ga are given by (ga' , th) : <(_<= ga)>
-   Morphisms from (ga' , th) to (de , ps) are given by
-   (th' , v) : <(_& ps =< th)>.
-   The coproduct of (ga0 , th) and (ga1 , ph) is some (de , ps)
-   with injections (th' , v0) and (ph' , v1) such that th' and ph'
-   cover de.
-
-   In effect, ps is the union of the selections made by th and ph,
-   but we also know it *is* the union.
--}
-
- module _ {ga}(x y : Sub ga) where  -- fix two objects x and y in Sub ga
+ module _ {ga : Scope}(x y : Sub ga) where  -- fix two subscopes, x and y
   ga0 = x .fst ; th = x .snd ; ga1 = y .fst ; ph = y .snd
+  
   Cop : Set  -- what is their coproduct?
   Cop = Sub ga >< /\ \ de ps              -- an object in Sub ga with...
      -> (ga0 <= de      * ga1 <= de     ) >< /\ \ th' ph'
@@ -283,3 +276,4 @@ consequence of the universal property.
  ... | r~ , r~ | r~ , r~ | r~ , r~
    with v00 ~&~ v10 | v01 ~&~ v11 | u0 ~/u\~ u1         -- splat!
  ... | r~ , r~ | r~ , r~ | r~ = r~
+

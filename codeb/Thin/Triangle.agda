@@ -299,3 +299,25 @@ degenerates the diagram, the other of which we want.
 -}
 
 
+------------------------------------------------------------------------------
+-- Growing triangles by composition
+------------------------------------------------------------------------------
+
+{-
+Selections from a given subscope are given by fixing the target, forming
+the slice category => / ga.
+-}
+
+ Sub : Scope -> Set
+ Sub ga = <(_<= ga)>
+
+{- Objects in Sub ga are given by (ga' , th) : <(_<= ga)>
+   Morphisms from (ga' , th) to (de , ps) are given by
+   (th' , v) : <(_& ps =< th)>, i.e., a thinning from ga' to de
+   which makes the diagram commute.
+-}
+
+ infix 7 _<&=_
+ _<&=_ : forall {ga} -> Sub ga -> Sub ga -> Set
+ (! th) <&= (! ps) = <(_& ps =< th)>
+ 
