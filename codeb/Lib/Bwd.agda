@@ -29,7 +29,7 @@ module _ {X : Set} where
 
  module _ {P : X -> Set} where
 
-  env0 : forall {P : X -> Set}{xz yz : Env P []} -> xz ~ yz
+  env0 : forall {xz yz : Env P []} -> xz ~ yz
   env0 {xz = []} {[]} = r~
 
   module _ {Q : X -> Set} where

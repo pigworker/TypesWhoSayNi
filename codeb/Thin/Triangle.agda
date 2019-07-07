@@ -189,6 +189,16 @@ This amounts to witnessing associativity in various forms.
    {th02 : ga0 <= ga2}{th13 : ga1 <= ga3} ->
    <(th01 &_=< th02) :* (_& th23 =< th13)> ->
    <(th01 & th13 =<_) :* (th02 & th23 =<_)>
+{-
+   1----->2
+   ^\    ^|
+   | \  / |
+   |  \/  |
+   |  /\  |
+   | /  \ |
+   |/    vv
+   0.....>3
+-}
  assoc03 (v        ^ w -^ x)  =
    let v ^ w = assoc03 (v ^ w) in   v -^ x  ^ w -^ x
  assoc03 (v -^ .x  ^ w -^, x) =

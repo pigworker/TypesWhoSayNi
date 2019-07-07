@@ -84,7 +84,7 @@ past, and the glued on thinning composes on up.
 -}
 
  Free : (Scope -> Set) -> Shifty
- Stuff (Free T) de = < T :* (_<= de) >
+ Stuff (Free T) de = < T :* (_<= de) >        -- left Kan extension
  shift (Free T) (t ^ th) ph = t ^ th -<- ph
 
 {-
@@ -112,6 +112,7 @@ The CodeBruijn operator :< is exactly this glue-on-a-thinning type
 constructor.
 -}
 
+ infix 7 _:<_
  _:<_ : (Scope -> Set) -> (Scope -> Set)
  _:<_ = Free - Stuff
 
@@ -168,16 +169,20 @@ Thinning thinned things is just composition.
  f :$ (s ^ th) = f s ^ th
 
 
+------------------------------------------------------------------------------
+-- Free is left adjoint to Stuff
+------------------------------------------------------------------------------
+
 {-
 Let us now expose the adjunction.
 -}
 
  module Free-|Stuff (S : Scope -> Set)(T : Shifty) where
 
-  forget : Free S -<=> T -> [ S -:> Stuff T ]
+  forget : (Free S -<=> T) -> [ S -:> Stuff T ]
   forget f s = act f (s ^ idth)
    
-  remind : [ S -:> Stuff T ] -> Free S -<=> T
+  remind : [ S -:> Stuff T ] -> (Free S -<=> T)
   act    (remind g) (s ^ th) = shift T (g s) th
   shifty (remind g) (s ^ th) ph = cosh T (g s) th ph
 
@@ -197,6 +202,38 @@ The idea behind codebruijn programming is to separate the *relevant*
 component of stuff, making positive use of its whole support, from the
 embedding of that support into the scope.
 -}
+
+
+------------------------------------------------------------------------------
+-- By the way, Kripke is right adjoint to Stuff (up to extensionality)
+------------------------------------------------------------------------------
+
+ module KRIPKE (ext : {S T : Scope -> Set}{f g : [ S -:> T ]}
+                  (q : forall {ga}(s : S ga) -> f s ~ g s) ->
+                       _~_ {_}{[ S -:> T ]} f g) where
+  Kripke : (Scope -> Set) -> Shifty           -- right Kan extension
+  Stuff (Kripke T) ga = [(ga <=_) -:> T ]
+  shift (Kripke T) k th ph = k (th -<- ph)
+  idsh (Kripke T) k = ext \ th -> k $~ id< th
+  cosh (Kripke T) k th ph = ext \ ps -> k $~ assoc< th ph ps ~o
+
+  module Stuff-|Kripke (S : Shifty)(T : Scope -> Set) where
+
+    forget : [ Stuff S -:> T ] -> (S -<=> Kripke T)
+    act    (forget f) s th = f (shift S s th)
+    shifty (forget f) s th = ext \ ph -> f $~ cosh S s th ph ~o
+
+    remind : (S -<=> Kripke T) -> [ Stuff S -:> T ]
+    remind g s = act g s idth
+
+    regret : (f : [ Stuff S -:> T ]) ->
+      forall {ga}(s : Stuff S ga) -> remind (forget f) s ~ f s
+    regret f s = f $~ idsh S s
+
+    foment : (g : S -<=> Kripke T) ->
+      forall {ga de}(s : Stuff S ga)(th : ga <= de) ->
+      act (forget (remind g)) s th ~ act g s th
+    foment g s th rewrite shifty g s th | th <id = r~
 
 
 ------------------------------------------------------------------------------

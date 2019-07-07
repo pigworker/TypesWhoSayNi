@@ -52,6 +52,11 @@ Pi gets the good treatment and it's just not fair on Sigma.
 Most often used with Lib.Index, this is handy for eliding cruft.
 -}
 
+ infixl 1 _<$>_
+ _<$>_ : forall {X : Set l}{S T : X -> Set l} ->
+         (forall {x} -> S x -> T x) -> < S > -> < T >
+ f <$> (x , s) = x , f s
+
 
 ------------------------------------------------------------------------------
 -- Eliminating dependent pairs

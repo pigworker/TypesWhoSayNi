@@ -76,22 +76,24 @@ to force a type onto something, and that's where :` gets used.
 -- our favourite combinators
 ------------------------------------------------------------------------------
 
-module _ {i j}{A : Set i}{B : A -> Set j} where
+module _ {i}{A : Set i}{j} where
 
- ko : (a : A)(b : B a) -> A
+ ko : {B : Set j}(a : A)(b : B) -> A
  ko a _ = a
 
- infixr 2 _$o_
+ module _ {B : A -> Set j} where
 
- _$o_ : (a : A) -> A >> B -> B a
- a $o f = f a
+  infixr 2 _$o_
 
- module _ {k}{C : (a : A) -> B a -> Set k} where
+  _$o_ : (a : A) -> A >> B -> B a
+  a $o f = f a
 
-  infixl 3 _$$_   -- Schoenfinkel on the money
+  module _ {k}{C : (a : A) -> B a -> Set k} where
 
-  _$$_ : ((a : A) -> B a >> C a) -> (s : A >> B) -> (a : A) -> C a (s a)
-  (f $$ s) a = f a (s a)
+   infixl 3 _$$_   -- Schoenfinkel on the money
+
+   _$$_ : ((a : A) -> B a >> C a) -> (s : A >> B) -> (a : A) -> C a (s a)
+   (f $$ s) a = f a (s a)
 
 {-
 These combinators let us do dependently typed applicative programming in the
