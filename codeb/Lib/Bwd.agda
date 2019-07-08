@@ -7,6 +7,7 @@
 module Lib.Bwd where
 
 open import Lib.Pi
+open import Lib.Sigma
 open import Lib.Equality
 open import Lib.Index
 
@@ -16,6 +17,11 @@ data Bwd {l}(X : Set l) : Set l where
   _-,_ : Bwd X -> X -> Bwd X
 
 module _ {X : Set} where
+
+ infixl 8 _+B_
+ _+B_ : Bwd X -> Bwd X -> Bwd X
+ xz +B [] = xz
+ xz +B (yz -, y) = xz +B yz -, y
 
  data Null : Bwd X -> Set where
    null : Null []
@@ -32,6 +38,14 @@ module _ {X : Set} where
   env0 : forall {xz yz : Env P []} -> xz ~ yz
   env0 {xz = []} {[]} = r~
 
+  envBwd : forall {xz} -> Env P xz -> Bwd < P >
+  envBwd [] = []
+  envBwd (pz -, p) = envBwd pz -, (! p)
+
+  purE : [ P ] -> [ Env P ]
+  purE p {[]} = []
+  purE p {xz -, x} = purE p -, p
+
   module _ {Q : X -> Set} where
 
    env : [ P -:> Q ] -> [ Env P -:> Env Q ]
@@ -42,6 +56,10 @@ module _ {X : Set} where
      (forall {x}(p : P x) -> f p ~ g p) -> env f pz ~ env g pz
    envExt []        q = r~
    envExt (pz -, p) q = _-,_ $~ envExt pz q ~$~ q p
+
+   _$E_ : [ Env (P -:> Q) -:> Env P -:> Env Q ]
+   [] $E [] = []
+   (fz -, f) $E (pz -, p) = (fz $E pz) -, f p
 
  module _ {P Q R : X -> Set} where
    
@@ -63,4 +81,3 @@ module _ {X : Set} where
     env (f - g) pz    ~[ envExt pz q >
     env (h - k) pz    < envComp pz (\ _ -> r~) ]~
     env k (env h pz)  [QED]
-  
