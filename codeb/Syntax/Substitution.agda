@@ -336,6 +336,16 @@ same way will agree on their output.
    sbGQ q (kkSb xs) (kkSb ys) with sbGQ q xs ys ; ... | r~ = r~
    sbGQ q (llSb xs) (llSb ys) with sbGQ (wknHit q) xs ys ; ... | r~ = r~
 
+   sbGMap : forall {D ga ga0 ga1 de}
+     {th0 : ga <= ga0}{sg0 : ga0 =X> de}{th1 : ga <= ga1}{sg1 : ga1 =Y> de}
+     -> Hit th0 sg0 th1 sg1
+     -> forall {t : Tm D ga}{t' : Tm D :< de} ->
+     X.SbG D (t ^ th0) sg0 t' -> Y.SbG D (t ^ th1) sg1 t'
+   sbGMap {D}{th1 = th1}{sg1} q {t}{t0} xs
+     with mkSbG Y D (t ^ th1) sg1
+   ... | t1 , ys with sbGQ q xs ys
+   ... | r~ = ys
+
 
 ------------------------------------------------------------------------------
 -- Identity action is identity

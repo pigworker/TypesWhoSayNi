@@ -138,9 +138,9 @@ If both, I incline to the left.
  cover1 : forall {ga0 ga ga1 : Scope}{b}(i : b <- ga)
    {th : ga0 <= ga}{ph : ga1 <= ga}(u : th /u\ ph) ->
      <(_& u/ u =< i)> + <(_& u\ u =< i)>
- cover1 (i -, b) (u -,^ .b)   rewrite noth! i noth = inl (! no& _ -, b)
- cover1 (i -, b) (u -^, .b)   rewrite noth! i noth = inr (! no& _ -, b)
- cover1 (i -, b) (u -, .b)    rewrite noth! i noth = inl (! no& _ -, b)
+ cover1 (i -, b) (u -,^ .b)   = inl (! no&' noth _ _ -, b)
+ cover1 (i -, b) (u -^, .b)   = inr (! no&' noth _ _ -, b)
+ cover1 (i -, b) (u -, .b)    = inl (! no&' noth _ _ -, b)
  cover1 (i -^ b) (u -,^ .b)   with cover1 i u
  ... | inl (! v) = inl (! v -^, b)
  ... | inr (! v) = inr (! v -^ b)
@@ -156,7 +156,7 @@ If both, I incline to the left.
 -- if nothing's on one side, everything's on the other
 ------------------------------------------------------------------------------
 
- allLeft : forall {ga de}{th : ga <= de} -> th /u\ noth ->
+ allLeft : forall {ga de}{th : ga <= de}{ph : [] <= de} -> th /u\ ph ->
            ga ~ de >< \ { r~ -> th ~ idth }
  allLeft []        = r~ , r~
  allLeft (u -,^ b) with allLeft u ; ... | r~ , r~ = r~ , r~

@@ -159,6 +159,10 @@ v looks a bit triangular and w is its friend.
  no& (th -, x) = no& th -^, x
  no& (th -^ x) = no& th -^ x
 
+ no&' : forall {ga de}(th : [] <= ga)(ph : ga <= de)(ps : [] <= de) ->
+   th & ph =< ps
+ no&' th ph ps rewrite noth! th noth | noth! ps noth = no& ph
+
 
 ------------------------------------------------------------------------------
 -- Associators
