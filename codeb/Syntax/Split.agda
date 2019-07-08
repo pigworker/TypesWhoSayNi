@@ -84,35 +84,24 @@ module _
    ... | (th0 ^ ph0) , (th1 ^ ph1) , (s0 , p0) , (s1 , p1) , u'
        = split u' (pb s0 s1 p) (th0 -<- th) (th1 <? sg)
      where
-     -- the following would be better done with the u.p. of the pullback
      pb : forall {ga0 ga ga1 de0 de de1}
        {ps0 : de0 <= de}{ps1 : de1 <= de}
        {th0 : ga0 <= de0}{th : ga <= de}{th1 : ga1 <= de1}
        {ph0 : ga0 <= ga}{ph1 : ga1 <= ga} ->
        Square (th0 ^ ps0) (ph0 ^ th) -> Square (th1 ^ ps1) (ph1 ^ th) ->
        Pullback (no& ps0 ^ no& ps1) -> Pullback (no& ph0 ^ no& ph1)
-     pb ([] ^ []) ([] ^ []) [] = []
-     pb ((v0 -, b) ^ w0) ((v1 -, .b) ^ w1) ()
-     pb ((v0 -, b) ^ w0) (v1 -^, .b ^ w1) ()
-     pb ((v0 -, b) ^ (w0 -, .b)) ((v1 -^ .b) ^ w1 -^, .b) (p -,^ .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p -,^ b
-     pb (v0 -^, b ^ w0) ((v1 -, .b) ^ w1) ()
-     pb (v0 -^, b ^ w0) (v1 -^, .b ^ w1) ()
-     pb (v0 -^, b ^ w0 -^, .b) ((v1 -^ .b) ^ w1 -^, .b) (p -,^ .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p -^ b
-     pb (v0 -^, b ^ (w0 -^ .b)) ((v1 -^ .b) ^ (w1 -^ .b)) (p -,^ .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p
-     pb ((v0 -^ b) ^ w0 -^, .b) ((v1 -, .b) ^ (w1 -, .b)) (p -^, .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p -^, b
-     pb ((v0 -^ b) ^ (w0 -^ .b)) ((v1 -, .b) ^ ()) (p -^, .b)
-     pb ((v0 -^ b) ^ w0 -^, .b) (v1 -^, .b ^ w1 -^, .b) (p -^, .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p -^ b
-     pb ((v0 -^ b) ^ (w0 -^ .b)) (v1 -^, .b ^ (w1 -^ .b)) (p -^, .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p
-     pb ((v0 -^ b) ^ w0 -^, .b) ((v1 -^ .b) ^ w1 -^, .b) (p -^ .b) = 
-       pb (v0 ^ w0) (v1 ^ w1) p -^ b
-     pb ((v0 -^ b) ^ (w0 -^ .b)) ((v1 -^ .b) ^ (w1 -^ .b)) (p -^ .b) =
-       pb (v0 ^ w0) (v1 ^ w1) p
+     pb {th0 = th0}{th}{th1}{ph0}{ph1} s0 s1 p with ph0 \^/ ph1
+     ... | ch0 ^ ch1 , (ch , v2 , v3) , p'
+       with ch0 -&- th0 | ch1 -&- th1 | ch -&- th
+     ... | ! v4 | ! v5 | ! w
+       with coSq v4 w (id& ch ^ v2) (opSq s0)
+          | coSq v5 w (id& ch ^ v3) (opSq s1)
+     ... | w0 ^ w2 | w1 ^ w3 with w0 ~&~ w1
+     ... | r~ , r~ with pullU (w2 ^ w3) p
+     ... | [] , w4 , w5 , w6
+       with noth! ch0 noth | noth! ch noth | noth! ch1 noth
+     ... | r~ | r~ | r~ with v2 ~&~ no& ph0 | v3 ~&~ no& ph1
+     ... | r~ , r~ | r~ , r~ = p'
    snd (selSplit ps (split u p th sg)) i with ps <u u
    ... | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
      with cover1 i u' | cover1 (i -<- ps) u
@@ -129,7 +118,7 @@ module _
    ... | r~ , r~ = r~
    snd (selSplit ps (split u p th sg)) i
      | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     | inr (j , w0) | inr (k , w1)  with i -&- ps | assoc03 (w0 ^ v3)
+     | inr (j , w0) | inr (k , w1) with i -&- ps | assoc03 (w0 ^ v3)
    ... | ! w2 | w3 ^ w4 with w2 ~&~ w4 | assoc02 (w3 ^ v2)
    ... | r~ , r~ | w5 ^ w6 with w6 ~1&1~ w1
    ... | r~ rewrite w5 &<? sg = r~
