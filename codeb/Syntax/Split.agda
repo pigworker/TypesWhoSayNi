@@ -216,7 +216,7 @@ the term.
          d' , ds = splSb D d ad ; e' , es = splSb E e ae
      in  (d' /,\ e') , prSb covPr (Y.sbGMap dq ds) (Y.sbGMap eq es) prPr
 
-   -- The other cases are structural.
+   -- The other cases are structural, and we can let the specification drive.
 
    splSb (b >' D) (ll d) a = ! \\Sb (splSb _ _ _ .snd)
    splSb (b >' D) (kk d) a = ! kkSb (splSb _ _ _ .snd)
