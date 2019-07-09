@@ -15,9 +15,9 @@ open import Thin.Partition
 
 open THIN
 
-thq? : forall {X}{x y : X}{xs}(i : x <- xs)(j : y <- xs) ->
+iq? : forall {X}{x y : X}{xs}(i : x <- xs)(j : y <- xs) ->
   Maybe (x ~ y >< \ { r~ -> i ~ j })
-thq? i j with i \^/ j
+iq? i j with i \^/ j
 ... | _ , _ , ([] -, b) = yes (r~ , r~)
 ... | _ , _ , _ = no
 

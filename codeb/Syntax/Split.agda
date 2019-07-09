@@ -20,7 +20,7 @@ open import Thin.Cover
 open import Thin.Thinned
 open import Thin.Square
 open import Thin.Pullback
-open import Thin.IYJRN
+open import Thin.Partition
 open import Relevant.Pair
 open import Relevant.Abstraction
 open import Syntax.Desc
@@ -46,145 +46,180 @@ module _
   open SUBSTITUTION B S b2s Cn Ds M
   open THINNING B S b2s Cn Ds M
 
+
+------------------------------------------------------------------------------
+-- a more sophisticated notion of action on free variables
+------------------------------------------------------------------------------
+
   record _=u>_ (ga de : Scope) : Set where
     constructor split
     field
       {passive active} : Scope
       {passiveTh}  : passive <= ga
       {activeTh}   : active  <= ga
-      paCover      : passiveTh /u\ activeTh
-      paPart       : Pullback (no& passiveTh ^ no& activeTh)
+      paPart       : Part passiveTh activeTh
       passiveHit   : passive <= de
       activeHit    : Sb active de
+
+{-
+This action splits its source scope into
+  the passive part, which gets thinned
+  the active part, which gets substituted.
+
+As we push one of these things through a term,
+  going under a binder extends the passive part
+  going left or right in a pair makes a selection from both parts.
+
+When the active part becomes empty, we can stop traversing the term and just
+deploy the thinning for the passive part.
+-}
 
   module _ where
    open Action
    
    action=u> : Action _=u>_
-   hit action=u> i (split u _ th sg) with cover1 i u
+   hit action=u> i (split (u , _) th sg) with cover1 i u
    ... | inl (j , _) = var ^ j -<- th
    ... | inr (j , _) with j <? sg ; ... | _ -, t = t
-   wkn action=u> (split u p th sg) b =
-     split (u -,^ b) (p -,^ b) (th -, b) (env (_:^ b) sg)
-   hitWkn0 action=u> {ga} (split u _ th sg) b
+   wkn action=u> (split (u , p) th sg) b =
+     split (u -,^ b , p -,^ b) (th -, b) (env (_:^ b) sg)
+   hitWkn0 action=u> {ga} (split (u , _) th sg) b
      rewrite noth! (noth -<- th) noth = r~
-   hitWkn+ action=u> i (split u p th sg) b with cover1 i u
+   hitWkn+ action=u> i (split (u , p) th sg) b with cover1 i u
    ... | inl (j , _) = r~
    ... | inr (j , _)
      with j <? sg | j <? env (_:^ b) sg | nat<? (_:^ b) j sg
    ... | _ -, t | _ -, t' | r~ = r~
 
+{-
+Note how the wkn method grows the passive part of the partition and extends
+the thinning.
+-}
+
   module _ where
-   open Action action=u>
+   open Action
+   open SBG action=u>
+   open THINACTION action~ ; open THSBG action~
+   private module X = SBGFUN Thinned action=u>
+   private module Y = SBGFUN action=u> action=u>
 
-   selSplit : forall {ga de ze}(ps : ga <= de)(sg : de =u> ze) ->
-     ga =u> ze >< \ rh ->
-     forall {b}(i : b <- ga) -> hit i rh ~ hit (i -<- ps) sg
-   fst (selSplit ps (split u p th sg)) with ps <u u
-   ... | (th0 ^ ph0) , (th1 ^ ph1) , (s0 , p0) , (s1 , p1) , u'
-       = split u' (pb s0 s1 p) (th0 -<- th) (th1 <? sg)
+
+------------------------------------------------------------------------------
+-- restricting an action to a subscope
+------------------------------------------------------------------------------
+
+{-
+To go left/right in a pair, we need to restricted the action to a subscope,
+but show that the restricted action acts just the same on that subscope.
+-}
+
+   splitLemma : forall D {ga' ga de}(th : ga' <= ga)
+     (t : Tm D ga')(a : ga =u> de) ->
+     ga' =u> de >< \ a' -> Y.Hit idth a' (th -<- idth) a
+
+-- Proceed copattern style, in order to keep left-programming after emitting
+-- the first component of the action. We do not want the computational part
+-- of the output to be strict in data used only for the proof. Agda's issues
+-- re copattern matching after "with" means we do the same with twice.
+
+-- For the restricted action, <Part hands us a restricted partition with the
+-- embeddings we need, active and passive.
+
+   fst (splitLemma D th t (split up ph sg)) with th <Part up
+   ... | (ph0 ^ _) , _ , (ph1 ^ _) , _ , up'
+     = split up' (ph0 -<- ph) (ph1 <? sg)
+
+-- Now, to show they behave the same, we first have to get rid of some idth
+-- compositions, and then we can abstract the result of looking up a var in
+-- both actions: by cover1Lemma, these match up.
+
+   snd (splitLemma D th t (split up ph sg)) i with th <Part up
+   ... | (ph0 ^ _) , (s0 , _) , (ph1 ^ _) , (s1 , _) , up'
+     with i -<- idth | i <id | th -<- idth | th <id ; ... | _ | r~ | _ | r~
+     with cover1 i (fst up') | cover1 (i -<- th) (fst up)
+        | cover1Lemma up s0 s1 up' i
+
+-- In the passive case, we appeal to associativity of composition.
+
+   ... | inl (j , _) | inl (k , _) | inl h = (var ^_) $~ (
+     (j -<- (ph0 -<- ph)) ~[ assoc< j ph0 ph >
+     (j -<- ph0 -<- ph)   ~[ (_-<- ph) $~ eq& h >
+     (k -<- ph)            [QED])
+
+-- In the active case, we appeal to functoriality of selection.
+
+   ... | _ | _ | inr h rewrite h &<? sg = r~
+
+
+------------------------------------------------------------------------------
+-- implementing substitution
+------------------------------------------------------------------------------
+
+{-
+We work with an action for exactly the support of our term. As ever, we must
+ensure that the relational specification of substitution is satisfied.
+-}
+
+   splSb : forall D {ga de}(t : Tm D ga)(sg : ga =u> de) ->
+     < SbG D (t ^ idth) sg >
+
+{-
+We immediately split on the active subscope. If that's empty, we're going
+home early.
+-}
+
+   splSb D {ga} t a@(split {active = []} (u , p) th sg) with allLeft u
+   ... | r~ , r~
+   
+     = t ^ th  -- just glue the thinning to the term, already!
+
+     -- To show this is correct, we just need to show that an action whose
+     -- active subscope is empty always behaves just like a thinning.
+     -- We already have a proof that thinnings leave the term unchanged.
+     
+     , X.sbGMap (\ i ->
+         (var ^ i -<- idth -<- th)   ~[  (var ^_) $~ ((_-<- th) $~ (i <id)) >
+         (var ^ i -<- th)             < help i ]~
+         hit action=u> i a            < hit action=u> $~ i <id ~$~ rf a ]~
+         hit action=u> (i -<- idth) a [QED])
+       (thSbG {D} (idSbG (t ^ idth)) th
+        :[ SBG.SbG _ _ _ _ $~ ((t ^_) $~ id< th) >)
      where
-     pb : forall {ga0 ga ga1 de0 de de1}
-       {ps0 : de0 <= de}{ps1 : de1 <= de}
-       {th0 : ga0 <= de0}{th : ga <= de}{th1 : ga1 <= de1}
-       {ph0 : ga0 <= ga}{ph1 : ga1 <= ga} ->
-       Square (th0 ^ ps0) (ph0 ^ th) -> Square (th1 ^ ps1) (ph1 ^ th) ->
-       Pullback (no& ps0 ^ no& ps1) -> Pullback (no& ph0 ^ no& ph1)
-     pb {th0 = th0}{th}{th1}{ph0}{ph1} s0 s1 p with ph0 \^/ ph1
-     ... | ch0 ^ ch1 , (ch , v2 , v3) , p'
-       with ch0 -&- th0 | ch1 -&- th1 | ch -&- th
-     ... | ! v4 | ! v5 | ! w
-       with coSq v4 w (id& ch ^ v2) (opSq s0)
-          | coSq v5 w (id& ch ^ v3) (opSq s1)
-     ... | w0 ^ w2 | w1 ^ w3 with w0 ~&~ w1
-     ... | r~ , r~ with pullU (w2 ^ w3) p
-     ... | [] , w4 , w5 , w6
-       with noth! ch0 noth | noth! ch noth | noth! ch1 noth
-     ... | r~ | r~ | r~ with v2 ~&~ no& ph0 | v3 ~&~ no& ph1
-     ... | r~ , r~ | r~ , r~ = p'
-   snd (selSplit ps (split u p th sg)) i with ps <u u
-   ... | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     with cover1 i u' | cover1 (i -<- ps) u
-   snd (selSplit ps (split u p th sg)) i
-     | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     | inl (j , w0) | inl (k , w1)
-       with th0 -&- th | i -&- ps | k -&- th | assoc03 (w0 ^ v1)
-   ... | th' , w2 | ! w3 | ! w4 | w5 ^ w6 with j -&- th' | w3 ~&~ w6 
-   ... | ! w7 | r~ , r~ with assoc02 (w7 ^ w2)
-   ... | w8 ^ w9 with assoc03 (w8 ^ v0)
-   ... | wA ^ wB with wA ~&~ w5
-   ... | r~ , r~ with wB ~1&1~ w1
-   ... | r~ with w4 ~&~ w9
-   ... | r~ , r~ = r~
-   snd (selSplit ps (split u p th sg)) i
-     | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     | inr (j , w0) | inr (k , w1) with i -&- ps | assoc03 (w0 ^ v3)
-   ... | ! w2 | w3 ^ w4 with w2 ~&~ w4 | assoc02 (w3 ^ v2)
-   ... | r~ , r~ | w5 ^ w6 with w6 ~1&1~ w1
-   ... | r~ rewrite w5 &<? sg = r~
-   snd (selSplit ps (split u p th sg)) i
-     | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     | inl (j , w0) | inr (k , w1) with i -&- ps | assoc03 (w0 ^ v1)
-   ... | ! w2 | w3 ^ w4 with w2 ~&~ w4 | assoc02 (w3 ^ v0)
-   ... | r~ , r~ | w5 ^ w6 with pullU (w6 ^ w1) p ; ... | () , _
-   snd (selSplit ps (split u p th sg)) i
-     | (th0 ^ ph0) , (th1 ^ ph1) , (v0 ^ v1 , p0) , (v2 ^ v3 , p1) , u'
-     | inr (j , w0) | inl (k , w1) with i -&- ps | assoc03 (w0 ^ v3)
-   ... | ! w2 | w3 ^ w4 with w2 ~&~ w4 | assoc02 (w3 ^ v2)
-   ... | r~ , r~ | w5 ^ w6 with pullU (w1 ^ w6) p ; ... | () , _
+       help : forall {b}(i : b <- ga) -> hit action=u> i a ~ var ^ i -<- th
+       help i with cover1 i u
+       ... | inr ((), _)
+       ... | inl (j , v) with v ~&~ j &id ; ... | r~ , r~ = r~
 
-   module _ where
-    open Action
-    open SBG action=u>
-    open THINACTION action~ ; open THSBG action~
-    private module X = SBGFUN Thinned action=u>
-    private module Y = SBGFUN action=u> action=u>
+{-
+In the cases where there is active substitution happening, we must look at
+the term.
+-}
 
-    splSb : forall D {ga de}(t : Tm D ga)(sg : ga =u> de) ->
-            < SbG D (t ^ idth) sg >
-    splSb D {ga} t a@(split {active = []} u p th sg) with allLeft u
-    ... | r~ , r~  = t ^ th
-      , X.sbGMap (\ i ->
-          (var ^ i -<- idth -<- th)   ~[  (var ^_) $~ ((_-<- th) $~ (i <id)) >
-          (var ^ i -<- th)             < help i ]~
-          hit action=u> i a            < hit action=u> $~ i <id ~$~ rf a ]~
-          hit action=u> (i -<- idth) a [QED])
-        (thSbG {D} (idSbG (t ^ idth)) th
-         :[ SBG.SbG _ _ _ _ $~ ((t ^_) $~ id< th) >)
-      where
-        help : forall {b}(i : b <- ga) -> hit action=u> i a ~ var ^ i -<- th
-        help i with cover1 i u
-        ... | inr ((), _)
-        ... | inl (j , v) with v ~&~ j &id ; ... | r~ , r~ = r~
+   -- If it is a variable, it must be the only variable, and active, to boot.
 
-    splSb un' null (split {active = _ -, _} {activeTh = ()} u p ph sg)
-    splSb (D *' E) (d </ u' \> e) a@(split {active = _ -, _} u p ph sg)
-      with selSplit (u/ u') a | selSplit (u\ u') a
-    ... | a/ , q/ | a\ , q\ with splSb D d a/ | splSb E e a\
-    ... | d' , ds | e' , es = (d' /,\ e') ,
-      prSb covPr
-        (Y.sbGMap (\ i ->
-          hit action=u> (i -<- idth) a/ ~[ hit action=u> $~ i <id ~$~ rf a/ >
-          hit action=u> i a/            ~[ q/ i >
-          hit action=u> (i -<- u/ u') a
-            < hit action=u> $~ ((i -<-_) $~ (u/ u' <id)) ~$~ rf a ]~
-          hit action=u> (i -<- (u/ u' -<- idth)) a [QED]) ds)
-        (Y.sbGMap (\ i ->
-          hit action=u> (i -<- idth) a\ ~[ hit action=u> $~ i <id ~$~ rf a\ >
-          hit action=u> i a\            ~[ q\ i >
-          hit action=u> (i -<- u\ u') a
-            < hit action=u> $~ ((i -<-_) $~ (u\ u' <id)) ~$~ rf a ]~
-          hit action=u> (i -<- (u\ u' -<- idth)) a [QED]) es)
-        (prPr {s = d'}{t = e'})
-    splSb (b >' D) (ll d) a@(split {active = _ -, _} u p ph sg) =
-      ! \\Sb (splSb _ _ _ .snd)
-    splSb (b >' D) (kk d) a@(split {active = _ -, _} u p ph sg) =
-      ! kkSb (splSb _ _ _ .snd)
-    splSb (` _) var (split {active = _ -, _} ([] -^, _) p ph ([] -, t)) =
-      ! vaSb idth r~
-    splSb (` _) var (split {active = _ -, _} (_-,^_ {ph = ()} u b) p ph sg)
-    splSb (` _) var (split {active = _ -, _} (u -, _) () ph sg)
-    splSb (` s) (c $ t)   a@(split {active = _ -, _} u p ph sg) =
-      ! cnSb c (splSb _ _ _ .snd)
-    splSb (` s) (m % t)   a@(split {active = _ -, _} u p ph sg) =
-      ! meSb m (splSb _ _ _ .snd)
+   splSb (` _) var (split {active = _ -, _} ([] -^, _ , _) ph ([] -, t)) =
+     ! vaSb idth r~
+   splSb (` _) var (split {active = _ -, _} (_-,^_ {ph = ()} u b , p) ph sg)
+   splSb (` _) var (split {active = _ -, _} (u -, _ , ()) ph sg)
+
+   -- The active subscope empties before we ever reach a null leaf.
+
+   splSb un' null (split {active = _ -, _} {activeTh = ()} up ph sg)
+
+   -- For pairs, restrict the action left and right, act recursively, then
+   -- pair up the outputs. To satisfy the specification, we need to shift the
+   -- induction hypotheses from being about restricted actions to being about
+   -- the original action on restricted scopes. We have the lemma we need.
+
+   splSb (D *' E) (d </ u \> e) a@(split {active = _ -, _} up ph sg) =
+     let ad , dq = splitLemma D (u/ u) d a ; ae , eq = splitLemma E (u\ u) e a
+         d' , ds = splSb D d ad ; e' , es = splSb E e ae
+     in  (d' /,\ e') , prSb covPr (Y.sbGMap dq ds) (Y.sbGMap eq es) prPr
+
+   -- The other cases are structural.
+
+   splSb (b >' D) (ll d) a = ! \\Sb (splSb _ _ _ .snd)
+   splSb (b >' D) (kk d) a = ! kkSb (splSb _ _ _ .snd)
+   splSb (` s) (c $ t)   a = ! cnSb c (splSb _ _ _ .snd)
+   splSb (` s) (m % t)   a = ! meSb m (splSb _ _ _ .snd)
+

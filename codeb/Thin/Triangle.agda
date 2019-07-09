@@ -124,6 +124,11 @@ v looks a bit triangular and w is its friend.
 
 -- Gallas's "using" gadget will make the above much sweeter.
 
+ eq& : PreTri \ th ph ps -> th & ph =< ps -> th -<- ph ~ ps
+ eq& {th = th}{ph} v with th -&- ph
+ ... | ! w with v ~&~ w
+ ... | r~ , r~ = r~
+
 
 ------------------------------------------------------------------------------
 -- Thinnings are monomorphisms
