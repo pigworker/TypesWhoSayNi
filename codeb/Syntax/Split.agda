@@ -36,7 +36,7 @@ module _
  where
  open THIN {B}
  open DESC B S b2s
- module _
+ module SPLIT
   (Cn : S -> Set) -- what constructors exist for each sort
   (Ds : {s : S} -> Cn s -> Desc)
   (M : S * Scope -> Set)
@@ -113,9 +113,8 @@ To go left/right in a pair, we need to restricted the action to a subscope,
 but show that the restricted action acts just the same on that subscope.
 -}
 
-   splitLemma : forall D {ga' ga de}(th : ga' <= ga)
-     (t : Tm D ga')(a : ga =u> de) ->
-     ga' =u> de >< \ a' -> Y.Hit idth a' (th -<- idth) a
+   splitLemma : forall D {ga' ga de}(t : Tm D ga')(th : ga' <= ga)
+     (a : ga =u> de) -> ga' =u> de >< \ a' -> Y.Hit idth a' (th -<- idth) a
 
 -- Proceed copattern style, in order to keep left-programming after emitting
 -- the first component of the action. We do not want the computational part
@@ -125,7 +124,7 @@ but show that the restricted action acts just the same on that subscope.
 -- For the restricted action, <Part hands us a restricted partition with the
 -- embeddings we need, active and passive.
 
-   fst (splitLemma D th t (split up ph sg)) with th <Part up
+   fst (splitLemma D t th (split up ph sg)) with th <Part up
    ... | (ph0 ^ _) , _ , (ph1 ^ _) , _ , up'
      = split up' (ph0 -<- ph) (ph1 <? sg)
 
@@ -133,7 +132,7 @@ but show that the restricted action acts just the same on that subscope.
 -- compositions, and then we can abstract the result of looking up a var in
 -- both actions: by cover1Lemma, these match up.
 
-   snd (splitLemma D th t (split up ph sg)) i with th <Part up
+   snd (splitLemma D t th (split up ph sg)) i with th <Part up
    ... | (ph0 ^ _) , (s0 , _) , (ph1 ^ _) , (s1 , _) , up'
      with i -<- idth | i <id | th -<- idth | th <id ; ... | _ | r~ | _ | r~
      with cover1 i (fst up') | cover1 (i -<- th) (fst up)
@@ -168,24 +167,24 @@ We immediately split on the active subscope. If that's empty, we're going
 home early.
 -}
 
-   splSb D {ga} t a@(split {active = []} (u , p) th sg) with allLeft u
+   splSb D {ga} t a@(split {active = []} (u , p) ph sg) with allLeft u
    ... | r~ , r~
    
-     = t ^ th  -- just glue the thinning to the term, already!
+     = t ^ ph  -- just glue the thinning to the term, already!
 
      -- To show this is correct, we just need to show that an action whose
      -- active subscope is empty always behaves just like a thinning.
      -- We already have a proof that thinnings leave the term unchanged.
      
      , X.sbGMap (\ i ->
-         (var ^ i -<- idth -<- th)   ~[  (var ^_) $~ ((_-<- th) $~ (i <id)) >
-         (var ^ i -<- th)             < help i ]~
+         (var ^ i -<- idth -<- ph)   ~[  (var ^_) $~ ((_-<- ph) $~ (i <id)) >
+         (var ^ i -<- ph)             < help i ]~
          hit action=u> i a            < hit action=u> $~ i <id ~$~ rf a ]~
          hit action=u> (i -<- idth) a [QED])
-       (thSbG {D} (idSbG (t ^ idth)) th
-        :[ SBG.SbG _ _ _ _ $~ ((t ^_) $~ id< th) >)
+       (thSbG {D} (idSbG (t ^ idth)) ph
+        :[ SBG.SbG _ _ _ _ $~ ((t ^_) $~ id< ph) >)
      where
-       help : forall {b}(i : b <- ga) -> hit action=u> i a ~ var ^ i -<- th
+       help : forall {b}(i : b <- ga) -> hit action=u> i a ~ var ^ i -<- ph
        help i with cover1 i u
        ... | inr ((), _)
        ... | inl (j , v) with v ~&~ j &id ; ... | r~ , r~ = r~
@@ -212,7 +211,7 @@ the term.
    -- the original action on restricted scopes. We have the lemma we need.
 
    splSb (D *' E) (d </ u \> e) a@(split {active = _ -, _} up ph sg) =
-     let ad , dq = splitLemma D (u/ u) d a ; ae , eq = splitLemma E (u\ u) e a
+     let ad , dq = splitLemma D d (u/ u) a ; ae , eq = splitLemma E e (u\ u) a
          d' , ds = splSb D d ad ; e' , es = splSb E e ae
      in  (d' /,\ e') , prSb covPr (Y.sbGMap dq ds) (Y.sbGMap eq es) prPr
 
@@ -223,3 +222,15 @@ the term.
    splSb (` s) (c $ t)   a = ! cnSb c (splSb _ _ _ .snd)
    splSb (` s) (m % t)   a = ! meSb m (splSb _ _ _ .snd)
 
+
+------------------------------------------------------------------------------
+-- entry point
+------------------------------------------------------------------------------
+
+   splSbG : forall D {ga de}(t : Tm D :< ga)(a : ga =u> de) -> < SbG D t a >
+   splSbG D (t ^ th) a with splitLemma D t th a
+   ... | a' , q with splSb D t a'
+   ... | t' , h = t' , Y.sbGMap help h where
+     help : Y.Hit idth a' th a
+     help i with q i
+     ... | h rewrite i <id | th <id = h

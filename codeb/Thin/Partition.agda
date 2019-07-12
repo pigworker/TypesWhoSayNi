@@ -165,3 +165,25 @@ That gives us four cases:
     must embed in the pullback, by universal property thereof... but the
     pullback is empty.
 -}
+
+
+------------------------------------------------------------------------------
+-- partition left and right
+------------------------------------------------------------------------------
+
+ leftPart : forall ga -> Part (idth {ga}) (noth {ga})
+ leftPart []        = [] , []
+ leftPart (ga -, b) = let u , p = leftPart ga in u -,^ b , p -,^ b
+
+ rightPart : forall ga -> Part (noth {ga}) (idth {ga})
+ rightPart []        = [] , []
+ rightPart (ga -, b) = let u , p = rightPart ga in u -^, b , p -^, b
+
+ catPart : forall {ga} de -> Part (thinl {ga} de) (thinr {ga} de)
+ catPart []        = leftPart _
+ catPart (de -, b) = let u , p = catPart de in u -^, b , p -^, b
+ 
+ tacPart : forall {ga} de -> Part (thinr {ga} de) (thinl {ga} de)
+ tacPart []        = rightPart _
+ tacPart (de -, b) = let u , p = tacPart de in u -,^ b , p -,^ b
+ 

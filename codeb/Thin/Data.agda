@@ -177,3 +177,16 @@ There is a unique thinning from the closed scope to any other.
 {-
 We can invert a selection.
 -}
+
+
+------------------------------------------------------------------------------
+-- Left and Right Injections
+------------------------------------------------------------------------------
+
+ thinl : forall {ga} de -> ga <= (ga +B de)
+ thinl []        = idth
+ thinl (de -, b) = thinl de -^ b
+
+ thinr : forall {ga} de -> de <= (ga +B de)
+ thinr []        = noth
+ thinr (de -, b) = thinr de -, b

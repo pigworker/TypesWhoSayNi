@@ -70,6 +70,26 @@ Given the left and right thinnings, compute their coproduct diagram.
 
 
 ------------------------------------------------------------------------------
+-- smart projections
+------------------------------------------------------------------------------
+
+  infixl 5 _-/ _-\
+
+  _-/ : [(S /*\ T :<_) -:> (S :<_)]
+  _-\ : [(S /*\ T :<_) -:> (T :<_)]
+  (s </ u \> _ ^ th) -/ = s ^ u/ u -<- th
+  (_ </ u \> t ^ th) -\ = t ^ u\ u -<- th
+
+  fstQ : forall {ga}(s : S :< ga)(t : T :< ga) -> (s /,\ t) -/ ~ s
+  fstQ (s ^ th) (t ^ ph) with th /+\ ph
+  ... | (! ps) , ! v , w , u rewrite eq& v = r~
+
+  sndQ : forall {ga}(s : S :< ga)(t : T :< ga) -> (s /,\ t) -\ ~ t
+  sndQ (s ^ th) (t ^ ph) with th /+\ ph
+  ... | (! ps) , ! v , w , u rewrite eq& w = r~
+
+
+------------------------------------------------------------------------------
 -- the smart constructor, relationally
 ------------------------------------------------------------------------------
 

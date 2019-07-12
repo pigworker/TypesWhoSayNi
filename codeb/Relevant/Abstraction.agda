@@ -65,19 +65,13 @@ with. We learn which constructor we should then use.
 -- smart destructor for thinned abstraction
 ------------------------------------------------------------------------------
 
- under : forall b {T : Scope -> Set}{ga} -> (b |- T) :< ga -> T :< ga -, b
- under b (ll t ^ th) = t ^ th -, b
- under b (kk t ^ th) = t ^ th -^ b
+ data Under {b T ga} : (b |- T) :< ga -> Set where
+   un\\ : forall t -> Under (b \\ t)
 
+ under : forall {b T ga}(x : (b |- T) :< ga) -> Under x
+ under (ll t ^ th) = un\\ (t ^ th -, _)
+ under (kk t ^ th) = un\\ (t ^ th -^ _)
 
-------------------------------------------------------------------------------
--- back and forth
-------------------------------------------------------------------------------
-
- abstUnder : forall b {T ga}(t : (b |- T) :< ga) -> b \\ under b t ~ t
- abstUnder b (ll _ ^ th) = r~
- abstUnder b (kk _ ^ th) = r~
-
- underAbst : forall b {T ga}(t : T :< ga -, b) -> under b (b \\ t) ~ t
- underAbst b (_ ^ th -, .b) = r~
- underAbst b (_ ^ th -^ .b) = r~
+ under\\ : forall b {T ga}(t : T :< ga -, b) -> under (b \\ t) ~ un\\ t
+ under\\ b (_ ^ th -, .b) = r~
+ under\\ b (_ ^ th -^ .b) = r~

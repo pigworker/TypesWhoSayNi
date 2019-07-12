@@ -60,7 +60,7 @@ may instantiate the metavariable: those of sort s in scope ga.
   data TmR (s : S)(ga : Scope) : Set   -- relevance-aware terms of given sort
 
   Tm : Desc -> Scope -> Set            -- Tm lifts TmR from S to Desc
-  Tm D = CdB TmR D
+  Tm = CdB TmR
 
   data TmR s ga where
     va  : forall {b} -> Sole b ga -> b2s b ~ s           -> Tm (` s) ga

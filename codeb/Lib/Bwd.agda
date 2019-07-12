@@ -23,6 +23,14 @@ module _ {X : Set} where
  xz +B [] = xz
  xz +B (yz -, y) = xz +B yz -, y
 
+ infixl 8 _>B=_
+ _>B=_ : forall {Y : Set} -> Bwd Y -> (Y -> Bwd X) -> Bwd X
+ [] >B= k = []
+ (yz -, y) >B= k = yz >B= k +B k y
+
+ bwd : forall {Y : Set} -> (Y -> X) -> Bwd Y -> Bwd X
+ bwd f = (_>B= (f - ([] -,_)))
+
  data Null : Bwd X -> Set where
    null : Null []
 
@@ -56,6 +64,8 @@ module _ {X : Set} where
      (forall {x}(p : P x) -> f p ~ g p) -> env f pz ~ env g pz
    envExt []        q = r~
    envExt (pz -, p) q = _-,_ $~ envExt pz q ~$~ q p
+
+   infixl 5 _$E_
 
    _$E_ : [ Env (P -:> Q) -:> Env P -:> Env Q ]
    [] $E [] = []
