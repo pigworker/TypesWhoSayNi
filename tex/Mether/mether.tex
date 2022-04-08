@@ -1,0 +1,208 @@
+\documentclass[format=acmsmall, screen, review, anonymous, timestamp]{acmart}
+\bibliographystyle{ACM-Reference-Format}
+\newcommand{\blind}[2]{#2}
+
+%%%%% Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage{proof}
+\usepackage{upgreek}
+\usepackage{pig}
+\ColourEpigram
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% Misc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\bsl}{\texttt{\symbol{92}}}
+\newcommand{\memo}[1]{\textbf{#1}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\title{The Types Who Say `\texttt{\bsl ni}'}
+\author{Conor Mc Bride}
+\maketitle
+
+
+\section{Introduction}
+
+This paper is about my religion. It introduces an enabling discipline
+for constructing bidirectional dependent type systems, where the usual
+type \emph{synthesis} judgement, $t : T$, is partly replaced
+(specifically for introduction forms) by the \emph{checking}
+judgement, $T \ni t$, while elimination forms continue to have their
+types extracted, $e \in S$.
+
+Bidirectional typing has been with us for quite some
+time, as a (not so) secret weapon for implementing dependent
+types~\cite{DBLP:journals/scp/Coquand96,DBLP:journals/corr/abs-1202-4905}.
+It has also achieved some popularity under the name `local type
+inference'~\cite{DBLP:journals/toplas/PierceT00}. But it is one thing
+to implement dependent type theory with a bidirectional strategy, and
+quite another to reimagine our fundamental approach to the metatheory
+of type theory along bidirectional lines --- that is the journey that
+I begin here. Notations for the directions abound, with arrows up,
+down and sideways, but I choose to exploit the
+asymmetry of $\ni$ and $\in$ ({\tt \bsl ni} and {\tt \bsl in} in
+\LaTeX, respectively) to ensure the left-to-right progress of
+\emph{time}. The types who say `\texttt{\bsl ni}' come before, and
+they know the terms they will accept.
+
+\memo{Write more introduction when it is clearer what is being introduced.}
+
+
+\section{What is My Problem?}
+
+I recall Tom Lehrer's quip about the eccentric therapist, Hen3ry
+(sic), who specialised in `giving advice to people who were happier
+than he was', and I am anxious not to inherit that mantle. But I am
+also anxious about type theories and their presentations, in some ways
+that I propose to confess by way of motivating the reassurance that I
+have subsequently gained, rather than to promote your discomfort.
+
+
+\subsection{Which Types Must We Write?}
+
+To ensure that types can be synthesized, we must write type
+annotations in some places. We work in a setting where types involve
+computation, so it is clear we should have to solve an ambiguous, let
+alone undecidable class of unification problems to omit all the type
+information in the Milner manner.  We cannot sustain a type system on
+the manifestly false promise that functions are in general
+invertible. Our programs need strategically placed type information to
+supply components we cannot hope to construct in any other reliably
+effective way. But what is the strategy? The examples of dependent
+functions and pairs allow us to contrast fantasy with reality.
+\[\begin{array}{rc@{\qquad}c}
+    & \mbox{\bf fantasy} & \mbox{\bf reality} \\
+    \mbox{\bf functions} 
+  & \Rule{x\!:\!S \vdash t\;:\;T}
+         {\lambda x.\,t\;:\;(x\!:\!S)\to T}
+  & \Rule{\textsc{type}\;S\quad x\!:\!S \vdash t\;:\;T}
+         {\lambda x\!:\!S.\,t\;:\;(x\!:\!S)\to T}
+                   \\
+    \mbox{\bf pairs}
+    & \Rule{s\;:\;S\quad t\;:\;T[s/x]}
+           {(s,t)\;:\;(x\!:\!S)\times T}
+  & \Rule{s\;:\;S\quad x\!:\!S\vdash \textsc{type}\;T\quad t\;:\;T[s/x]}
+           {(s,t)_{x.\,T}\;:\;(x\!:\!S)\times T}\\
+  \end{array} \]
+
+In the case of functions, the domain of an abstraction must come from
+somewhere, and it must be in place and checked to be a type before it
+is reasonable to extend the context and synthesize the type of the
+body. However, once the body's type has been found, with respect to a
+generic variable, there is no choice about how to abstract that
+variable to yield a function type. In practice, one can place a
+metavariable in the context as $x$'s type and hope to collect
+constraints on it from the zero or more ways that $x$ is used in $t$,
+but one cannot expect that those constraints will yield a clear unique
+solution every time.
+
+The situation is, if anything, worse in the case of pairs. While the
+type, $S$, of the first component, $s$, is clearly obtainable by
+synthesis, the type, $T[s/x]$, of the second component, $t$, yields
+but one instance of the pattern of dependency expressed by the pair
+type, from which we must abstract some $T[x]$. Substitution is not
+uniquely invertible. More concretely, the pair $(3, [0,1,2])$ of a
+number and a length-indexed list can be given any pair type where the
+length is computed by a function on the natural numbers which maps $3$
+to $3$: there are a great many such functions. There is no choice but
+to give this function explicitly. Moreover, once we can compute types
+from data, there is no reason to believe that the second component is
+even a length-indexed list at all, when the first is any number other
+than 3. Wherever there are dependent types, there are substitutions;
+wherever there are substitutions, there are sharks.
+
+We can construct the real rules from the fantasy rules, determining
+which annotations are mandated by magical misapprehensions. That is to
+say, it is not practical merely to write schematic variables in typing rules
+without a clear idea of how they will come to be instantiated. Might
+we profit from a finer analysis of scope and information flow in
+typing rules? Let me offer you one such. We can already see that the
+necessary annotations will arise from the specifics of the types in
+question, rather than in a uniform way that lends itself
+to a generic transformation of the rules.
+
+The irony is that the `fantasy' rules make perfect sense when seen as
+type \emph{checking} rules. A function type tells you the domain type
+which goes in the context and the range type then checks the body of
+the abstraction. A pair type tells you the general scheme of dependency
+which must be instantiated when checking each component.
+
+
+\subsection{The Case of the Exploding Parameters}
+
+It gets worse. Up to local notational conventions, the type of the
+nondependent pair constructor in both Coq and the Glasgow Haskell
+Compiler core language is
+\[
+  (,) : (\sigma\!:\!\ast)\to (\tau\!:\!\ast)\to \sigma\to\tau\to\sigma\times\tau
+\]
+and each pair apparent to the user elaborates to a dependent quadruple
+internally. E.g.
+\[
+  ((\texttt{True},\texttt{"Fred"}),(\texttt{3.14},\texttt{not}))
+\]
+becomes
+\[\begin{array}{cll}
+    (,) & (\texttt{Bool}\times\texttt{String})& (\texttt{Float}\times(\texttt{Bool}\to\texttt{Bool}))\\
+        & ((,)\:\texttt{Bool}\:\texttt{String}\:\texttt{True}\:\texttt{"Fred"})
+        & ((,)\:\texttt{Float}\:(\texttt{Bool}\to\texttt{Bool})\:\texttt{3.14}\:\texttt{not})\\
+  \end{array}\]
+That is, nesting introduction forms induces reduplication of type
+information. Indeed \texttt{"Fred"} may very well contain five copies
+of the \texttt{Char} type, if strings are lists of
+characters. Meanwhile, we see the same trouble for the projection functions: they
+must carry enough type information to know what type of pair to
+expect, even when applied to a pair that tells you what type of pair
+it is. To extract \texttt{"Fred"} from this tuple, one must apply
+\[
+  \texttt{snd}\:\texttt{Bool}\:\texttt{String}\:(\texttt{fst}\: (\texttt{Bool}\times\texttt{String})\: (\texttt{Float}\times(\texttt{Bool}\to\texttt{Bool})\:-))
+\]
+to it.
+
+Of course, it is highly convenient that every subterm carries all the
+information necessary for the synthesis of its type, regardless of
+where it sits and how much we might already know of our
+\emph{requirements} for it. The price of that convenience is a serious
+blow up in the size of terms, supplemented by a quixotic struggle to preserve
+sharing in the face of operations, like substitution for type variables,
+which na\"i{}vely duplicate.
+
+
+\subsection{What is to be Done?}
+
+Can we redesign our type theories to propagate, not duplicate, type
+information? It seems clear that the types of introduction forms tell
+us a great deal about the types of their subformulae, so it is
+pragmatically sensible to check those types, rather than synthsizing
+them: abstractions can lose their domain annotations and pairs can
+just be pairs. Meanwhile, for elimination forms, synthesizing the type
+of the thing being eliminated will tell us a great deal about
+\emph{how} it may be eliminated and what type of things we may compute
+when we do.
+
+Any term whose type may be synthesized can surely be checked: we have
+\emph{two} types for the term, which is one too many, so we must check
+their compatibility. The other way around --- synthesizing a type for
+a term which is merely checkable --- offers \emph{zero} candidates for
+the type of the term, which is one too few, so we shall have to think
+about how to cope. What we have thus endangered is the immediate
+elimination of introduction forms, e.g., $\beta$-redexes
+\[
+  (\lambda x.\:t)\:s
+\]
+and their analogues in other types. One option is simply to exclude
+$\beta$-redexes from the very syntax of our calculus, perhaps offering
+typed \emph{definition} instead. But we must have a care with
+dependent types, for some typing rules demand substitutions, and
+substitutions may create $\beta$-redexes! Let us find out what sort
+of trouble we are in by getting in it!
+
+
+
+
+\bibliography{TypesNi}
+
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
