@@ -42,20 +42,20 @@ module _ (X : Set) where
 
   THIN : SmolCat
   Obj THIN = Bwd X
-  Arr THIN = _<=_
+  _=>_ THIN = _<=_
   iden THIN = io
   [_-_]~_ THIN = [_&_]~_
-  comp THIN th         (ph -^ y) = let _ , ps = comp THIN th ph in _ , ps -^ y
-  comp THIN (th -^ .x) (ph -, x) = let _ , ps = comp THIN th ph in _ , ps -^, x
-  comp THIN (th -, .x) (ph -, x) = let _ , ps = comp THIN th ph in _ , ps -, x
-  comp THIN [] [] = _ , []
-  compU THIN (_ , v -^ z) (_ , w -^ .z)
-    with r~ <- compU THIN (_ , v) (_ , w) = r~
-  compU THIN (_ , v -^, y) (_ , w -^, .y)
-    with r~ <- compU THIN (_ , v) (_ , w) = r~
-  compU THIN (_ , (v -, x)) (_ , (w -, .x))
-    with r~ <- compU THIN (_ , v) (_ , w) = r~
-  compU THIN (_ , []) (_ , []) = r~
+  compU THIN th         (ph -^ y) .fst = let _ , ps = compU THIN th ph .fst in _ , ps -^ y
+  compU THIN (th -^ .x) (ph -, x) .fst = let _ , ps = compU THIN th ph .fst in _ , ps -^, x
+  compU THIN (th -, .x) (ph -, x) .fst = let _ , ps = compU THIN th ph .fst in _ , ps -, x
+  compU THIN [] [] .fst = _ , []
+  compU THIN _ _ .snd (_ , v -^ z) (_ , w -^ .z)
+    with r~ <- compU THIN _ _ .snd (_ , v) (_ , w) = r~
+  compU THIN _ _ .snd (_ , v -^, y) (_ , w -^, .y)
+    with r~ <- compU THIN _ _ .snd (_ , v) (_ , w) = r~
+  compU THIN _ _ .snd (_ , (v -, x)) (_ , (w -, .x))
+    with r~ <- compU THIN _ _ .snd (_ , v) (_ , w) = r~
+  compU THIN _ _ .snd (_ , []) (_ , []) = r~
   absl THIN (f -^ y) = absl THIN f -^ y
   absl THIN (f -, x) = absl THIN f -, x
   absl THIN [] = []
@@ -82,7 +82,7 @@ module _ {X : Set} where
   triQ : forall {xz yz zz}{th : xz <= yz}{ph : yz <= zz}{ps : xz <= zz}
       -> [ th & ph ]~ ps
       -> (th & ph) ~ ps
-  triQ v with r~ <- compU (_ , v) (comp _ _) = r~
+  triQ v with r~ <- compQ (_ , v) (comp _ _) = r~
 
   noBig : forall {xz x} -> xz -, x <= xz -> Zero
   noBig (th -^ y) = noBig ((io -^ y -, _) & th)
@@ -131,75 +131,12 @@ module _ {X : Set} where
          -> th -, z /u\ ph -, z
     []    : [] /u\ []
 
-  module _ {xz yz zz : Bwd X}{th : xz <= zz}{ph : yz <= zz}(u : th /u\ ph) where
-    luth = th
-    ruth = ph
-
-  Cop : forall {xz yz : Bwd X} -> < xz <=_ *: yz <=_ > -> Set
-  Cop {xz}{yz} (zz , th , ph) =
-    < xz <=_ *: _<= zz *: yz <=_ > >< \ (_ , th' , ps , ph') ->
-    [ th' & ps ]~ th * th' /u\ ph' * [ ph' & ps ]~ ph
-
-  copa : forall {xz yz : Bwd X}{z@(zz , _) : < xz <=_ *: yz <=_ >}
-    (C@((uz , _) , _) : Cop z) -> uz <= zz
-  copa ((_ , _ , ps , _) , _) = ps
-              
-  cop : forall {xz yz} -> [> Cop {xz}{yz} ]
-  cop (_ , th -^ y , ph -^ .y) =
-    let _ , v , u , w = cop (_ , th , ph) in _ , v -^ y  , u       , w -^ y
-  cop (_ , th -^ y , ph -, .y) =
-    let _ , v , u , w = cop (_ , th , ph) in _ , v -^, y , u -^, y , w -, y
-  cop (_ , th -, x , ph -^ .x) =
-    let _ , v , u , w = cop (_ , th , ph) in _ , v -, x  , u -,^ x , w -^, x
-  cop (_ , th -, x , ph -, .x) =
-    let _ , v , u , w = cop (_ , th , ph) in _ , v -, x  , u -, x  , w -, x
-  cop (_ ,    []   ,    []   ) =             _ ,   []    ,   []    ,   []
-
-  copQ : forall {xz yz zz}{th : xz <= zz}{ph : yz <= zz}
+  covQ : forall {xz yz zz}{th : xz <= zz}{ph : yz <= zz}
       -> (a b : th /u\ ph) -> a ~ b
-  copQ (a -^, y) (b -^, .y) rewrite copQ a b = r~
-  copQ (a -,^ x) (b -,^ .x) rewrite copQ a b = r~
-  copQ (a -, z) (b -, .z) rewrite copQ a b = r~
-  copQ [] [] = r~
-
-  copU : forall {xz yz}{c@(zz , th , ph) : < xz <=_ *: yz <=_ >}
-      -> (((uz , th' , ps , ph') , v , u , w) : Cop c)
-      -> ((uz0 , th0 , ps0 , ph0) : < xz <=_ *: _<= zz *: yz <=_ >)
-      -> [ th0 & ps0 ]~ th -> [ ph0 & ps0 ]~ ph
-      -> < [ th' &_]~ th0 *: [_& ps0 ]~ ps *: [ ph' &_]~ ph0 >
-  copU (_ , v -^ .z , u , w -^ .z) _ (v' -^ z) (w' -^ .z)
-    with _ , v0 , t0 , w0 <- copU (_ , v , u , w) _ v' w'
-    = _ , v0 , t0 -^ z , w0
-  copU (_ , v -^, y , () , w -^, .y) _ (v' -^ .y) (w' -^ .y)
-  copU (_ , v -^ _ , u , w -^ _) _ (v' -^, _) (w' -^, _)
-    with _ , v0 , t0 , w0 <- copU (_ , v , u , w) _ v' w'
-    = _ , v0 -^ _ , t0 -^, _ , w0 -^ _
-  copU (_ , v -^, .y , () , w -^, .y) _ (v' -^, y) (w' -^, .y)
-  copU (_ , v -^, .y , u -^, .y , (w -, .y)) _ (v' -^, y) (w' -, .y)
-    with _ , v0 , t0 , w0 <- copU (_ , v , u , w) _ v' w'
-    = _ , v0 -^, y , t0 -, y , w0 -, y
-  copU (_ , (v -, .x) , u -,^ .x , w -^, .x) _ (v' -, x) (w' -^, .x)
-    with _ , v0 , t0 , w0 <- copU (_ , v , u , w) _ v' w'
-    = _ , v0 -, x , t0 -, x , w0 -^, x
-  copU (_ , (v -, .x) , (u -, .x) , (w -, .x)) _ (v' -, x) (w' -, .x)
-    with _ , v0 , t0 , w0 <- copU (_ , v , u , w) _ v' w'
-    = _ , v0 -, x , t0 -, x , w0 -, x
-  copU (_ , [] , [] , []) _ [] [] = _ , [] , [] , []
-
-  CopQ : forall {xz yz}{c : < xz <=_ *: yz <=_ >}
-         (a b : Cop c) -> a ~ b
-  CopQ l@((_ , thl , psl , phl) , vl , ul , wl)
-       r@((_ , thr , psr , phr) , vr , ur , wr)
-    with chl , a , b , c <- copU l _ vr wr
-       | chr , d , e , f <- copU r _ vl wl
-       | r~ , r~ , r~ <- asy chl chr
-       | r~ <- compU (_ , a) (_ , absr _)
-       | r~ <- compU (_ , b) (_ , absl _)
-       | r~ <- compU (_ , c) (_ , absr _)
-       | r~ <- compU (_ , vl) (_ , vr)
-       | r~ <- copQ ul ur
-       | r~ <- compU (_ , wl) (_ , wr)
-    = r~
+  covQ (a -^, y) (b -^, .y) rewrite covQ a b = r~
+  covQ (a -,^ x) (b -,^ .x) rewrite covQ a b = r~
+  covQ (a -, z)  (b -, .z) rewrite covQ a b = r~
+  covQ [] [] = r~
 
   lll : forall {xz} -> io{X}{xz} /u\ no
   lll {  []  } = []
@@ -214,62 +151,189 @@ module _ {X : Set} where
   isRRR (u -^, y) with r~ <- isRRR u = r~
   isRRR [] = r~
 
-  copL : forall {xz yz}(th : xz <= yz) ->
-    cop (_ , th , no) ~ ((_ , io , th , no) , absl th , lll , no& th)
-  copL (th -^ y) rewrite copL th = r~
-  copL (th -, x) rewrite copL th = r~
-  copL [] = r~
+  isRRRdammit : forall {xz yz}{th : [] <= yz}{ph : xz <= yz}(u : th /u\ ph)
+       -> (xz ~ yz) >< \ { r~ -> (th ~ no) >< \ { r~ -> (ph ~ io) >< \ { r~ ->
+          u ~ rrr } } }
+  isRRRdammit (u -^, y) with r~ , r~ , r~ , r~ <- isRRRdammit u = r~ , r~ , r~ , r~
+  isRRRdammit [] = r~ , r~ , r~ , r~
 
-  copR : forall {xz yz}(th : xz <= yz) ->
-    cop (_ , no , th) ~ ((_ , no , th , io) , no& th , rrr , absl th)
-  copR (th -^ y) rewrite copR th = r~
-  copR (th -, x) rewrite copR th = r~
-  copR [] = r~
+
+  module _ {xz yz zz : Bwd X}{th : xz <= zz}{ph : yz <= zz}(u : th /u\ ph) where
+    luth = th
+    ruth = ph
+
+  infix 15 _/|_|\_
+  record Cop {uz : Bwd X}(l r : < _<= uz >) : Set where
+    constructor _/|_|\_
+    share = uz
+    subcl = snd l
+    subcr = snd r
+    field
+      {union} : Bwd X
+      {injcl} : fst l <= union
+      {slack} : union <= share
+      {injcr} : fst r <= union
+      tricl   : [ injcl & slack ]~ subcl
+      cover   : injcl /u\ injcr
+      tricr   : [ injcr & slack ]~ subcr
+    unionOb : < _<= uz >
+    unionOb = union , slack
+  open Cop public
+
+  cop : forall {uz}(l r : < _<= uz >) -> Cop l r
+  cop (! th -^ y) (! ph -^ .y) =
+    let v /| u |\ w = cop (! th) (! ph) in v -^ y  /| u       |\ w -^ y
+  cop (! th -^ y) (! ph -, .y) =
+    let v /| u |\ w = cop (! th) (! ph) in v -^, y /| u -^, y |\ w -, y
+  cop (! th -, x) (! ph -^ .x) =
+    let v /| u |\ w = cop (! th) (! ph) in v -, x  /| u -,^ x |\ w -^, x
+  cop (! th -, x) (! ph -, .x) =
+    let v /| u |\ w = cop (! th) (! ph) in v -, x  /| u -, x  |\ w -, x
+  cop (! []) (! []) = [] /| [] |\ []
+
+{-
+  copU : forall {xz yz}{c@(zz , th , ph) : < xz <=_ *: yz <=_ >}
+    -> {(uz0 , th0 , ps0 , ph0) : < xz <=_ *: _<= zz *: yz <=_ >}
+    -> [ th0 & ps0 ]~ th -> [ ph0 & ps0 ]~ ph
+    -> (C : Cop c)
+    -> < [ injcl C &_]~ th0 *: [_& ps0 ]~ slack C *: [ injcr C &_]~ ph0 >
+  copU _ _ (v -^, _ /| () |\ w -^, _)
+  copU (s -^ z) (t -^ .z) (v -^ .z /| u |\ w -^ .z) =
+    let _ , a , b , c = copU s t (v /| u |\ w) in _ , a , b -^ z , c
+  copU (s -^, y) (t -^, .y) (v -^ .y /| u |\ w -^ .y) =
+    let _ , a , b , c = copU s t (v /| u |\ w) in _ , a -^ y , (b -^, y) , c -^ y
+  copU (s -^, y) (t -, .y) (v -^, .y /| u -^, .y |\ (w -, .y)) =
+    let _ , a , b , c = copU s t (v /| u |\ w) in _ , a -^, y , b -, y , c -, y
+  copU (s -, x) (t -^, .x) (v -, .x /| u -,^ .x |\ w -^, .x) =
+    let _ , a , b , c = copU s t (v /| u |\ w) in _ , a -, x , b -, x , c -^, x
+  copU (s -, x) (t -, .x) (v -, .x /| u -, .x |\ w -, .x) =
+    let _ , a , b , c = copU s t (v /| u |\ w) in _ , a -, x , b -, x , c -, x
+  copU [] [] ([] /| [] |\ []) = _ , [] , [] , []
+
+  CopQ : forall {xz yz}{c : < xz <=_ *: yz <=_ >}
+         (a b : Cop c) -> a ~ b
+  CopQ Cl@(vl /| ul |\ wl) Cr@(vr /| ur |\ wr)
+    with ch , a , b , c <- copU vr wr Cl
+       | om , d , e , f <- copU vl wl Cr
+       | r~ , r~ , r~ <- asy ch om
+       | r~ , r~ , r~ <-
+         compQ (_ , a) (_ , absr _) , compQ (_ , b) (_ , absl _) , compQ (_ , c) (_ , absr _)
+       | r~ , r~ , r~ <- compQ (_ , vl) (_ , vr) , covQ ul ur , compQ (_ , wl) (_ , wr)
+    = r~
+
+  -- associativity of disjunction in a heavy disguise
+  copGluR : forall {ga}
+    {(_ , th0) (_ , th1) (_ , th2) : < _<= ga >}
+    (a : Cop (ga , th0 , th1))(b : Cop (ga , th1 , th2))
+    -> slack a /u\ th2
+    -> th0 /u\ slack b
+  copGluR a@(av /| au |\ aw) b@(bv /| bu |\ bw) u
+    with c@(cv /| cu |\ cw) <- cop (_ , subcl a , slack b)
+       | (_ , dv , dw) , (_ , ev , ew) <- asso02 (_ , bv , cw) , asso02 (_ , bw , cw)
+       | _ , _ , f , _ <- copU cv dw a
+       | _ , _ , g , _ <- copU f ew (absr _ /| u |\ absr _)
+       | r~ , r~ , r~ <- asyL g
+       | r~ , r~ <- compQ (_ , cv) (_ , absr _) , compQ (_ , cw) (_ , absr _)
+    = cu
+    
+  covSwap : forall {xz yz zz}{th : yz <= zz}{ph : xz <= zz}
+         -> th /u\ ph -> ph /u\ th
+  covSwap (u -^, y) = covSwap u -,^ y
+  covSwap (u -,^ x) = covSwap u -^, x
+  covSwap (u -, z) = covSwap u -, z
+  covSwap [] = []
 
   copSwap : forall {xz yz zz}{th : yz <= zz}{ph : xz <= zz}
-         -> th /u\ ph -> ph /u\ th
-  copSwap (u -^, y) = copSwap u -,^ y
-  copSwap (u -,^ x) = copSwap u -^, x
-  copSwap (u -, z) = copSwap u -, z
-  copSwap [] = []
+        -> Cop (_ , th , ph) -> Cop (_ , ph , th)
+  copSwap (v /| u |\ w) = w /| covSwap u |\ v
 
-  copRot : forall {xz yz wz}
-      -> {z@(zz , th , ph) : < xz <=_ *: yz <=_ >}
-      -> (C@((_ , _ , ch , _) , _) : Cop z)
-      -> {ps : wz <= zz}
-      -> ch /u\ ps
-      -> let (_ , _ , psr , _) , vr , ur , wr = cop (_ , ph , ps)
-      in th /u\ psr
-  copRot {z = _ , th , ph} C@((_ , _ , ch , _) , v , u , w) x
-    with cr@((_ , _ , psr , _) , vr , ur , wr) <- cop (_ , ph , ruth x)
-       | (_ , _ , om , _) , tl , y , tr <- cop (_ , th , psr)
-       | (_ , _ , b) , (_ , _ , h ) <- asso02 (_ , vr , tr) , asso02 (_ , wr , tr)
-       | _ , _ , e , _ <- copU C _ tl b
-       | _ , _ , j , _ <- copU (_ , absr _ , x , absr _) _ e h
-       | r~ , r~ , r~ <- asyL j
-       | r~ <- compU (_ , tr) (_ , absr _)
-       | r~ <- compU (_ , tl) (_ , absr _)
-    = y
+  copDis : forall {ga}
+    {(_ , th0) (_ , th1) (_ , th) : < _<= ga >}
+    (a : Cop (ga , th0 , th))(b : Cop (ga , th1 , th))(c : Cop (ga , th0 , th1))
+    -> slack c /u\ th
+    -> slack a /u\ slack b
+  copDis a@(av /| au |\ aw) b@(bv /| bu |\ bw) c@(cv /| cu |\ cw) u
+    with dv /| du |\ dw <- cop (_ , slack a , slack b)
+       | (_ , _ , ae) , (_ , _ , be) , (_ , _ , ce)
+         <- asso02 (_ , av , dv) , asso02 (_ , bv , dw) , asso02 (_ , bw , dw)
+       | _ , _ , e , _ <- copU ae be c
+       | _ , _ , f , _ <- copU e ce (absr _ /| u |\ absr _)
+       | r~ , r~ , r~ <- asyL f
+       | r~ , r~ <- compQ (_ , dv) (_ , absr _) , compQ (_ , dw) (_ , absr _)
+       = du
 
-  copDis : forall {xz yz wz}
-        -> {z@(zz , th , ph) : < xz <=_ *: yz <=_ >}
-        -> (((_ , _ , ch , _) , _) : Cop z)
-        -> {ps : wz <= zz}
-        -> ch /u\ ps
-        -> let (_ , _ , psl , _) , vl , ul , wl = cop (_ , th , ps)
-        in let (_ , _ , psr , _) , vr , ur , wr = cop (_ , ph , ps)
-        in psl /u\ psr
-  copDis {z = _ , th , ph} C@((_ , _ , ch , _) , v , u , w) x
-    with cl@((_ , _ , psl , _) , vl , ul , wl) <- cop (_ , th , ruth x)
-       | cr@((_ , _ , psr , _) , vr , ur , wr) <- cop (_ , ph , ruth x)
-       | (_ , _ , nu , _) , v' , u' , w' <- cop (_ , psl , psr)
-       | (_ , a , b) , (_ , c , d) <- asso02 (_ , vl , v') , asso02 (_ , vr , w')
-       | _ , e , f , g <- copU C _ b d
-       | _ , h , i <- asso02 (_ , wr , w')
-       | om , j , k , l <- copU (_ , absr _ , x , absr _) _ f i
-       | r~ , r~ , r~ <- asy om nu
-       | r~ , r~ <- compU (_ , v') (_ , absr _) , compU (_ , w') (_ , absr _)
-    = u'
+  infix 15 _\^/_
+
+  data _\^/_ : forall {iz jz kz uz : Bwd X}
+             {th0 : iz <= jz}{th1 : jz <= uz}
+             {ph0 : iz <= kz}{ph1 : kz <= uz}
+             {ps}
+          -> [ th0 & th1 ]~ ps -> [ ph0 & ph1 ]~ ps -> Set
+    where
+    _-^_ : forall {iz jz kz uz}
+             {th0 : iz <= jz}{th1 : jz <= uz}
+             {ph0 : iz <= kz}{ph1 : kz <= uz}
+             {ps}
+             {v : [ th0 & th1 ]~ ps}{w : [ ph0 & ph1 ]~ ps}
+          -> v \^/ w -> forall x
+          -> v -^ x \^/ w -^ x
+    _-,^_ : forall {iz jz kz uz}
+             {th0 : iz <= jz}{th1 : jz <= uz}
+             {ph0 : iz <= kz}{ph1 : kz <= uz}
+             {ps}
+             {v : [ th0 & th1 ]~ ps}{w : [ ph0 & ph1 ]~ ps}
+          -> v \^/ w -> forall x
+          -> v -^, x \^/ w -^ x
+    _-^,_ : forall {iz jz kz uz}
+             {th0 : iz <= jz}{th1 : jz <= uz}
+             {ph0 : iz <= kz}{ph1 : kz <= uz}
+             {ps}
+             {v : [ th0 & th1 ]~ ps}{w : [ ph0 & ph1 ]~ ps}
+          -> v \^/ w -> forall x
+          -> v -^ x \^/ w -^, x
+    _-,_ : forall {iz jz kz uz}
+             {th0 : iz <= jz}{th1 : jz <= uz}
+             {ph0 : iz <= kz}{ph1 : kz <= uz}
+             {ps}
+             {v : [ th0 & th1 ]~ ps}{w : [ ph0 & ph1 ]~ ps}
+          -> v \^/ w -> forall x
+          -> v -, x \^/ w -, x
+    [] : [] \^/ []
+
+  record Pub {uz : Bwd X}(th : < _<= uz >)(ph : < _<= uz >) : Set where
+    constructor pb
+    field
+      {intersection} : Bwd X
+      {diagonal}     : intersection <= uz
+      {leftSelect}   : intersection <= fst th
+      {rightSelect}  : intersection <= fst ph
+      {leftTri}      : [ leftSelect & snd th ]~ diagonal
+      {rightTri}     : [ rightSelect & snd ph ]~ diagonal
+      pullback       : leftTri \^/ rightTri
+
+  open Pub public
+
+  pub : forall {uz : Bwd X}(th : < _<= uz >)(ph : < _<= uz >) -> Pub th ph
+  pub (_ , th -^ y) (_ , ph -^ .y) = let pb a = pub (_ , th) (_ , ph) in pb (a -^ y)
+  pub (_ , th -^ y) (_ , (ph -, .y)) = let pb a = pub (_ , th) (_ , ph) in pb (a -^, y)
+  pub (_ , (th -, x)) (_ , ph -^ .x) = let pb a = pub (_ , th) (_ , ph) in pb (a -,^ x)
+  pub (_ , (th -, x)) (_ , (ph -, .x)) = let pb a = pub (_ , th) (_ , ph) in pb (a -, x)
+  pub (_ , []) (_ , []) = pb []
+
+  record Neg {uz : Bwd X}(th : < _<= uz >) : Set where
+    constructor _u!^_
+    field
+      {complement} : Bwd X
+      {negation} : complement <= uz
+      exhaustive : snd th /u\ negation
+      exclusive  : no& (snd th) \^/ no& negation
+
+  open Neg public
+
+  neg : forall {uz : Bwd X}(th : < _<= uz >) -> Neg th
+  neg (_ , th -^ y) = let u u!^ a = neg (_ , th) in (u -^, y) u!^ (a -^, y)
+  neg (_ , th -, x) = let u u!^ a = neg (_ , th) in (u -,^ x) u!^ (a -,^ x)
+  neg (_ , []) = [] u!^ []
 
   infix 15 _:^_
   infixl 25 _^_
@@ -283,3 +347,5 @@ module _ {X : Set} where
 
   _^&_ : forall {P ga} -> P :^ ga -> [ ga <=_ -:> P :^_ ]
   (p ^ th) ^& ph = p ^ th & ph
+
+-}
