@@ -1,0 +1,250 @@
+\documentclass[format=acmsmall, screen, review, anonymous, timestamp]{acmart}
+\bibliographystyle{ACM-Reference-Format}
+\newcommand{\blind}[2]{#2}
+
+%%%%% Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\usepackage{MnSymbol}
+\usepackage{proof}
+\usepackage{upgreek}
+\usepackage{pig} \ColourEpigram
+\usepackage{stmaryrd}
+\usepackage{latexsym}
+\usepackage{amssymb}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% Misc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\bsl}{\texttt{\symbol{92}}}
+\newcommand{\memo}[1]{\textbf{#1}}
+\newcommand{\fsl}{\texttt{/}}
+\newcommand{\emp}{\varepsilon}
+
+\newcommand{\A}[1]{\texttt{#1}}
+\newcommand{\V}[1]{\purple{\mathit{#1}}}
+
+\newcommand{\Pa}[1]{\texttt{(}\black{#1}\texttt{)}}
+\newcommand{\Bk}[1]{\texttt{[}\black{#1}\texttt{]}}
+\newcommand{\Bc}[1]{\texttt{\string{}\black{#1}\texttt{\string}}}
+\newcommand{\dt}{\texttt{.}}
+\newcommand{\cn}[2]{\Pa{#1 \dt #2}}
+\newcommand{\hb}{\texttt{:}}
+\newcommand{\ra}[2]{#1 \,:\, #2}
+\newcommand{\grp}[1]{\{ #1 \}}
+\newcommand{\Ne}{\underline}
+\newcommand{\PI}{\blue{\Uppi}}
+\newcommand{\la}[1]{\bsl #1\:}
+\newcommand{\x}[1]{\V{x_{\mathrm{#1}}}}
+\newcommand{\Ty}{\blue{\star}}
+
+\newcommand{\rred}{\leadsto^\ast}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\title{Input. Subject. Output.}
+\author{Conor Mc Bride}
+\maketitle
+
+\section{An Example from 1971}
+
+Let me give you a flavour of what is to come by reconstructing Martin-L\"of's 1971 type theory, in a bidirectional style. I chose this system because it small enough to learn from, but also because it is inconsistent, ruling out reliance on totality of normalisation.
+
+
+\subsection{Syntax}
+
+Let us establish our grammar of terms. I define two sorts of \emph{scoped} terms by mutual induction --- a scope is a sequence of sorted variables which grows on the right.
+\newcommand{\syso}{\textsc}
+\newcommand{\chk}[1]{\syso{chk}(#1)}
+\newcommand{\syn}[1]{\syso{syn}(#1)}
+\newcommand{\bva}[2]{\syso{#1}\,{\V{#2}}}
+\newcommand{\PT}[3]{\PI\:#1\:\V{#2}.#3}
+\newcommand{\LA}{\red{\uplambda}}
+\newcommand{\LF}[2]{\LA\:\V{#1}.#2}
+
+\[\begin{array}{rrl}
+    \chk\gamma & ::= & \Ne{\syn\gamma} \\
+               &   | & \Ty \\
+               &   | & \PT {\chk\gamma}x{\chk{\gamma,\bva{syn}x}}\\
+               &   | & \LF x{\chk{\gamma,\bva{syn}x}}
+                       \medskip\\
+    \syn\gamma & ::= & \ra{\chk\gamma}{\chk\gamma}\\
+               &   | & \syn\gamma\;\chk\gamma
+\end{array}\]
+
+I have specified this syntax in an informal `scoped Backus-Naur form' notation. Each sort yields a nonterminal symbol carrying a scope, e.g. $\chk\gamma$. The notation ${\x{}.}$ indicates a variable binding, where we name the variable in the grammar so that we can bring it into scope. As you can see, $\chk\gamma$ embeds $\syn\gamma$ and adds $\Ty$ (the type of types, dependent function types and Curry-style functions. Meanwhile, $\syn\gamma$ includes type annotated terms in $\chk\gamma$, and applications where the function is also in $\syn\gamma$.
+
+Implicitly, the grammar for every sort extends to include all the variables in scope of that sort. In particular $\x{} \in \syn{\gamma,\bva{syn}x,\gamma'}$.
+We can always $\alpha$-convert to distinguish the variable names in scopes. A variable name is but a human-friendly way to indicate a position in a scope: machines fare better without them.
+
+Scoped syntax is functorial with respect to the category of \emph{thinnings} --- order-preserving embeddings on scopes --- exactly because scope lookup is covariant with respect to thinnings and scope extension is functorial on thinnings. I write $\theta : \gamma \le \delta$ to indicate that $\theta$ witnesses such an embedding from $\gamma$ to $\delta$. You can think of $\theta$ as a vector of bits whose length is that of $\delta$ and whose 1s show which of $\delta$'s entries were embedded from $\gamma$.
+
+Meanwhile, we acquire a category whose objects are scopes and whose morphisms $\gamma \Rightarrow \delta$ are simultaneous \emph{substitutions} mapping every $\bva {sort}x \in \gamma$ to some term in $\syso{sort}(\delta)$. Again, scope extension acts functorially on substitutions, exactly because thinnings act on terms.
+
+
+\subsection{Typing Version $\upalpha$}
+
+For each of our syntactic sorts, let us have a judgment form whose purpose is to establish trust in terms of that sort. The grammar of \emph{formal judgments} is
+\newcommand{\jud}[1]{\syso{jud}(#1)}
+\[\begin{array}{rrl@{\qquad\qquad}l}
+    \jud\gamma & ::= & \chk\gamma \ni \chk\gamma & \mbox{checking a prior type}\\
+               &   | & \syn\gamma \in \chk\gamma & \mbox{synthesizing a posterior type}\\
+               &   | & \chk\gamma = \chk\gamma & \mbox{type equality}\\
+               &   | & \x{}\in\chk\gamma \vdash \jud{\gamma,\bva{syn}x}
+                       & \mbox{local extension}
+\end{array}\]
+where entire \emph{contexts} do not appear in formal judgments, only local extensions of contexts, recording what is known about a variable when we move under its binder. Note that thinnings act perfectly well on judgments, so we can bring everything we already knew into the current scope whenever we make a local extension. A local extension thus acts as an additional axiom, extending the rules just as bound variables extend terms, obviating the need to write a `variable rule' at all.
+What are the rules for the other term forms? For checking, we have
+\[
+  \Rule{e\in S\quad S=T}{T\ni \Ne e}\qquad
+  \Axiom{\Ty\ni \Ty}\qquad
+  \Rule{\Ty\ni S\quad \x{}\in S\vdash \Ty\ni T}{\Ty\ni \PT SxT}\qquad
+  \Rule{\x{}\in S\vdash T\ni t}{\PT SxT \ni \LF xt}
+\]
+Meanwhile, for synthesis, we have
+\[
+  \Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T} \qquad
+  \Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}
+\]
+and, for the time being, we may take the equality judgment to be up to renaming of bound variables:
+\[
+  \Axiom{T = T}
+\]
+
+Now, these rules are syntax directed in the $t$ of $T \ni t$ and the $e$ of $e \in S$. They have no extraneous premises checking, e.g., that the domain of an abstraction is a type. How are we to understand why these rules are sensible? Each judgment form has a \emph{precondition} and a \emph{postcondition}.
+\newcommand{\pre}[1]{\textsc{pre}(#1)}
+\newcommand{\post}[1]{\textsc{post}(#1)}
+\[\begin{array}{|r|c|l|}
+    \hline
+    \pre J & J & \post J \\
+    \hline
+    \Ty\ni T & T \ni t & \top \\
+    \top & e\in S & \Ty\ni S \\
+    \Ty\ni S \wedge \Ty\ni T & S = T & \top \\
+    \Ty\ni S \wedge \x{}\in S\vdash\pre J& \x{}\in S\vdash J & \x{}\in S\vdash \post J \\
+    \hline
+\end{array}  \]
+Now, suppose we are working in a context of hypothetical judgments for each of which the precondition implies the postcondition (here, effectively that the types of the known variables are well formed). For any derivation of judgment $J$ in such a context, we should like to know that $\pre J$ is enough to ensure the pre- and postconditions for every judgment in the whole derivation. In other words, if we start well, we stay well. This property will hold for actual derivations of actual judgments if we can establish a suitable property of the rules from which derivations are composed. Let us find our way to that property.
+
+To establish a judgment as the conclusion of a rule, one must demand that the premises hold. To demand a premise one must guarantee its precondition, but once the premise has been derived, one may rely on it and on its postcondition. Each judgment thus gives us an operator on propositions
+\[
+  \check{J}\;P = \pre J \wedge ((J \wedge \post J) \Rightarrow P)
+\]
+which explains what use it is to demand $J$ in the cause of establishing $P$. Of course, if one has a sequence of premises, $J_1\;\ldots\;J_n$, one can form the composition
+\[
+  (\circ_i\check{J_i})\;P = \check{J_1}\:(\ldots (\check{J_n}\:P)\ldots)
+\]
+which amounts to the assertion that the precondition for each premisefollows from the postconditions of the prior premises, and that $P$ follows from all of their postconditions put together. Now, for a rule
+\[
+  \Rule{J_1\;\;\ldots\;\;J_n}{J}
+\]
+we must show why
+\[
+  \pre J \;\Rightarrow\;  (\circ_i\check{J_i})\;(\post J)
+\]
+i.e., that if we assume it is reasonable to enquire after the rule's conclusion in the first place, then it is also reasonable to enquire after the premises and, upon their successful derivation, to deliver the conclusion's postcondition. For an axiom, with zero premises, this reduces to $\pre J \Rightarrow \post J$, so our assumption about the context amounts to treating hypothetical judgments as local axioms.
+
+Let us visit each of our rules in turn.
+\begin{itemize}
+\item $\Rule{e\in S\quad S=T}{T\ni \Ne e}\quad$
+  We are given $\Ty\ni T$. The first premise has nothing to check, and it gives us $\Ty\ni S$. So we have established the precondition for checking $S=T$.
+\item $\Axiom{\Ty\ni \Ty}\quad$
+  The postcondition for this rule is derived by this rule!
+\item $\Rule{\Ty\ni S\quad x\in S\vdash \Ty\ni T}{\Ty\ni \PT SxT}\quad$ We are given $\Ty\ni\Ty$, which we know anyway, and that is what we must deliver to invoke the first premise. Once we know $\Ty\ni S$, we may extend the context with $\x{}\in S$. Again, $\Ty\ni\Ty$ for the second premise.
+\item $\Rule{x\in S\vdash T\ni t}{\PT SxT \ni \LF xt}\quad$
+  We know $\Ty\ni \PT SxT$, so by inversion,
+  $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$. Correspondingly, we may extend the context with $\x{}\in S$ and then check $T\ni t$.
+\item $\Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T}\quad$
+  For the first premise, we need $\Ty\ni\Ty$. For the second premise we need the first premise. The conclusion postcondition is again the first premise.
+\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad$
+  The first premise promises us $\Ty\ni \PT SxT$, so by inversion,
+  $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$. We may thus invoke the second premise. Now, for the conclusion postcondition, we may deduce $\ra sS\in S$ from $\Ty\ni S$ and $S\ni s$. Substituting this derivation for all uses of the hypothetical $\x{}\in S$, we obtain $\Ty\ni \{\x{}\mapsto \ra sS\}T$.
+\end{itemize}
+
+In that last case, I made use of the fact that substitution extends from terms to derivations. How do I know? I have been very careful to ensure that none of my rules ever says anything about \emph{free} variables. Substitutions preserve everything but free variables, so the only parts of derivations where they have noticeable impact are where we appeal to hypothetical judgments. Stability under substitution is exactly that if a substitution preserves all the hypothetical judgments, then it preserves all derivations. Note that an ill typed substitution may falsify the preconditions for a derivation to be meaningful, but it will still preserve the derivation.
+
+So, we get out as much sense as we put in! However, this system does no computation, so we had better add it and see what sort of mess it makes.
+
+  
+\subsection{Computation}
+
+\newcommand{\ma}[2]{\{#1\mapsto #2\}}
+
+Let us define some \emph{contraction schemes}, from which we shall extract a notion of untyped conversion. Of course, there are more sophisticated ways to account for computation, but let us begin with the basics.
+\[
+  (\upsilon)\quad \Ne{\ra tT} \;\leadsto\; r
+  \quad\quad\quad\quad 
+  (\beta)\quad(\ra{\LF {\x{}}t}{\PT {S}{\x{}}T})\:s \;\leadsto\; \{x\mapsto\ra sS\}(\ra tT)
+\]
+The idea here is that function types drive function applications. The $\upsilon$ rule deletes the type annotation from a term which is not being applied. The $\beta$ rule uses the type information in the redex to annotate the reduct and also to annotate the argument so that, wherever the variable is substituted, further computation may be enabled.
+
+We might think of a contraction scheme as saying that any substitution instance of the left-hand side contracts to the corresponding substitution instance of the right-hand side, but where do these substitutions come from? They come from \emph{matchings}: a matching is a formula (such as we write in these rules) with each schematic variable annotated by a term that it maps to. E.g.,
+\[
+  \Ne{\ra{\ma t{\LF x{\Ne{\x{}}}}}{\ma T{\PT\Ty\_\Ty}}}
+\]
+is a matching for $\upsilon$-contraction. Matchings support three erasures:
+\begin{itemize}
+\item if you replace $\ma vt$ by $v$, you get a formula which is the \emph{pattern} of the matching;
+\item if you replace $\ma vt$ by $t$, you get a term which is the \emph{instance} of the matching;
+\item if you erase everything outside the $\ma vt$s, you get the \emph{substitution} of the matching.
+\end{itemize}
+Moreover, we call any subterm of any $t$ in a matching annotation $\ma vt$ a \emph{residual} of the matching, and we can be sure that such residuals are copied intact into the matching substitution.
+So, a \emph{redex} is a matching instance of the left-hand side of a contraction scheme.
+We say the contraction schemes are \emph{orthogonal} if no term is a redex for two of them, and whenever a redex has a proper subterm which is also a redex, the latter is a residual of the former's matching. E.g., $\upsilon$ and $\beta$ are clearly orthogonal, because embedding, $\Ne{-}$, occurs only and outermost in $\upsilon$ while application, $-\:-$, occurs only and outermost in $\beta$.
+
+Orthogonal contraction schemes give rise to confluent reduction systems, essentially by Takahashi's proof. Once we have contraction schemes, we can systematically derive an inductive definition of \emph{parallel reduction}. We begin with structural rules for variables and all syntactic productions, thus ensuring that the relation is at least reflexive and closed under all syntactic contexts.
+\newcommand{\PRR}{\triangleright}
+\newcommand{\prr}[2]{#1\:\PRR\,#2}
+\[\begin{array}{c}
+    \Axiom{\prr{\x{}}{\x{}}} \\
+    \Rule{\prr e{e'}}{\prr{\Ne e}{\Ne{e'}}}\quad\quad
+    \Axiom{\prr\Ty\Ty}\quad\quad
+    \Rule{\prr S{S'} \quad \prr T{T'}}{\prr{\PT SxT}{\PT{S'}x{T'}}}\quad\quad
+    \Rule{\prr t{t'}}{\prr{\LF xt}{\LF x{t'}}} \\
+    \Rule{\prr t{t'}\quad \prr T{T'}}{\prr{\ra tT}{\ra{t'}{T'}}}\quad\quad
+    \Rule{\prr f{f'} \quad \prr s{s'}}{\prr{f\;s}{f'\;s'}}
+\end{array}\]
+Then, we add rules generated from each contraction schemes by renaming all the schematic variables in the reduct and giving premises which allow the schematic variables in the premises to reduce to their renamed variants.
+\[
+  \Rule{\prr t{t'}}{\prr{\Ne{\ra tT}}{t'}} \quad\quad
+  \Rule{\prr t{t'}\quad \prr S{S'} \quad \prr T{T'}\quad\prr s{s'}}
+    {\prr{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s}{\{x\mapsto\ra{s'}{S'}\}(\ra{t'}{T'})}}
+  \]
+
+\newcommand{\dev}[1]{\mathbf{dev}(#1)}
+We can also define the \emph{development}, $\dev{t}$, of a term $t$, which aggressively contracts redexes from the outside in.
+\[\begin{array}{lcl}
+    \dev{\Ne{\ra tT}} &=& \Ne{\ra{\dev t}{\dev T}} \\
+    \dev{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s} &=&
+                                                    \{x\mapsto\ra{\dev{s}}{\dev{S}}\}(\ra{\dev t}{\dev T}) \\
+    \multicolumn{3}{l}{\hspace*{-0.3in}\textit{and otherwise,}}\\
+    \dev{\x{}} &=& \x{}\\
+    \dev{\Ne e} &=& \Ne{\dev{e}} \\
+    \dev\Ty &=& \Ty\\
+    \dev{\PT SxT} &=& \PT{\dev S}x{\dev T}\\
+    \dev{\LF xt} &=& \LF x{\dev t}\\
+    \dev{\ra tT} &=& \ra{\dev t}{\dev T}\\
+    \dev{f\;s} &=& \dev f\; \dev s
+\end{array}  \]
+
+By construction, $\prr t{\dev t}$. Moreover, whenever we develop a redex, we develop all of its residuals, too. By orthogonality, that means we develop all the redexes present in the input, and as a consequence, whenever $\prr st$, we also have $\prr t{\dev s}$. We acquire the \emph{diamond} property for $\PRR$
+\[
+  \forall s,p,q.\; \prr sp \wedge \prr sq \;\Rightarrow\; \exists r.\; \prr pr \wedge \prr qr
+\]
+by taking $r = \dev s$. This extends to the same for $\PRR^\ast$, the reflexive-transitive closure of $\PRR$, by tiling a parallelogram with diamonds. We further obtain that the equivalence closure of $\PRR$ amounts to having a common reduct.
+
+With this machinery in place, we may add computation to our theory in the form of two new rules.
+We may compute a type before checking it or after synthesizing it.
+\[
+  \Rule{\prr T{T'} \quad T'\ni t}{T\ni t}\qquad \Rule{e\in S\quad \prr S{S'}}{e\in S'}
+\]
+Note that, with these rules in place, we may construct derivations with multiple computation steps on either side of the $S = T$ check, so that we effectively allow type conversion at the change of direction. Everywhere we insist on a particular type form, $\Ty$ or $\PT SxT$, we allow only reduction, but we also have that whenever a type is convertible to a canonical form, it can reach a convertible canonical form by reduction alone.
+
+
+\subsection{Subject Reduction}
+
+
+
+
+\end{document}
