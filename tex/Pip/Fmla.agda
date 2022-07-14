@@ -8,6 +8,7 @@ data Sort : Set where
   sub : Nat -> Sort
   _su : Sort -> Sort
   _**_ : Sort -> Sort -> Sort
+infixr 80 _**_
 
 module TM (M : Nat -> Set) where
 
@@ -21,22 +22,23 @@ module TM (M : Nat -> Set) where
     sb : forall {m} -> sub (m su) -< sub m ** syn >
     kk : forall {s} -> (s su) -< s >
 
-  data Tm : Sort -> Nat -> Set where
-    _$_ : forall {n t s} -> t -< s > -> Tm s n -> Tm t n
-    ty : Tm chk 0
-    va : Tm syn 1
-    ze : Tm (sub 0) 0
-    bb : forall {n s} -> Tm s (n su) -> Tm (s su) n
+  infix 60 _-!_
+  data _-!_ : Sort -> Nat -> Set where
+    _$_ : forall {n t s} -> t -< s > -> s -! n -> t -! n
+    ty : chk -! 0
+    va : syn -! 1
+    ze : sub 0 -! 0
+    bb : forall {n s} -> s -! n su -> s su -! n
     pp : forall {i j n s t}{th : i <= n}{ph : j <= n} ->
-           Tm s i -> th /u\ ph -> Tm t j -> Tm (s ** t) n
-  infixr  60 _$_
+           s -! i -> th /u\ ph -> t -! j -> s ** t -! n
+  infixr  90 _$_
 
 module _ {M : Nat -> Set} where
   open TM M
 
   infix 80 _=>_
   _=>_ : Nat -> Nat -> Set
-  m => n = Tm (sub m) n
+  m => n = sub m -! n
 
   infix 80 _%%_
   data _%%_ : forall {i k}
@@ -46,7 +48,7 @@ module _ {M : Nat -> Set} where
           {lt@(! th , sg) : < i <=_ *: _=> k0 >}
           {br@(! ta , ph) : < i =>_ *: _<= k0 >}
        -> lt %% br
-       -> {ps : k0 <= k}{(k1 , e , ph1) : Tm syn ^^ k}
+       -> {ps : k0 <= k}{(k1 , e , ph1) : syn -!_ ^^ k}
        -> {u : ps /u\ ph1}
        -> ((ph0 , _) : < [ ph ^ ps ]~_ >)
        -> (! th fu , sb $ pp sg u e) %% (! ta , ph0)
@@ -54,12 +56,19 @@ module _ {M : Nat -> Set} where
           {lt@(! th , sg) : < i <=_ *: _=> k0 >}
           {br@(! ta , ph) : < i =>_ *: _<= k0 >}
        -> lt %% br
-       -> {ps : k0 <= k}{(k1 , e , ph1) : Tm syn ^^ k}
+       -> {ps : k0 <= k}{(k1 , e , ph1) : syn -!_ ^^ k}
        -> {u : ps /u\ ph1}
        -> ((ph0 , _) : < [ ph ^ ps ]~_ >)
        -> ((C , u') : CopDiag ph0 ph1)
        -> (! th su , sb $ pp sg u e) %% (! sb $ pp ta u' e , slak C)
     ze : (! ze , ze) %% (! ze , ze)
+
+  module _ {i k}{lt : < i <=_ *: _=> k >}{br : < i =>_ *: _<= k >}
+           (x : lt %% br) where
+    l%% = fst (snd lt)
+    t%% = snd (snd lt)
+    b%% = fst (snd br)
+    r%% = snd (snd br)
 
   sel : forall {i k}(lt : < i <=_ *: _=> k >)
      -> < i =>_ *: _<= k > >< \ br -> lt %% br
@@ -142,22 +151,23 @@ module _ {M : Nat -> Set} where
     = rotLemma (v0 /!\ v3 , roof u x0 x1) B u1
   roof ze ze ze = ze
 
-  data [_/_]~_ : forall {m n s} -> Tm s m -> m => n -> Tm s n -> Set where
-    _$_ : forall {o i m n}(c : o -< i >){t : Tm i m}{sg : m => n}{t'}
+  infix 80 [_/_]~_
+  data [_/_]~_ : forall {m n s} -> s -! m -> m => n -> s -! n -> Set where
+    _$_ : forall {o i m n}(c : o -< i >){t : i -! m}{sg : m => n}{t'}
        -> [ t / sg ]~ t' -> [ c $ t / sg ]~ c $ t'
     ty : [ ty / ze ]~ ty
-    va : forall {n}{e : Tm syn n}
+    va : forall {n}{e : syn -! n}
       -> [ va / sb $ pp ze rrr e ]~ e
     ze : [ ze / ze ]~ ze
-    bb : forall {m n s}{t : Tm s (m su)}{t'}{sg : m => n}
+    bb : forall {m n s}{t : s -! m su}{t'}{sg : m => n}
       -> [ t / sb $ pp sg (lll rr) va ]~ t' -> [ bb t / sg ]~ bb t'
     pp : forall {m n s0 s1}
-         {(! t0 , th0) : Tm s0 ^^ m}
-         {(! t1 , th1) : Tm s1 ^^ m}
+         {(! t0 , th0) : s0 -!_ ^^ m}
+         {(! t1 , th1) : s1 -!_ ^^ m}
          {u : th0 /u\ th1}
          {sg : m => n}
-         {(! t0' , ph0) : Tm s0 ^^ n}
-         {(! t1' , ph1) : Tm s1 ^^ n}
+         {(! t0' , ph0) : s0 -!_ ^^ n}
+         {(! t1' , ph1) : s1 -!_ ^^ n}
          {sg0 sg1} ->
          (! th0 , sg) %% (! sg0 , ph0) ->
          [ t0 / sg0 ]~ t0' ->
@@ -166,7 +176,12 @@ module _ {M : Nat -> Set} where
          (u' : ph0 /u\ ph1) ->
          [ pp t0 u t1 / sg ]~ pp t0' u' t1'
 
-  sbst : forall {m n s}(t : Tm s m)(sg : m => n)
+  module _ {m n s}{f : s -! m}{b : m => n}{c : s -! n}(c : [ f / b ]~ c) where
+    f/ = f
+    b/ = b
+    c/ = c
+
+  sbst : forall {m n s}(t : s -! m)(sg : m => n)
       -> < [ t / sg ]~_ >
   sbst (x $ t) sg = let ! t' = sbst _ _ in ! x $ t'
   sbst ty ze = ! ty
@@ -178,10 +193,10 @@ module _ {M : Nat -> Set} where
     let (! sg1 , ph1) , x1 = sel _ in let ! t1' = sbst _ _ in
     ! pp x0 t0' x1 t1' (roof u x0 x1) 
 
-  _/_ : forall {m n s}(t : Tm s m)(sg : m => n) -> Tm s n
+  _/_ : forall {m n s}(t : s -! m)(sg : m => n) -> s -! n
   t / sg = fst (sbst t sg)
 
-  sbstQ : forall {m n s}{t : Tm s m}{sg : m => n}(x y : < [ t / sg ]~_ >) -> x ~ y
+  sbstQ : forall {m n s}{t : s -! m}{sg : m => n}(x y : < [ t / sg ]~_ >) -> x ~ y
   sbstQ (! (c $ x)) (! (.c $ y)) with r~ <- sbstQ (! x) (! y) = r~
   sbstQ (! ty) (! ty) = r~
   sbstQ (! va) (! va) = r~
@@ -195,7 +210,7 @@ module _ {M : Nat -> Set} where
        | r~ <- copQ ux uy
     = r~
 
-  is : forall {n} -> Tm (sub n) n
+  is : forall {n} -> sub n -! n
   is {ze} = ze
   is {n su} = sb $ pp is (lll rr) va
 
@@ -219,7 +234,7 @@ module _ {M : Nat -> Set} where
     u
   is/ ze = ze
 
-  _/is : forall {m s}(t : Tm s m) -> [ t / is ]~ t
+  _/is : forall {m s}(t : s -! m) -> [ t / is ]~ t
   (c $ t) /is = c $ (t /is)
   ty /is = ty
   va /is = va
@@ -251,140 +266,40 @@ module _ {M : Nat -> Set} where
        = aye (pasteh x v0 y3 w0) (! b) (snd (tri _ _) /!\ snd (tri _ _) , u1)
   pasteh ze ze ze ze = ze
 
-
-{-
-  pp~ : forall {n s t}
-        {a@(! i , th0) b@(! j , ph0) : Tm s ^^ n}
-        {c@(! k , th1) d@(! l , ph1) : Tm t ^^ n}
-     -> a ~ b -> c ~ d
-     -> {u : th0 /u\ th1}{w : ph0 /u\ ph1}
-     -> pp i u k ~ pp j w l
-  pp~ r~ r~ {u}{w} with r~ <- copIrr u w = r~
-
-  roof : forall {i0 i1 m n}{th0 : i0 <= m}{th1 : i1 <= m}
-         (u : th0 /u\ th1)(sg : Tm (sub m) n)
-      -> Tm (sub i0 ** sub i1) n
-  roof (u0 su) (sb (pp sg u1 e))
-    with pp sg0 u2 sg1 <- roof u0 sg
-       | ! a , ! b , ! c <- lem1 u1 u2
-       = pp (sb (pp sg0 b e)) a (sb (pp sg1 c e))
-  roof (u0 ll) (sb (pp sg u1 e))
-    with pp sg0 u2 sg1 <- roof u0 sg
-       | ! (! _ , a) , ! ! ! b , _ <- rot u1 (swap u2)
-       = pp (sb (pp sg0 b e)) (swap a) sg1
-  roof (u0 rr) (sb (pp sg u1 e))
-    with pp sg0 u2 sg1 <- roof u0 sg
-       | ! (! _ , a) , ! ! ! b , _ <- rot u1 u2
-       = pp sg0 a (sb (pp sg1 b e))
-  roof ze ze = pp ze ze ze
-    
-  _/_ : forall {m n s} -> Tm s m -> Tm (sub m) n -> Tm s n
-  em t / sg = em (t / sg)
-  ty / ze = ty
-  pi t / sg = pi (t / sg)
-  la t / sg = la (t / sg)
-  (m $ t) / sg = m $ (t / sg)
-  va / sb (pp ze u e) with r~ , _ <- allRight u = e
-  ra t / sg = ra (t / sg)
-  ap t / sg = ap (t / sg)
-  ze / ze = ze
-  sb t / sg = sb (t / sg)
-  kk t / sg = kk (t / sg)
-  bb t / sg = bb (t / sb (pp sg (lll rr) va))
-  pp s u t / sg with pp sg0 u' sg1 <- roof u sg = pp (s / sg0) u' (t / sg1)
-
-  is : forall {n} -> Tm (sub n) n
-  is {ze} = ze
-  is {n su} = sb (pp is (lll rr) va)
-
-  rooflll : forall {m n}(sg : Tm (sub m) n) -> roof lll sg ~ pp sg lll ze
-  rooflll ze = r~
-  rooflll (sb (pp sg u e)) rewrite rooflll sg | rot-rrr u = pp~ r~ r~
-
-  roofrrr : forall {m n}(sg : Tm (sub m) n) -> roof rrr sg ~ pp ze rrr sg
-  roofrrr ze = r~
-  roofrrr (sb (pp sg u e)) rewrite roofrrr sg | rot-rrr u = r~
-
-  is/ : forall {m n}(sg : Tm (sub m) n) -> (is / sg) ~ sg
-  is/ {ze} ze = r~
-  is/ {m su} (sb (pp {j = j} sg u e))
-    rewrite rooflll sg | rot-lll u | allRightQ {j} | is/ sg = r~
-
-  roof-is : forall {i j n}{th : i <= n}{ph : j <= n}(u : th /u\ ph)
-    -> roof u is ~ pp is u is
-  roof-is (u su) rewrite roof-is u | lem1lll u = r~
-  roof-is (u ll) rewrite roof-is u | rotlll (swap u) = pp~ r~ r~
-  roof-is (u rr) rewrite roof-is u | rotlll u = r~
-  roof-is ze = r~
-
-  _/is : forall {n s}(t : Tm s n) -> (t / is) ~ t
-  em t /is rewrite t /is = r~
-  ty /is = r~
-  pi t /is rewrite t /is = r~
-  la t /is rewrite t /is = r~
-  (m $ t) /is rewrite t /is = r~
-  va /is = r~
-  ra t /is rewrite t /is = r~
-  ap t /is rewrite t /is = r~
-  ze /is = r~
-  sb t /is rewrite t /is = r~
-  kk t /is rewrite t /is = r~
-  bb t /is rewrite t /is = r~
-  pp s u t /is rewrite roof-is u | s /is | t /is = r~
-
-  compw : forall {l n m}(sg : Tm (sub l) n)(ta : Tm (sub n) m)
-       -> sb (pp (sg / ta) (lll rr) va)
-        ~ (sb (pp sg (lll rr) va) / sb (pp ta (lll rr) va))
-  compw {l}{n}{m} sg ta
-    rewrite rooflll ta | rotlll (lll {m}) = r~
-
-  compr : forall {l n m}{(! th0) (! ph0) : < _<= l >}(u0 : th0 /u\ ph0)
-          (sg : Tm (sub l) n)(ta : Tm (sub n) m)
-          {(! th1) (! ph1) : < _<= n >}(u1 : th1 /u\ ph1)
-          {sg0 sg1} -> roof u0 sg ~ pp sg0 u1 sg1 ->
-          forall {(! th2) (! ph2) : < _<= m >}(u2 : th2 /u\ ph2)
-          {ta0 ta1} -> roof u1 ta ~ pp ta0 u2 ta1 ->
-          roof u0 (sg / ta) ~ pp (sg0 / ta0) u2 (sg1 / ta1)
-  compr (u0 su) (TM.sb (TM.pp sg u3 e)) ta u1 q1 u2 q2
-    with pp tal u4 tar <- roof u3 ta
-       | z <- compr u0 sg tal
-       | pp sg0 u5 sg1 <- roof u0 sg
-       | y <- z u5 r~
-       | pp ta2 u6 ta3 <- roof u5 tal
-       | x <- y u6 r~
-       | pp up0 u7 up1 <- roof u0 (sg / tal)
-       | r~ <- x
-       | r~ <- q1
-       = {!!}
-  compr (u0 ll) sg ta u1 q1 u2 q2 = {!!}
-  compr (u0 rr) sg ta u1 q1 u2 q2 = {!!}
-  compr ze TM.ze TM.ze .ze r~ .ze r~ = r~
-
-  compo : forall {l n m s}(t : Tm s l)(sg : Tm (sub l) n)(ta : Tm (sub n) m)
-       -> (t / (sg / ta)) ~ ((t / sg) / ta)
-  compo (em t) sg ta rewrite compo t sg ta = r~
-  compo ty ze ze = r~
-  compo (pi t) sg ta rewrite compo t sg ta = r~
-  compo (TM.la t) sg ta rewrite compo t sg ta = r~
-  compo (x TM.$ t) sg ta rewrite compo t sg ta = r~
-  compo {m = m} TM.va (TM.sb (TM.pp TM.ze u e)) ta
-    with r~ , r~ , r~ , r~ <- allRight u
-    rewrite roofrrr ta | allRightQ {m}
-    = r~
-  compo (TM.ra t) sg ta rewrite compo t sg ta = r~
-  compo (TM.ap t) sg ta rewrite compo t sg ta = r~
-  compo TM.ze TM.ze TM.ze = r~
-  compo (TM.sb t) sg ta rewrite compo t sg ta = r~
-  compo (TM.kk t) sg ta rewrite compo t sg ta = r~
-  compo (TM.bb t) sg ta
-    rewrite compw sg ta
-          | compo t (sb (pp sg (lll rr) va)) (sb (pp ta (lll rr) va))
-    = r~
-  compo (TM.pp s u0 t) sg ta
-    with z <- compr u0 sg ta
-       | pp sg0 u1 sg1 <- roof u0 sg
-       | y <- z u1 r~
-       | pp ta0 u2 ta1 <- roof u1 ta
-    rewrite y u2 r~ | compo s sg0 ta0 | compo t sg1 ta1
-       = r~
--}
+  asbo03 : forall {i1 i2}
+       {(! sg01 , sg02) : < _-! i1 *: _-! i2 >}
+       {(! sg13 , sg23) : < i1 =>_ *: i2 =>_ >}
+    -> < [ sg01 /_]~ sg02 *: [_/ sg23 ]~ sg13 >
+    -> < [ sg01 / sg13 ]~_ *: [ sg02 / sg23 ]~_ >
+  asbo03 (! x , y) = go x y where
+    go : forall {i1 i2}
+       {(! sg01 , sg02) : < _-! i1 *: _-! i2 >}
+       {(! sg13 , sg23) : < i1 =>_ *: i2 =>_ >}
+       {sg12}
+      -> [ sg01 / sg12 ]~ sg02 -> [ sg12 / sg23 ]~ sg13
+      -> < [ sg01 / sg13 ]~_ *: [ sg02 / sg23 ]~_ >
+    go (c $ x) y = let ! p , q = go x y in ! c $ p , c $ q
+    go ty ze = ! ty , ty
+    go va (.sb $ pp x ze y sg u)
+      with r~ <- selQ (! x) (! nosel _)
+         | r~ <- selQ (! y) (! iosel _)
+         | r~ , r~ , r~ , r~ <- allRight u
+         = ! va , sg
+    go ze ze = ! ze , ze
+    go (bb x) y =
+      let ! p , q = go x
+             (sb $ pp (naw (iosel _) {u = lll rr} (! io^ _)) y
+                      (aye (nosel _) (! no^ _) (no^ _ /!\ io^ _ , rrr))
+                        (va { e = va })
+                      (lll rr))
+      in  ! bb p , bb q
+    go (pp a0 x0 a1 x1 u) y =
+      let ! b0 = sel (! r%% a0 , b/ y)
+          ! y0 = sbst (b%% a0) (b%% b0)
+          ! p0 , q0 = go x0 y0
+          ! b1 = sel (! r%% a1 , b/ y)
+          ! y1 = sbst (b%% a1) (b%% b1)
+          ! p1 , q1 = go x1 y1
+          u' = roof u b0 b1
+      in  ! pp (pasteh a0 y b0 y0) p0 (pasteh a1 y b1 y1) p1 u'
+           , pp b0 q0 b1 q1 u'
