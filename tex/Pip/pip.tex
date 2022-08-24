@@ -215,7 +215,7 @@ Then, we add rules generated from each contraction schemes by renaming all the s
 \newcommand{\dev}[1]{\mathbf{dev}(#1)}
 We can also define the \emph{development}, $\dev{t}$, of a term $t$, which aggressively contracts redexes from the outside in.
 \[\begin{array}{lcl}
-    \dev{\Ne{\ra tT}} &=& \Ne{\ra{\dev t}{\dev T}} \\
+    \dev{\Ne{\ra tT}} &=& \dev t \\
     \dev{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s} &=&
                                                     \{x\mapsto\ra{\dev{s}}{\dev{S}}\}(\ra{\dev t}{\dev T}) \\
     \multicolumn{3}{l}{\hspace*{-0.3in}\textit{and otherwise,}}\\
