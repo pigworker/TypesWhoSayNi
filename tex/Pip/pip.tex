@@ -43,7 +43,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
-\title{Input. Subject. Output.}
+\title{Inputs $\langle$ Subjects $\rangle$ Outputs}
 \author{Conor Mc Bride}
 \maketitle
 
@@ -173,7 +173,7 @@ So, we get out as much sense as we put in! However, this system does no computat
 
 Let us define some \emph{contraction schemes}, from which we shall extract a notion of untyped conversion. Of course, there are more sophisticated ways to account for computation, but let us begin with the basics.
 \[
-  (\upsilon)\quad \Ne{\ra tT} \;\leadsto\; r
+  (\upsilon)\quad \Ne{\ra tT} \;\leadsto\; t
   \quad\quad\quad\quad 
   (\beta)\quad(\ra{\LF {\x{}}t}{\PT {S}{\x{}}T})\:s \;\leadsto\; \{x\mapsto\ra sS\}(\ra tT)
 \]
@@ -241,9 +241,129 @@ We may compute a type before checking it or after synthesizing it.
 \]
 Note that, with these rules in place, we may construct derivations with multiple computation steps on either side of the $S = T$ check, so that we effectively allow type conversion at the change of direction. Everywhere we insist on a particular type form, $\Ty$ or $\PT SxT$, we allow only reduction, but we also have that whenever a type is convertible to a canonical form, it can reach a convertible canonical form by reduction alone.
 
+However, if we want to argue that preconditions ensure postconditions, we shall have to account for the impact of computation, which is our next task.
+
 
 \subsection{Subject Reduction}
 
+Judgments establish trust, so it would be unfortunate, to say the least, if computation were to damage that trust. Of course, we can speak only to forward computation: goodness knows monstrous arguments a backward $\beta$-step might conjure for a vacuous abstraction. It is fortunate, then, that our rules require only forward computation. The tricky part of proving that forward computation preserves judgments is the movement of subterms between the judgments' places: application copies the argument into the type, function type formation copies the domain into the context, and so on. If we are to proceed by mutual induction on derivations, we shall need to be sufficiently flexible in the statement of our goals, if our induction hypotheses are to be fit for purpose.
+
+Like a rabbit from a hat, I produce the following claims:
+\begin{itemize}
+\item Suppose that under some $\x{i} : S_i$ we have $T\ni t$, and that $S_i \PRR^\ast S'_i$, $T \PRR^\ast T'$ and $\prr t{t'}$.\\Then under $\x{i} : S'_i$ we have $T'\ni t'$.
+\item Suppose that under some $\x{i} : S_i$ we have $e\in S$, and that $S_i \PRR^\ast S'_i$, $\prr e{e'}$.\\Then there exists some $S'$ such that $S \PRR^\ast S'$ and under $\x{i} : S'_i$ we have $e'\in S'$.
+\end{itemize}
+That is, if we know a judgement and we allow the devil to compute contexts and checked types forwards arbitrarily, but the terms only by \emph{one} parallel reduction step, then we may recover our judgment by sufficiently computing synthesized types. If we let the devil compute the context, we shall certainly need to control the computation of synthesized types, if we are to have any chance of catching up with appeals to hypothetical judgments: when the devil computes $S_i \PRR^\ast S'_i$, we must be able to deploy a copycat strategy to recover $\x{i}\in S_i$ as $\x{i}\in S'_i$. Let us see how the game plays out for the rest of the rules: we obtain a case for each term former taking a \emph{structural} parallel reduction step, together with cases for actual contraction.
+\begin{itemize}
+\item $\Rule{e\in S\quad S=T}{T\ni \Ne e}\quad T\PRR^\ast T'\quad \prr e{e'}\quad$ We must show $T'\ni \Ne{e'}$.\\
+  By induction hypothesis, $e'\in S'$ for some $S \PRR^\ast S'$. As $S = T$, confluence gives us a common reduct, $U$ for $S'$ and $T'$. The precomputation rule allows us to derive $T'\ni\Ne{e'}$ from $U\ni\Ne{e'}$, which follows by change of direction from $e'\in U$, derived by postcomputation from $e'\in S'$.
+\item $\Axiom{\Ty\ni \Ty}\quad \Ty\PRR^\ast\Ty\quad \prr\Ty\Ty\quad$ We must show $\Ty\ni\Ty$, which holds.
+\item $\Rule{\Ty\ni S\quad x\in S\vdash \Ty\ni T}{\Ty\ni \PT SxT}\quad \Ty\PRR^\ast\Ty\quad \prr{\PT SxT}{\PT{S'}x{T'}}\quad$ We must show $\Ty\ni \PT{S'}x{T'}$.\\
+  We had $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$ in the typing derivation, and $\prr S{S'}$ and $\prr T{T'}$ from reduction. One induction hypothesis yields $\Ty\ni S'$; the other yields
+  $\x{}\in S'\vdash \Ty\ni T'$ as we may compute in the context. We may thus use the same rule to deduce the goal.
+\item $\Rule{x\in S\vdash T\ni t}{\PT SxT \ni \LF xt}\quad \PT SxT\PRR^\ast\PT{S'}x{T'}\quad \prr{\LF xt}{\LF x{t'}}\quad$ We must show $\PT{S'}x{T'}\ni \LF x{t'}$.\\
+  Allowing for precomputation, we must have had $\x{}\in S\vdash T''\ni t$ for some $T\PRR^\ast T''$ from the typing derivation. From reduction, we must have $S\PRR^\ast S'$ and $T\PRR^\ast T'$. Taking $T'''$ as the common reduct of $T'$ and $T''$, we may derive $\x{}\in S'\vdash T'''\ni t$ by induction hypothesis and obtain the goal by precomputation and abstraction.
+\item $\Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T}\quad \prr{\ra tT}{\ra{t'}{T'}}\quad$
+  We must show $\ra{t'}{T'} \in R$ for some $T\PRR^\ast R$.\\
+  We must have had $\prr t{t'}$ and $\prr T{T'}$. By induction hypothesis, $\Ty\ni T'$ and, computing the type, $T'\ni t'$. We thus choose $R = T'$ and reapply the same rule.
+\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad \prr{f\:s}{f'\:s'}\quad$ We must show $f'\:s'\in R$ for some $\{\x{}\mapsto \ra sS\}T\PRR^\ast R$.\\
+  By induction, we obtain $f\in \PT {S'}x{T'}$ for some $S\PRR^\ast S'$ and $T\PRR^\ast T'$. Computing the type, our other hypothesis yields $S'\ni s'$. We may thus take
+  $R = \{\x{}\mapsto \ra{s'}{S'}\}T'$ because computation is stable under substitution, and reapply.
+\item $\Rule{\prr T{T'} \quad T'\ni t}{T\ni t}\quad T\PRR^\ast T' \quad \prr t{t'}\quad$. We must show $T''\ni t'$.\\
+  Confluence gives $T'''$ as common reduct of $T'$ and $T''$, so induction yield $T'''\ni t'$, then precomputation yields the goal.
+\item $\Rule{e\in S\quad \prr S{S'}}{e\in S'}\quad \prr e{e'}\quad$ We must show $e'\in R$ for some $S'\PRR^\ast R$.\\
+  By induction, $e'\in S''$ for some $S\PRR^\ast S''$. Confluence yields $S'''$ as common reduct of $S'$ and $S'''$. We take $R = S'''$ and
+  derive goal from hypothesis by postcomputation.
+\item $\Rule{\ra t{T_0}\in T_1\quad T_1=T}{T\ni \Ne{\ra t{T_0}}}\quad T\PRR^\ast T'\quad \prr{\Ne{\ra t{T_0}}}{t'}\;\mbox{where}\;\prr t{t'}\quad$
+  We must show $T'\ni t'$.\\
+  We must have had $T_0\ni t$ and $T_0\PRR^\ast T$. Hence $T_0\PRR^\ast T'$ and the induction hypothesis yields the goal.
+\item $\Rule{(\ra{\LF xt}{\PT{S'}x{T'}})\in \PT SxT \quad S\ni s}{(\ra{\LF xt}{\PT{S'}x{T'}})\;s\in \{\x{}\mapsto \ra sS\}T}$\\
+  $\prr{(\ra{\LF xt}{\PT{S'}x{T'}})\:s}{\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})}\;\mbox{where}\;
+  \prr s{s'}\;\;\prr{S'}{S''}\;\;\prr{T'}{T''}\;\;\prr t{T'}$\\
+  We must show $\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})\in R$ for some $\{\x{}\mapsto \ra sS\}T \PRR^\ast R$.\\
+  We must have had $S'\PRR^\ast S$ and $T'\PRR^\ast T$. Further, we must have had $\x{}\in S_0\vdash T_0\ni t$ for some $S'\PRR^\ast S_0$ and $T'\PRR^\ast T_0$. Moreover, we must have had subderivations of
+  $\Ty\ni S'$ and $x\in S'\vdash \Ty\ni T'$.
+  By confluence, obtain common reducts
+  $S_c$ and $T_c$. By induction, obtain $S_c\ni s'$ and $\x{}\in S_c\vdash T_c\ni t'$.
+  Precomputation yields $S''\ni S'$ and $\x{}\in S_c\vdash T''\ni t'$.
+  Induction yields $\Ty\ni S''$ and $x\in S_c\vdash \Ty\ni T''$ as $\prr{S'}{S''}$
+  and $\prr{T'}{T''}$. We thus obtain
+  $\ra{s'}{S''}\in S_c$ and $\x{}\in S_c \vdash \ra{t'}{T''}\in T_c$.
+  Stability under substitution tells us that
+  $R = \{x\mapsto \ra{s'}{S''}\}T_c$ yields the goal. We could also choose
+  $R = \{x\mapsto \ra{s'}{S_c}\}T_c$.
+\end{itemize}
+
+So, my lucky rabbit did the trick! Whenever I needed an induction hypothesis, the term in question had computed only by parallel reduction. Whenever checked types precomputed or synthesized types postcomputed in competing ways, confluence always gave me a common reduct which I could then choose either in a checking hypothesis or a synthesis conclusion. It is almost as if the places in the judgments have some sort of \emph{orientation} which aligns with the rules for computation and the statements of subject reduction!
+
+With subject reduction in place, it is straightforward to see that the preconditions and postconditions which demand validity of types are now stable with respect to the forward computations permitted by the rules. Repairing the na\"\i{}ve proof to cope with computation is safely left as an exercise.
+
+Now, the real purpose of this paper is to demystify the alignment by which the above proof comes out. Let us look not at the rabbit but rather at the hat I pulled it from, for this trick is not magic, but millinery!
+
+
+\section{Judging Judgments; Ruling Rules}
+
+Bidirectional type systems come with a sense that checked types flow `inward' while synthesized types flow `outward', but it is not at all standard to bake this distinction into the very idea of what it is to be a judgment form. In our statement of subject reduction, we quantified universally over how the inputs computed and existentially over how the outputs computed, so perhaps the distinction is worth observing. More subtly, we have some places in judgment forms to which we attach conditions explaining what we rely on or guarantee for the things in those places, but others with no such condition; and in our example, that distinction coincided with the places which had $\PRR^\ast$ in the statement of subject reduction and those which were permitted only $\PRR$. Let us refine the notion of \emph{judgment} form to make this analysis more explicit, then explore the consequences of doing so.
+
+
+\subsection{Modes for Judgment Forms}
+
+We may think of a judgment as a structured interaction between a \emph{client} who \emph{proposes} and a server who \emph{avers}. The data in its places are transmitted either from client to server or vice versa, but moreover, some sort of \emph{guarantee} is made about the data by one to the other. We may classify judgment form places with a \emph{mode} according to the senders of their data and the makers of the guarantees about them:
+
+\begin{tabular}{|c||c|c|}
+  \hline
+  \textbf{Mode} & \textbf{Sender} & \textbf{Guarantor} \\
+  \hline \hline
+  \textbf{Input} & client & client \\
+  \textbf{Subject} & client & server \\
+  \textbf{Output} & server & server \\
+  \hline
+\end{tabular}
+
+We might imagine a fourth `whataboutery' mode in which the server sends data to the client in the hope of a guarantee, but it seems unlikely to play a role in typechecking interactions, at least for complete terms, so let us let slip that idea for the present. Likewise, one might imagine judgment forms with arbitrary interaction protocols, but we will get a long way with only those whose inputs precede their subjects which in turn precede the outputs.
+
+Let us specify judgment forms uniformly for all scopes by writing grammar productions using syntactic sorts for nonterminal symbols, punctuation as we see fit, a `$\langle$' between inputs and subjects as far right as possible, and a `$\rangle$' between subjects and outputs as far left as possible after the `$\langle$'. Our example system has
+\[\begin{array}{l}
+    \syso{chk} \ni \langle \syso{chk} \rangle \\
+    \langle \syso{syn} \rangle \in \syso{chk} \\
+    \syso{chk} = \syso{chk} \langle\rangle 
+  \end{array}\]
+
+
+\subsection{Contracts and Contexts}
+
+We may think of a judgment with subjects as a \emph{validator} for those subjects. The guarantees made by clients about inputs and servers about outputs are validity guarantees. Each judgment form must thus have a \emph{contract} of preconditions and postconditions: the preconditions are for each input a judgment in which that input stands as a subject; the postconditions are for each output a judgment in which that output stands as a subject.
+
+The sensible hypothetical judgments one may adopt about a variable are those in which it stands as a subject. That is why, when we bind variables $\x{}$ in sort $\syso{syn}$, we take hypotheses of form $\x{}\in S$. We thus acquire that derivations respect well sorted simultaneous substitutions, provided their hypotheses similarly substituted are derivable: the latter derivations, suitably thinned, substitute into places where the hypothetical judgments were invoked, exactly extending substitutions from the syntax of terms to the derivations of judgments.
+
+Hypothetical judgments must keep their contracts, too, so it is a duty for any rule which has a premise in a locally extended context to ensure that the corresponding contract is met. In our example, this means that whenever we say $\x{}\in S\vdash \ldots$ we must be able to explain why $\Ty\ni S$, because that is what the type synthesis postcondition promises.
+
+
+\subsection{Patterns versus Expressions}
+
+In inference rules as we know them, we write formulae which employ \emph{schematic variables} to stand for the concrete objects for which the rules may be used to construct derivations. A rule is valid for any syntactically correct instantiation of its schematic variables. That is, the schematic variables are bound \emph{implicitly} by universal quantifiers under which the rule amounts to the implication of its conclusion from the conjunction of its premises. When deploying rules to make derivations, we are obliged to instantiate those implicitly quantified variables with whatever insight and inspiration we can muster. For example, we might give a rule for constructing dependent pairs as follows:\\
+\parbox{4.5in}{
+\[
+  \Rule{s:S \quad t:\{x\mapsto s\}T}
+  {s,t : \blue{\Upsigma}\:S\:\V{x}.T}
+    \]}\hfill \mbox{(danger!)}
+Given $s$ and $t$, one constructs derivations by dreaming up a suitable $S$ and a suitable $T$ depending on $\x{}$, but how is this dreaming to be done? If we are \emph{checking} types, it is reasonable to dismantle the pair type to extract $S$ and $\V{x}.T$. However, if we are \emph{synthesizing}, we may readily obtain $S$ from the first premise, but the second premise gives us but one substitution instance of $T$, from which there is no general way to infer the dependency pattern. Inverting substitution is more magic than you have the right to expect!
+
+Our modes make it clear who sends and who receives the data in a typing rule:
+\begin{quote}
+  \emph{A rule is the server for its conclusion and the client for its premises.}
+\end{quote}
+Hence, each rule receives the inputs and subjects of its conclusion, sends the inputs and subjects of its premises, receives the outputs of its premises, and sends the outputs of its conclusion. These communications can happen, in principle, in any causally sustainable order, but it is often an adequate simplification to demand that they happen \emph{clockwise}, starting from wherever in the conclusion has the $\rangle$ in its judgment form.
+
+We may now make a distinction between the \emph{patterns} by which rules may \emph{analyse} the data they receive and the \emph{expressions} with which they \emph{construct} the data they send. We receive, in return, two benefits.
+
+Firstly, implicit universal quantification of the schematic variables gives way to the explicit binding of each schematic variables in exactly one pattern, making it clear who is respnsible for delivering that information, and just as clear what is \emph{in scope} at the time. The use sites of schematic variables should be in expressions only, and then only in places where the variables in scope for them are either captured or substituted. Indeed, it is clear by inspection which variables are not in scope at use sites and must thus be substituted, hence we may write substitutions without explicit naming, e.g.
+\[\Rule{f\in\PT SxT\quad S\ni s}
+  {f\:s\in\{\ra sS\}T}
+\]
+is perfectly meaningful, because the binding site of $T$ is in the first premise with $\x{}$ in scope, but what is missing from scope in the conclusion's output is exactly such an $\x{}$, so there is no doubt as to what is being substituted by $\ra sS$.
+
+Secondly, we become free to gain reassurance at the expense of power by reducing the expressivity of the pattern language to avoid magic that we are better off without. At the very least, we should disallow general substitutions in patterns, exactly because we cannot invert them. In our application example, the substitution is safely in an expression position; in our dependent pair example, if we read $:$ as $\in$, we see that the second premise's substitution occurs in a pattern position and is thus unwise. Later, we should also consider how further restricting the pattern language in some places might assist in establishing metatheoretical properties, e.g., by ensuring that we never demand a type matches a pattern that computation can destroy. As in `Theorems for Free', the less we can look, the more we are promised. When ignorance is bliss, 'tis folly to be wise.
 
 
 
