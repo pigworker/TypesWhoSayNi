@@ -196,6 +196,8 @@ We say the contraction schemes are \emph{orthogonal} if no term is a redex for t
 Orthogonal contraction schemes give rise to confluent reduction systems, essentially by Takahashi's proof. Once we have contraction schemes, we can systematically derive an inductive definition of \emph{parallel reduction}. We begin with structural rules for variables and all syntactic productions, thus ensuring that the relation is at least reflexive and closed under all syntactic contexts.
 \newcommand{\PRR}{\triangleright}
 \newcommand{\prr}[2]{#1\:\PRR\,#2}
+\newcommand{\PRS}{\PRR^{\!\ast}}
+\newcommand{\prs}[2]{#1\:\PRS\,#2}
 \[\begin{array}{c}
     \Axiom{\prr{\x{}}{\x{}}} \\
     \Rule{\prr e{e'}}{\prr{\Ne e}{\Ne{e'}}}\quad\quad
@@ -216,7 +218,7 @@ Then, we add rules generated from each contraction schemes by renaming all the s
 We can also define the \emph{development}, $\dev{t}$, of a term $t$, which aggressively contracts redexes from the outside in.
 \[\begin{array}{lcl}
     \dev{\Ne{\ra tT}} &=& \dev t \\
-    \dev{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s} &=&
+    \dev{(\ra{\LF {\x{}}t}{\PT SxT})\:s} &=&
                                                     \{x\mapsto\ra{\dev{s}}{\dev{S}}\}(\ra{\dev t}{\dev T}) \\
     \multicolumn{3}{l}{\hspace*{-0.3in}\textit{and otherwise,}}\\
     \dev{\x{}} &=& \x{}\\
@@ -232,7 +234,7 @@ By construction, $\prr t{\dev t}$. Moreover, whenever we develop a redex, we dev
 \[
   \forall s,p,q.\; \prr sp \wedge \prr sq \;\Rightarrow\; \exists r.\; \prr pr \wedge \prr qr
 \]
-by taking $r = \dev s$. This extends to the same for $\PRR^\ast$, the reflexive-transitive closure of $\PRR$, by tiling a parallelogram with diamonds. We further obtain that the equivalence closure of $\PRR$ amounts to having a common reduct.
+by taking $r = \dev s$. This extends to the same for $\PRS$, the reflexive-transitive closure of $\PRR$, by tiling a parallelogram with diamonds. We further obtain that the equivalence closure of $\PRR$ amounts to having a common reduct.
 
 With this machinery in place, we may add computation to our theory in the form of two new rules.
 We may compute a type before checking it or after synthesizing it.
@@ -250,38 +252,38 @@ Judgments establish trust, so it would be unfortunate, to say the least, if comp
 
 Like a rabbit from a hat, I produce the following claims:
 \begin{itemize}
-\item Suppose that under some $\x{i} : S_i$ we have $T\ni t$, and that $S_i \PRR^\ast S'_i$, $T \PRR^\ast T'$ and $\prr t{t'}$.\\Then under $\x{i} : S'_i$ we have $T'\ni t'$.
-\item Suppose that under some $\x{i} : S_i$ we have $e\in S$, and that $S_i \PRR^\ast S'_i$, $\prr e{e'}$.\\Then there exists some $S'$ such that $S \PRR^\ast S'$ and under $\x{i} : S'_i$ we have $e'\in S'$.
+\item Suppose that under some $\x{i} : S_i$ we have $T\ni t$, and that $\prs{S_i}{S'_i}$, $\prs T{T'}$ and $\prr t{t'}$.\\Then under $\x{i} : S'_i$ we have $T'\ni t'$.
+\item Suppose that under some $\x{i} : S_i$ we have $e\in S$, and that $\prs{S_i}{S'_i}$, $\prr e{e'}$.\\Then there exists some $S'$ such that $\prs S{S'}$ and under $\x{i} : S'_i$ we have $e'\in S'$.
 \end{itemize}
-That is, if we know a judgement and we allow the devil to compute contexts and checked types forwards arbitrarily, but the terms only by \emph{one} parallel reduction step, then we may recover our judgment by sufficiently computing synthesized types. If we let the devil compute the context, we shall certainly need to control the computation of synthesized types, if we are to have any chance of catching up with appeals to hypothetical judgments: when the devil computes $S_i \PRR^\ast S'_i$, we must be able to deploy a copycat strategy to recover $\x{i}\in S_i$ as $\x{i}\in S'_i$. Let us see how the game plays out for the rest of the rules: we obtain a case for each term former taking a \emph{structural} parallel reduction step, together with cases for actual contraction.
+That is, if we know a judgement and we allow the devil to compute contexts and checked types forwards arbitrarily, but the terms only by \emph{one} parallel reduction step, then we may recover our judgment by sufficiently computing synthesized types. If we let the devil compute the context, we shall certainly need to control the computation of synthesized types, if we are to have any chance of catching up with appeals to hypothetical judgments: when the devil computes $\prs{S_i}{S'_i}$, we must be able to deploy a copycat strategy to recover $\x{i}\in S_i$ as $\x{i}\in S'_i$. Let us see how the game plays out for the rest of the rules: we obtain a case for each term former taking a \emph{structural} parallel reduction step, together with cases for actual contraction.
 \begin{itemize}
-\item $\Rule{e\in S\quad S=T}{T\ni \Ne e}\quad T\PRR^\ast T'\quad \prr e{e'}\quad$ We must show $T'\ni \Ne{e'}$.\\
-  By induction hypothesis, $e'\in S'$ for some $S \PRR^\ast S'$. As $S = T$, confluence gives us a common reduct, $U$ for $S'$ and $T'$. The precomputation rule allows us to derive $T'\ni\Ne{e'}$ from $U\ni\Ne{e'}$, which follows by change of direction from $e'\in U$, derived by postcomputation from $e'\in S'$.
-\item $\Axiom{\Ty\ni \Ty}\quad \Ty\PRR^\ast\Ty\quad \prr\Ty\Ty\quad$ We must show $\Ty\ni\Ty$, which holds.
-\item $\Rule{\Ty\ni S\quad x\in S\vdash \Ty\ni T}{\Ty\ni \PT SxT}\quad \Ty\PRR^\ast\Ty\quad \prr{\PT SxT}{\PT{S'}x{T'}}\quad$ We must show $\Ty\ni \PT{S'}x{T'}$.\\
+\item $\Rule{e\in S\quad S=T}{T\ni \Ne e}\quad \prs{T}{T'}\quad \prr e{e'}\quad$ We must show $T'\ni \Ne{e'}$.\\
+  By induction hypothesis, $e'\in S'$ for some $\prs S{S'}$. As $S = T$, confluence gives us a common reduct, $U$ for $S'$ and $T'$. The precomputation rule allows us to derive $T'\ni\Ne{e'}$ from $U\ni\Ne{e'}$, which follows by change of direction from $e'\in U$, derived by postcomputation from $e'\in S'$.
+\item $\Axiom{\Ty\ni \Ty}\quad \prs\Ty\Ty\quad \prr\Ty\Ty\quad$ We must show $\Ty\ni\Ty$, which holds.
+\item $\Rule{\Ty\ni S\quad x\in S\vdash \Ty\ni T}{\Ty\ni \PT SxT}\quad \prs\Ty\Ty\quad \prr{\PT SxT}{\PT{S'}x{T'}}\quad$ We must show $\Ty\ni \PT{S'}x{T'}$.\\
   We had $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$ in the typing derivation, and $\prr S{S'}$ and $\prr T{T'}$ from reduction. One induction hypothesis yields $\Ty\ni S'$; the other yields
   $\x{}\in S'\vdash \Ty\ni T'$ as we may compute in the context. We may thus use the same rule to deduce the goal.
-\item $\Rule{x\in S\vdash T\ni t}{\PT SxT \ni \LF xt}\quad \PT SxT\PRR^\ast\PT{S'}x{T'}\quad \prr{\LF xt}{\LF x{t'}}\quad$ We must show $\PT{S'}x{T'}\ni \LF x{t'}$.\\
-  Allowing for precomputation, we must have had $\x{}\in S\vdash T''\ni t$ for some $T\PRR^\ast T''$ from the typing derivation. From reduction, we must have $S\PRR^\ast S'$ and $T\PRR^\ast T'$. Taking $T'''$ as the common reduct of $T'$ and $T''$, we may derive $\x{}\in S'\vdash T'''\ni t$ by induction hypothesis and obtain the goal by precomputation and abstraction.
+\item $\Rule{x\in S\vdash T\ni t}{\PT SxT \ni \LF xt}\quad \prs{\PT SxT}{\PT{S'}x{T'}}\quad \prr{\LF xt}{\LF x{t'}}\quad$ We must show $\PT{S'}x{T'}\ni \LF x{t'}$.\\
+  Allowing for precomputation, we must have had $\x{}\in S\vdash T''\ni t$ for some $\prs{T}{T''}$ from the typing derivation. From reduction, we must have $\prs S{S'}$ and $\prs T{T'}$. Taking $T'''$ as the common reduct of $T'$ and $T''$, we may derive $\x{}\in S'\vdash T'''\ni t$ by induction hypothesis and obtain the goal by precomputation and abstraction.
 \item $\Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T}\quad \prr{\ra tT}{\ra{t'}{T'}}\quad$
-  We must show $\ra{t'}{T'} \in R$ for some $T\PRR^\ast R$.\\
+  We must show $\ra{t'}{T'} \in R$ for some $\prs TR$.\\
   We must have had $\prr t{t'}$ and $\prr T{T'}$. By induction hypothesis, $\Ty\ni T'$ and, computing the type, $T'\ni t'$. We thus choose $R = T'$ and reapply the same rule.
-\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad \prr{f\:s}{f'\:s'}\quad$ We must show $f'\:s'\in R$ for some $\{\x{}\mapsto \ra sS\}T\PRR^\ast R$.\\
-  By induction, we obtain $f\in \PT {S'}x{T'}$ for some $S\PRR^\ast S'$ and $T\PRR^\ast T'$. Computing the type, our other hypothesis yields $S'\ni s'$. We may thus take
+\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad \prr{f\:s}{f'\:s'}\quad$ We must show $f'\:s'\in R$ for some $\prs{\{\x{}\mapsto \ra sS\}T}R$.\\
+  By induction, we obtain $f\in \PT {S'}x{T'}$ for some $\prs S{S'}$ and $\prs T{T'}$. Computing the type, our other hypothesis yields $S'\ni s'$. We may thus take
   $R = \{\x{}\mapsto \ra{s'}{S'}\}T'$ because computation is stable under substitution, and reapply.
-\item $\Rule{\prr T{T'} \quad T'\ni t}{T\ni t}\quad T\PRR^\ast T' \quad \prr t{t'}\quad$. We must show $T''\ni t'$.\\
+\item $\Rule{\prr T{T'} \quad T'\ni t}{T\ni t}\quad \prs T{T''} \quad \prr t{t'}\quad$ We must show $T''\ni t'$.\\
   Confluence gives $T'''$ as common reduct of $T'$ and $T''$, so induction yield $T'''\ni t'$, then precomputation yields the goal.
-\item $\Rule{e\in S\quad \prr S{S'}}{e\in S'}\quad \prr e{e'}\quad$ We must show $e'\in R$ for some $S'\PRR^\ast R$.\\
-  By induction, $e'\in S''$ for some $S\PRR^\ast S''$. Confluence yields $S'''$ as common reduct of $S'$ and $S'''$. We take $R = S'''$ and
+\item $\Rule{e\in S\quad \prr S{S'}}{e\in S'}\quad \prr e{e'}\quad$ We must show $e'\in R$ for some $\prs{S'}R$.\\
+  By induction, $e'\in S''$ for some $\prs S{S''}$. Confluence yields $S'''$ as common reduct of $S'$ and $S'''$. We take $R = S'''$ and
   derive goal from hypothesis by postcomputation.
-\item $\Rule{\ra t{T_0}\in T_1\quad T_1=T}{T\ni \Ne{\ra t{T_0}}}\quad T\PRR^\ast T'\quad \prr{\Ne{\ra t{T_0}}}{t'}\;\mbox{where}\;\prr t{t'}\quad$
+\item $\Rule{\ra t{T_0}\in T_1\quad T_1=T}{T\ni \Ne{\ra t{T_0}}}\quad \prs T{T'}\quad \prr{\Ne{\ra t{T_0}}}{t'}\;\mbox{where}\;\prr t{t'}\quad$
   We must show $T'\ni t'$.\\
-  We must have had $T_0\ni t$ and $T_0\PRR^\ast T$. Hence $T_0\PRR^\ast T'$ and the induction hypothesis yields the goal.
+  We must have had $T_0\ni t$ and $\prs{T_0}T$. Hence $\prs{T_0}{T'}$ and the induction hypothesis yields the goal.
 \item $\Rule{(\ra{\LF xt}{\PT{S'}x{T'}})\in \PT SxT \quad S\ni s}{(\ra{\LF xt}{\PT{S'}x{T'}})\;s\in \{\x{}\mapsto \ra sS\}T}$\\
   $\prr{(\ra{\LF xt}{\PT{S'}x{T'}})\:s}{\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})}\;\mbox{where}\;
   \prr s{s'}\;\;\prr{S'}{S''}\;\;\prr{T'}{T''}\;\;\prr t{T'}$\\
-  We must show $\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})\in R$ for some $\{\x{}\mapsto \ra sS\}T \PRR^\ast R$.\\
-  We must have had $S'\PRR^\ast S$ and $T'\PRR^\ast T$. Further, we must have had $\x{}\in S_0\vdash T_0\ni t$ for some $S'\PRR^\ast S_0$ and $T'\PRR^\ast T_0$. Moreover, we must have had subderivations of
+  We must show $\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})\in R$ for some $\prs{\{\x{}\mapsto \ra sS\}T}R$.\\
+  We must have had $\prs{S'}S$ and $\prs{T'}T$. Further, we must have had $\x{}\in S_0\vdash T_0\ni t$ for some $\prs{S'}{S_0}$ and $\prs{T'}{T_0}$. Moreover, we must have had subderivations of
   $\Ty\ni S'$ and $x\in S'\vdash \Ty\ni T'$.
   By confluence, obtain common reducts
   $S_c$ and $T_c$. By induction, obtain $S_c\ni s'$ and $\x{}\in S_c\vdash T_c\ni t'$.
@@ -303,7 +305,7 @@ Now, the real purpose of this paper is to demystify the alignment by which the a
 
 \section{Judging Judgments; Ruling Rules}
 
-Bidirectional type systems come with a sense that checked types flow `inward' while synthesized types flow `outward', but it is not at all standard to bake this distinction into the very idea of what it is to be a judgment form. In our statement of subject reduction, we quantified universally over how the inputs computed and existentially over how the outputs computed, so perhaps the distinction is worth observing. More subtly, we have some places in judgment forms to which we attach conditions explaining what we rely on or guarantee for the things in those places, but others with no such condition; and in our example, that distinction coincided with the places which had $\PRR^\ast$ in the statement of subject reduction and those which were permitted only $\PRR$. Let us refine the notion of \emph{judgment} form to make this analysis more explicit, then explore the consequences of doing so.
+Bidirectional type systems come with a sense that checked types flow `inward' while synthesized types flow `outward', but it is not at all standard to bake this distinction into the very idea of what it is to be a judgment form. In our statement of subject reduction, we quantified universally over how the inputs computed and existentially over how the outputs computed, so perhaps the distinction is worth observing. More subtly, we have some places in judgment forms to which we attach conditions explaining what we rely on or guarantee for the things in those places, but others with no such condition; and in our example, that distinction coincided with the places which had $\PRS$ in the statement of subject reduction and those which were permitted only $\PRR$. Let us refine the notion of \emph{judgment} form to make this analysis more explicit, then explore the consequences of doing so.
 
 
 \subsection{Modes for Judgment Forms}
