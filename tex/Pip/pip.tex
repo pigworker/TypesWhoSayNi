@@ -10,6 +10,14 @@
 \usepackage{stmaryrd}
 \usepackage{latexsym}
 \usepackage{amssymb}
+\usepackage{amsthm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% Theorems etc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{eg}[thm]{Example}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -368,12 +376,76 @@ is perfectly meaningful, because the binding site of $T$ is in the first premise
 Secondly, we become free to gain reassurance at the expense of power by reducing the expressivity of the pattern language to avoid magic that we are better off without. At the very least, we should disallow general substitutions in patterns, exactly because we cannot invert them. In our application example, the substitution is safely in an expression position; in our dependent pair example, if we read $:$ as $\in$, we see that the second premise's substitution occurs in a pattern position and is thus unwise. Later, we should also consider how further restricting the pattern language in some places might assist in establishing metatheoretical properties, e.g., by ensuring that we never demand a type matches a pattern that computation can destroy. As in `Theorems for Free', the less we can look, the more we are promised. When ignorance is bliss, 'tis folly to be wise.
 
 
-\subsection{Citizens and Subjects}
+\subsection{Citizens or Subjects?}
 
 So far, it might seem that inputs and subjects differ only morally: who makes what guarantee? However, the distinction runs deeper. The schematic variables brought into scope by matching on a conclusion input or a premise output are \emph{citizens}, in (meta-)scope for use in subsequent premise input or conclusion output expressions. By contrast, schematic variables from matching on a conclusion subject are not citizens, but merely subjects themselves, and they may not, ab initio, be used in premise inputs or conclusion outputs, because subjects are unvalidated.
 
 What promotes a subject to a citizen is its validation, i.e., its use as the subject of a premise. Indeed, every premise subject must be a subject schematic variable, and every subject schematic variable must be a premise subject exactly once. This linear discipline requires us to design judgment forms which characterize what it is to validate a thing. Moreover, the stipulation that premise subjects come from conclusion subjects prevents \emph{re}validation of data from inputs or outputs which should already be covered by a \emph{contract}. There is no `papiere bitte' for citizens!
 
 This design choice marks a shift from standard practice in type theory. It is common to insist that $\Gamma\vdash t:T$ must imply $\Gamma\:\textsc{valid}$ and $\Gamma\vdash T\:\textsc{type}$, and thence to require additional premises e.g., revalidating the context for each atomic term. Whilst commendably diligent, this conventional choice has an unfortunate consequence for proofs by induction on derivations: it removes our ability to work with goals which give citizens more freedom than subjects. If a conclusion input can become a subject premise, then we are obliged to deduce an induction conclusion about a thing with a citizen's freedom to misbehave than our subject induction hypothesis can address. Concretely, in our earlier proof of subject reduction, the subjects were allowed only $\PRR$, so that their subterms do only $\PRR$, but the citizens were permitted arbitrary $\PRS$ computation. By ensuring that our rules do not revalidate citizens, we avoided any risk of seeking a $\PRS$ conclusion from a mere $\PRR$ hypothesis. If you ask whether $\Gamma\vdash t:T$ without first ensuring that $\Gamma\:\textsc{valid}$ and $\Gamma\vdash T\:\textsc{type}$, you are the author of your own misfortune.
+
+
+\section{Generic Metatheory}
+
+Virtue may be its own reward, but I like to get paid. Let us formulate a framework which rewards us with metatheorems if we play by its rules.
+
+\subsection{Terms and Expressions}
+
+Fix a set $\syso{sort}$ of syntactic sorts, and another set $\syso{atom}$ of terminal symbols.
+Let us give a way to associate with each sort a description of a syntax with binding.
+
+\newcommand{\dx}{\mathop{\,\red{\times}\,}}
+\newcommand{\db}{\mathop{\red{.}\:}}
+
+\begin{defn}[Syntax Descriptions]
+  The set $\syso{desc}$ of \textbf{syntax descriptions} with respect to $\syso{sort}$ is given inductively as follows:
+  \[\begin{array}{rrll}
+      \syso{desc} & \ni & \red{1} & \mbox{for the empty tuple} \\
+                  & | & \syso{desc} \dx \syso{desc} & \mbox{for pairing} \\
+                  & | & \syso{sort} & \mbox{for a subterm of a given sort} \\
+                  & | & \syso{sort}\db\syso{desc} & \mbox{for binding a variable of a given sort} \\
+    \end{array}\]
+
+  A \textbf{syntax} is then given by a function in $\syso{sort} \to \syso{list}(\syso{atom} \times \syso{desc})$, mapping each sort to
+  a choice of atomic tags accompanied a description of their associated payload.
+\end{defn}
+
+\begin{eg}[Bidirectional 1971 Martin-L\"of Type Theory]
+  Our example type theory takes $\syso{sort} = \{\syso{chk},\syso{syn}\}$, and you will see some of the atoms, shortly. Its syntax is
+  \[\begin{array}{lcr@{\,}ll}
+      \syso{chk} & \mapsto & [ & (\mathtt{type},     & \red{1}) \\
+                 &         & , & (\mathtt{pi},       & \syso{chk} \dx (\syso{syn}\mathop{\red{.}\:}\syso{chk})) \\
+                 &         & , & (\mathtt{lambda},   & \syso{syn}\db\syso{chk}) \\
+                 &         & , & (\mathtt{embed},    & \syso{syn}) \\
+                 &         & ] \\
+      \syso{syn} & \mapsto & [ & (\mathtt{check},    & \syso{chk} \dx \syso{chk}) \\
+                 &         & , & (\mathtt{apply},    & \syso{syn} \dx \syso{chk}) \\
+                 &         & ]
+  \end{array}\]
+\end{eg}
+
+\newcommand{\sem}[1]{\llbracket #1 \rrbracket}
+\newcommand{\st}{\mathrel{\mid}}
+\begin{defn}[Scopes and Scoped Terms]
+  The category \textbf{Sco} of scopes has as objects $\gamma,\delta : \syso{list}(\syso{sort})$ with
+  morphisms being thinnings, $\theta,\phi : \gamma \le \delta$. Terms are given as a
+  family of functors $(\textbf{Sco}\to\textbf{Set})^{\syso{sort}}$. Given such a family, $R$, we may interpret
+  some $D:\syso{desc}$ as a functor $\llbracket D \rrbracket(R,\cdot) : \textbf{Sco}\to\textbf{Set}$ as follows:
+  \[\begin{array}{lcl}
+      \sem{\red{1}}(R,\gamma) & = & 1 \\
+      \sem{D\dx D'}(R,\gamma) & = & \sem{D}(R,\gamma) \times \sem{D'}(R,\gamma) \\
+      \sem{s}(R,\gamma) & = & R(s,\gamma) \\
+      \sem{s\db D}(R,\gamma) & = & \sem{D}(R, (\gamma, s))
+    \end{array}\]
+  Given a syntax $F$, we may then construct terms as a least fixpoint:
+  \[
+    \textbf{Term}(s, \gamma) = \{\#\theta\st\theta\in[s]\le \gamma\} \cup \{(a,t) \st (a,D)\in F(s), t\in\sem{D}(\textbf{Term},\gamma)\}
+  \]
+  Note that a thinning $\phi:\gamma\le\delta$ acts on a term $t$ as $t\phi$, where $(\#\theta)\phi = \#(\theta;\phi)$. On other terms,
+  $\phi$ acts structurally; to go under a binder, note that $\phi,1:\gamma,s\le\delta,s$.
+\end{defn}
+
+
+
 
 \end{document}
