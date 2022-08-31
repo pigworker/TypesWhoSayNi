@@ -18,6 +18,7 @@
 \newtheorem{thm}{Theorem}[section]
 \newtheorem{defn}[thm]{Definition}
 \newtheorem{eg}[thm]{Example}
+\newtheorem{notn}[thm]{Notation}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -117,7 +118,7 @@ What are the rules for the other term forms? For checking, we have
 Meanwhile, for synthesis, we have
 \[
   \Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T} \qquad
-  \Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}
+  \Rule{f\in \PT SxT \quad S\ni s}{f\;s\in T\{\x{}\mapsto \ra sS\}}
 \]
 and, for the time being, we may take the equality judgment to be up to renaming of bound variables:
 \[
@@ -169,9 +170,9 @@ Let us visit each of our rules in turn.
   $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$. Correspondingly, we may extend the context with $\x{}\in S$ and then check $T\ni t$.
 \item $\Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T}\quad$
   For the first premise, we need $\Ty\ni\Ty$. For the second premise we need the first premise. The conclusion postcondition is again the first premise.
-\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad$
+\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in T\{\x{}\mapsto \ra sS\}}\quad$
   The first premise promises us $\Ty\ni \PT SxT$, so by inversion,
-  $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$. We may thus invoke the second premise. Now, for the conclusion postcondition, we may deduce $\ra sS\in S$ from $\Ty\ni S$ and $S\ni s$. Substituting this derivation for all uses of the hypothetical $\x{}\in S$, we obtain $\Ty\ni \{\x{}\mapsto \ra sS\}T$.
+  $\Ty\ni S$ and $\x{}\in S\vdash \Ty\ni T$. We may thus invoke the second premise. Now, for the conclusion postcondition, we may deduce $\ra sS\in S$ from $\Ty\ni S$ and $S\ni s$. Substituting this derivation for all uses of the hypothetical $\x{}\in S$, we obtain $\Ty\ni T\{\x{}\mapsto \ra sS\}$.
 \end{itemize}
 
 In that last case, I made use of the fact that substitution extends from terms to derivations. How do I know? I have been very careful to ensure that none of my rules ever says anything about \emph{free} variables. Substitutions preserve everything but free variables, so the only parts of derivations where they have noticeable impact are where we appeal to hypothetical judgments. Stability under substitution is exactly that if a substitution preserves all the hypothetical judgments, then it preserves all derivations. Note that an ill typed substitution may falsify the preconditions for a derivation to be meaningful, but it will still preserve the derivation.
@@ -187,7 +188,7 @@ Let us define some \emph{contraction schemes}, from which we shall extract a not
 \[
   (\upsilon)\quad \Ne{\ra tT} \;\leadsto\; t
   \quad\quad\quad\quad 
-  (\beta)\quad(\ra{\LF {\x{}}t}{\PT {S}{\x{}}T})\:s \;\leadsto\; \{x\mapsto\ra sS\}(\ra tT)
+  (\beta)\quad(\ra{\LF {\x{}}t}{\PT {S}{\x{}}T})\:s \;\leadsto\; (\ra tT)\{x\mapsto\ra sS\}
 \]
 The idea here is that function types drive function applications. The $\upsilon$ rule deletes the type annotation from a term which is not being applied. The $\beta$ rule uses the type information in the redex to annotate the reduct and also to annotate the argument so that, wherever the variable is substituted, further computation may be enabled.
 
@@ -223,7 +224,7 @@ Then, we add rules generated from each contraction schemes by renaming all the s
 \[
   \Rule{\prr t{t'}}{\prr{\Ne{\ra tT}}{t'}} \quad\quad
   \Rule{\prr t{t'}\quad \prr S{S'} \quad \prr T{T'}\quad\prr s{s'}}
-    {\prr{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s}{\{x\mapsto\ra{s'}{S'}\}(\ra{t'}{T'})}}
+    {\prr{(\ra{\LF {\x{}}t}{\PT {S}{\x{}}t})\:s}{(\ra{t'}{T'})\{x\mapsto\ra{s'}{S'}\}}}
   \]
 
 \newcommand{\dev}[1]{\mathbf{dev}(#1)}
@@ -231,7 +232,7 @@ We can also define the \emph{development}, $\dev{t}$, of a term $t$, which aggre
 \[\begin{array}{lcl}
     \dev{\Ne{\ra tT}} &=& \dev t \\
     \dev{(\ra{\LF {\x{}}t}{\PT SxT})\:s} &=&
-                                                    \{x\mapsto\ra{\dev{s}}{\dev{S}}\}(\ra{\dev t}{\dev T}) \\
+                  (\ra{\dev t}{\dev T})\{x\mapsto\ra{\dev{s}}{\dev{S}}\} \\
     \multicolumn{3}{l}{\hspace*{-0.3in}\textit{and otherwise,}}\\
     \dev{\x{}} &=& \x{}\\
     \dev{\Ne e} &=& \Ne{\dev{e}} \\
@@ -280,9 +281,9 @@ That is, if we know a judgement and we allow the devil to compute contexts and c
 \item $\Rule{\Ty\ni T \quad T \ni t}{\ra tT \in T}\quad \prr{\ra tT}{\ra{t'}{T'}}\quad$
   We must show $\ra{t'}{T'} \in R$ for some $\prs TR$.\\
   We must have had $\prr t{t'}$ and $\prr T{T'}$. By induction hypothesis, $\Ty\ni T'$ and, computing the type, $T'\ni t'$. We thus choose $R = T'$ and reapply the same rule.
-\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in \{\x{}\mapsto \ra sS\}T}\quad \prr{f\:s}{f'\:s'}\quad$ We must show $f'\:s'\in R$ for some $\prs{\{\x{}\mapsto \ra sS\}T}R$.\\
+\item $\Rule{f\in \PT SxT \quad S\ni s}{f\;s\in T\{\x{}\mapsto \ra sS\}}\quad \prr{f\:s}{f'\:s'}\quad$ We must show $f'\:s'\in R$ for some $\prs{T\{\x{}\mapsto \ra sS\}}R$.\\
   By induction, we obtain $f\in \PT {S'}x{T'}$ for some $\prs S{S'}$ and $\prs T{T'}$. Computing the type, our other hypothesis yields $S'\ni s'$. We may thus take
-  $R = \{\x{}\mapsto \ra{s'}{S'}\}T'$ because computation is stable under substitution, and reapply.
+  $R = T'\{\x{}\mapsto \ra{s'}{S'}\}$ because computation is stable under substitution, and reapply.
 \item $\Rule{\prr T{T'} \quad T'\ni t}{T\ni t}\quad \prs T{T''} \quad \prr t{t'}\quad$ We must show $T''\ni t'$.\\
   Confluence gives $T'''$ as common reduct of $T'$ and $T''$, so induction yield $T'''\ni t'$, then precomputation yields the goal.
 \item $\Rule{e\in S\quad \prr S{S'}}{e\in S'}\quad \prr e{e'}\quad$ We must show $e'\in R$ for some $\prs{S'}R$.\\
@@ -291,12 +292,12 @@ That is, if we know a judgement and we allow the devil to compute contexts and c
 \item $\Rule{\ra t{T_0}\in T_1\quad T_1=T}{T\ni \Ne{\ra t{T_0}}}\quad \prs T{T'}\quad \prr{\Ne{\ra t{T_0}}}{t'}\;\mbox{where}\;\prr t{t'}\quad$
   We must show $T'\ni t'$.\\
   We must have had $T_0\ni t$ and $\prs{T_0}T$. Hence $\prs{T_0}{T'}$ and the induction hypothesis yields the goal.
-\item $\Rule{(\ra{\LF xt}{\PT{S'}x{T'}})\in \PT SxT \quad S\ni s}{(\ra{\LF xt}{\PT{S'}x{T'}})\;s\in \{\x{}\mapsto \ra sS\}T}$\\
-  $\prr{(\ra{\LF xt}{\PT{S'}x{T'}})\:s}{\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})}\;\mbox{where}\;
+\item $\Rule{(\ra{\LF xt}{\PT{S'}x{T'}})\in \PT SxT \quad S\ni s}{(\ra{\LF xt}{\PT{S'}x{T'}})\;s\in T\{\x{}\mapsto \ra sS\}}$\\
+  $\prr{(\ra{\LF xt}{\PT{S'}x{T'}})\:s}{(\ra{t'}{T''})\{x\mapsto\ra{s'}{S''}\}}\;\mbox{where}\;
   \prr s{s'}\;\;\prr{S'}{S''}\;\;\prr{T'}{T''}\;\;\prr t{T'}$\\
-  We must show $\{x\mapsto\ra{s'}{S''}\}(\ra{t'}{T''})\in R$ for some $\prs{\{\x{}\mapsto \ra sS\}T}R$.\\
+  We must show $(\ra{t'}{T''})\{\x{}\mapsto\ra{s'}{S''}\}\in R$ for some $\prs{T\{\x{}\mapsto \ra sS\}}R$.\\
   We must have had $\prs{S'}S$ and $\prs{T'}T$. Further, we must have had $\x{}\in S_0\vdash T_0\ni t$ for some $\prs{S'}{S_0}$ and $\prs{T'}{T_0}$. Moreover, we must have had subderivations of
-  $\Ty\ni S'$ and $x\in S'\vdash \Ty\ni T'$.
+  $\Ty\ni S'$ and $\x{}\in S'\vdash \Ty\ni T'$.
   By confluence, obtain common reducts
   $S_c$ and $T_c$. By induction, obtain $S_c\ni s'$ and $\x{}\in S_c\vdash T_c\ni t'$.
   Precomputation yields $S''\ni S'$ and $\x{}\in S_c\vdash T''\ni t'$.
@@ -304,8 +305,8 @@ That is, if we know a judgement and we allow the devil to compute contexts and c
   and $\prr{T'}{T''}$. We thus obtain
   $\ra{s'}{S''}\in S_c$ and $\x{}\in S_c \vdash \ra{t'}{T''}\in T_c$.
   Stability under substitution tells us that
-  $R = \{x\mapsto \ra{s'}{S''}\}T_c$ yields the goal. We could also choose
-  $R = \{x\mapsto \ra{s'}{S_c}\}T_c$.
+  $R = T_c\{\x{}\mapsto \ra{s'}{S''}\}$ yields the goal. We could also choose
+  $R = T_c\{\x{}\mapsto \ra{s'}{S_c}\}$.
 \end{itemize}
 
 So, my lucky rabbit did the trick! Whenever I needed an induction hypothesis, the term in question had computed only by parallel reduction. Whenever checked types precomputed or synthesized types postcomputed in competing ways, confluence always gave me a common reduct which I could then choose either in a checking hypothesis or a synthesis conclusion. It is almost as if the places in the judgments have some sort of \emph{orientation} which aligns with the rules for computation and the statements of subject reduction!
@@ -358,7 +359,7 @@ Hypothetical judgments must keep their contracts, too, so it is a duty for any r
 In inference rules as we know them, we write formulae which employ \emph{schematic variables} to stand for the concrete objects for which the rules may be used to construct derivations. A rule is valid for any syntactically correct instantiation of its schematic variables. That is, the schematic variables are bound \emph{implicitly} by universal quantifiers under which the rule amounts to the implication of its conclusion from the conjunction of its premises. When deploying rules to make derivations, we are obliged to instantiate those implicitly quantified variables with whatever insight and inspiration we can muster. For example, we might give a rule for constructing dependent pairs as follows:\\
 \parbox{4.5in}{
 \[
-  \Rule{s:S \quad t:\{x\mapsto s\}T}
+  \Rule{s:S \quad t:T\{x\mapsto s\}}
   {s,t : \blue{\Upsigma}\:S\:\V{x}.T}
     \]}\hfill \mbox{(danger!)}
 Given $s$ and $t$, one constructs derivations by dreaming up a suitable $S$ and a suitable $T$ depending on $\x{}$, but how is this dreaming to be done? If we are \emph{checking} types, it is reasonable to dismantle the pair type to extract $S$ and $\V{x}.T$. However, if we are \emph{synthesizing}, we may readily obtain $S$ from the first premise, but the second premise gives us but one substitution instance of $T$, from which there is no general way to infer the dependency pattern. Inverting substitution is more magic than you have the right to expect!
@@ -373,7 +374,7 @@ We may now make a distinction between the \emph{patterns} by which rules may \em
 
 Firstly, implicit universal quantification of the schematic variables gives way to the explicit binding of each schematic variables in exactly one pattern, making it clear who is respnsible for delivering that information, and just as clear what is \emph{in scope} at the time. The use sites of schematic variables should be in expressions only, and then only in places where the variables in scope for them are either captured or substituted. Indeed, it is clear by inspection which variables are not in scope at use sites and must thus be substituted, hence we may write substitutions without explicit naming, e.g.
 \[\Rule{f\in\PT SxT\quad S\ni s}
-  {f\:s\in\{\ra sS\}T}
+  {f\:s\in T\{\ra sS\}}
 \]
 is perfectly meaningful, because the binding site of $T$ is in the first premise with $\x{}$ in scope, but what is missing from scope in the conclusion's output is exactly such an $\x{}$, so there is no doubt as to what is being substituted by $\ra sS$.
 
@@ -468,8 +469,8 @@ by expressions well scoped at the use site.
 
 \newcommand{\Sb}{\Rightarrow}
 \begin{defn}[Expressions and Substitutions]
- Given some scope-indexed set $M(\cdot) :
-|\textbf{Sco}|\to\textbf{Set}$, giving a notion of
+ Given some sorted and scope-indexed set $M(\cdot) :
+(|\textbf{Sco}|\to\textbf{Set})^{\syso{sort}}$, giving a notion of
 metavariables whose permitted dependencies are fixed, we
 acquire expressions and simultaneous substitutions, $\textbf{Expr}_M:
 (\textbf{Sco}\to\textbf{Set})^{\syso{sort}}$ and
@@ -481,7 +482,8 @@ by mutual induction:
         &=& \{\#\theta\st\theta\in[s]\le \gamma\}\\
         &\cup& \{(a,t) \st (a,D)\in F(s),
                t\in\sem{D}(\textbf{Expr}_M,\gamma)\}\\
-        &\cup& \{m(\sigma) \st \exists \xi. m\in M(\xi), \sigma\in
+        &\cup& \{m\{\sigma\} \st \exists \xi.
+               m\in M(s,\xi),  \sigma\in
                \xi\Sb_M\gamma\}\medskip\\
       \emp\Sb_M\gamma & = & 1 \\
       (\xi,s)\Sb_M\gamma & = & (\xi\Sb_M\gamma)\times \textbf{Expr}_M(s,
@@ -496,20 +498,40 @@ $\textbf{Expr}_M(s,\gamma)$.
 \end{defn}
 
 I shall routinely drop them $M$ subscript where it is used uniformly.
+Note that $\textbf{Term}$s are $\textbf{Expr}_M$s with $M(s,\xi)$ always
+empty.
+
+\begin{notn}[Scope Block Thinnings]
+  Let us write $\gamma1$ for the identity thinning
+  $\vec1\in\gamma\le\gamma$ and $\gamma0$ for the empty thinning
+  $\vec0\in\emp\le\gamma$. We may then juxtapose these scope blocks to
+  get $(\gamma1,\delta0) \in \gamma\le(\gamma,\delta)$ and
+  $(\gamma0,\delta1) \in \delta\le(\gamma,\delta)$
+\end{notn}
 
 \newcommand{\wks}[2]{#1\!\uparrow\!#2}
 \begin{defn}[Weakening for Substitution, Identity Substitution]
-If $\sigma : \xi\Sb\gamma$, then let $\wks\sigma s$, its \emph{weakening},
-be given thus:
+If $\sigma : \xi\Sb\gamma$, then let $\wks\sigma s$, its
+\emph{weakening} at sort $s$, be given thus:
 \[
-  \wks\sigma s = (\sigma(\vec1,0), \#(\vec0,1)) : (\xi,s)\Sb(\gamma,s)
+  \wks\sigma s = (\sigma(\gamma1,0), \#(\gamma0,1)) : (\xi,s)\Sb(\gamma,s)
 \]
 Iterating over scopes, we obtain
 \[
-  \iota_\gamma = ()|\gamma : \gamma\Sb\gamma
+  \iota_\gamma = \wks{()}{\gamma} : \gamma\Sb\gamma
 \]
 mapping each variable to itself.
 \end{defn}
+
+\begin{notn}[Thinnings as Substitutions]
+  Every thinning $\theta\in \gamma\le\delta$ yields a substitution
+  $\iota_\gamma\theta$ by thinning the source identity substitution. A
+  routine calculation shows that the same substitution may be obtained
+  by selecting from the target identity substitution
+  $\theta\iota_\delta$.
+  Let us permit thinnings wherever it is clear that
+  substitutions are demanded.
+\end{notn}
 
 \begin{defn}[Action of Substitution]
 Substitutions act on expressions $t\sigma$ and postcompose with other
@@ -520,6 +542,49 @@ $(x.t)\sigma = x.t(\wks\sigma s)$.
 Moreover, routine calculations show that substitutions are thus
 morphisms of a \emph{category} acting \emph{functorially} on expressions. 
 \end{defn}
+
+Now, the expressions which occur in rules \emph{mention} object
+variables bound in the rule, but they concern open terms in some
+larger scope of which the rule's variables are but the most local.
+That is to say, each metavariable in $M(s,\xi)$ stands for some
+expression in $\textbf{Expr}_N(s,(\gamma,\xi))$, where $\gamma$ is the
+implicit global scope of the open terms and $\xi$ is the explicit
+local scope of the metavariable. Let us now see how to instantiate
+metavariables.
+
+\begin{defn}[Metavariable Instantiation]
+  Given some family of maps
+  \[
+    \pi\in\forall s,\xi. M(s,\xi) \to \textbf{Expr}_N(s,(\gamma,\xi))
+  \]
+  we may construct a family of maps
+  \[
+    \cdot\pi\in \forall s,\delta. \textbf{Expr}_M(s,\delta)
+      \to \textbf{Expr}_N(s,(\gamma,\delta))
+    \]
+  where the $\delta$ are the local scope of variables bound explicitly
+  at some use site of a metavariable.  
+  This operation acts as the identity on atoms and structurally on
+  pairs. It goes under binders by extending $\delta$ on the right.
+  On variables, it acts by postcomposing with the thinning
+  $(\gamma_0,\delta_1)$, which amounts to
+  acknowledging the existence of the global scope $\gamma$ that the
+  rule does not talk about.
+  Now, for $\{\sigma\}m$ with $m\in M(s,\xi)$ and
+  $\sigma\in \xi\Sb_M\delta$, we first compute
+  $\sigma\pi \in \xi\Sb_N(\gamma,\delta)$, then we extend it on the
+  left via the thinning (hence substitution) which embeds $\gamma$, namely
+  $(\gamma1,\delta0)$, so that
+  $((\gamma1,\delta0),\sigma\pi)
+    \in (\gamma,\xi)\Sb_N(\gamma,\delta)$
+  and hence
+  \[
+    \pi(m)((\gamma1,\delta0),\sigma\pi)
+    \in \textbf{Expr}_N(s,(\gamma,\delta))
+    \]
+\end{defn}
+
+
 
 
 \end{document}
