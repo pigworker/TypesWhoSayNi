@@ -25,7 +25,6 @@
 \newcommand{\bsl}{\texttt{\symbol{92}}}
 \newcommand{\memo}[1]{\textbf{#1}}
 \newcommand{\fsl}{\texttt{/}}
-\newcommand{\emp}{\varepsilon}
 
 \newcommand{\A}[1]{\texttt{#1}}
 \newcommand{\V}[1]{\purple{\mathit{#1}}}
@@ -43,8 +42,11 @@
 \newcommand{\la}[1]{\bsl #1\:}
 \newcommand{\x}[1]{\V{x_{\mathrm{#1}}}}
 \newcommand{\Ty}{\blue{\star}}
+\newcommand{\emp}{\varepsilon}
 
 \newcommand{\rred}{\leadsto^\ast}
+
+\newcommand{\op}{^{op}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -81,7 +83,9 @@ Let us establish our grammar of terms. I define two sorts of \emph{scoped} terms
                &   | & \syn\gamma\;\chk\gamma
 \end{array}\]
 
-I have specified this syntax in an informal `scoped Backus-Naur form' notation. Each sort yields a nonterminal symbol carrying a scope, e.g. $\chk\gamma$. The notation ${\x{}.}$ indicates a variable binding, where we name the variable in the grammar so that we can bring it into scope. As you can see, $\chk\gamma$ embeds $\syn\gamma$ and adds $\Ty$ (the type of types, dependent function types and Curry-style functions. Meanwhile, $\syn\gamma$ includes type annotated terms in $\chk\gamma$, and applications where the function is also in $\syn\gamma$.
+I have specified this syntax in an informal `scoped Backus-Naur form'
+notation. Each sort yields a nonterminal symbol carrying a scope,
+e.g. $\chk\gamma$. I write $\emp$ for the empty scope. The notation ${\x{}.}$ indicates a variable binding, where we name the variable in the grammar so that we can bring it into scope. As you can see, $\chk\gamma$ embeds $\syn\gamma$ and adds $\Ty$ (the type of types, dependent function types and Curry-style functions. Meanwhile, $\syn\gamma$ includes type annotated terms in $\chk\gamma$, and applications where the function is also in $\syn\gamma$.
 
 Implicitly, the grammar for every sort extends to include all the variables in scope of that sort. In particular $\x{} \in \syn{\gamma,\bva{syn}x,\gamma'}$.
 We can always $\alpha$-convert to distinguish the variable names in scopes. A variable name is but a human-friendly way to indicate a position in a scope: machines fare better without them.
@@ -437,15 +441,85 @@ Let us give a way to associate with each sort a description of a syntax with bin
       \sem{s}(R,\gamma) & = & R(s,\gamma) \\
       \sem{s\db D}(R,\gamma) & = & \sem{D}(R, (\gamma, s))
     \end{array}\]
-  Given a syntax $F$, we may then construct terms as a least fixpoint:
-  \[
-    \textbf{Term}(s, \gamma) = \{\#\theta\st\theta\in[s]\le \gamma\} \cup \{(a,t) \st (a,D)\in F(s), t\in\sem{D}(\textbf{Term},\gamma)\}
-  \]
+  Observe that the above is strictly positive in $R$. Hence, given a
+  syntax $F$, we may construct its terms as a least fixpoint:
+  \[\begin{array}{rcl}
+    \textbf{Term}(s, \gamma) &=& \{\#\theta\st\theta\in[s]\le
+                                 \gamma\}\\
+                             &\cup& \{(a,t) \st (a,D)\in F(s), t\in\sem{D}(\textbf{Term},\gamma)\}
+  \end{array}\]
   Note that a thinning $\phi:\gamma\le\delta$ acts on a term $t$ as $t\phi$, where $(\#\theta)\phi = \#(\theta;\phi)$. On other terms,
   $\phi$ acts structurally; to go under a binder, note that $\phi,1:\gamma,s\le\delta,s$.
 \end{defn}
 
+In human company, it helps to write $x.t$ for a term in $\sem\db D$,
+with $x$ written in place of $\#\vec0,1,\vec0$ for those variable use
+sites which refer to that binding, as long as the name $x$ is
+carefully chosen to be unambiguous.
 
+These terms constitute the \emph{object} language that rules talk
+about, but they are not enough to give the \emph{meta}-language that
+rules use to talk \emph{about} terms, with schematic variables
+standing for terms unknown and substitutions instantiating object
+variables. Schematic, or `meta-', variables should be scoped to
+indicate the object variables on which they may depend. Whenever a
+metavariable is used, its permitted dependencies should be substituted
+by expressions well scoped at the use site.
+
+\newcommand{\Sb}{\Rightarrow}
+\begin{defn}[Expressions and Substitutions]
+ Given some scope-indexed set $M(\cdot) :
+|\textbf{Sco}|\to\textbf{Set}$, giving a notion of
+metavariables whose permitted dependencies are fixed, we
+acquire expressions and simultaneous substitutions, $\textbf{Expr}_M:
+(\textbf{Sco}\to\textbf{Set})^{\syso{sort}}$ and
+$\cdot\Sb\cdot :
+\textbf{Sco}\op\times\textbf{Sco}\to\textbf{Set}$,
+by mutual induction:
+  \[\begin{array}{rcl}
+      \textbf{Expr}_M(s, \gamma)
+        &=& \{\#\theta\st\theta\in[s]\le \gamma\}\\
+        &\cup& \{(a,t) \st (a,D)\in F(s),
+               t\in\sem{D}(\textbf{Expr}_M,\gamma)\}\\
+        &\cup& \{m(\sigma) \st \exists \xi. m\in M(\xi), \sigma\in
+               \xi\Sb_M\gamma\}\medskip\\
+      \emp\Sb_M\gamma & = & 1 \\
+      (\xi,s)\Sb_M\gamma & = & (\xi\Sb_M\gamma)\times \textbf{Expr}_M(s,
+                             \gamma) 
+  \end{array}\]
+Note that substitutions, $\sigma$ may have their source scopes
+restricted, $\theta\sigma$ and
+their target scopes thinned $\sigma\theta$. Note that if
+$\theta\in[s]\le\xi$ and $\sigma\in\xi\Sb_M\gamma$, then the
+singleton restriction $\theta\sigma$ amounts to a projection into
+$\textbf{Expr}_M(s,\gamma)$.
+\end{defn}
+
+I shall routinely drop them $M$ subscript where it is used uniformly.
+
+\newcommand{\wks}[2]{#1\!\uparrow\!#2}
+\begin{defn}[Weakening for Substitution, Identity Substitution]
+If $\sigma : \xi\Sb\gamma$, then let $\wks\sigma s$, its \emph{weakening},
+be given thus:
+\[
+  \wks\sigma s = (\sigma(\vec1,0), \#(\vec0,1)) : (\xi,s)\Sb(\gamma,s)
+\]
+Iterating over scopes, we obtain
+\[
+  \iota_\gamma = ()|\gamma : \gamma\Sb\gamma
+\]
+mapping each variable to itself.
+\end{defn}
+
+\begin{defn}[Action of Substitution]
+Substitutions act on expressions $t\sigma$ and postcompose with other
+substitutions $\rho\sigma$. This action is the identity on atoms and
+structural on pairs. We further have $(\#\theta)\sigma = \theta\sigma$
+and we go under a binding at sort $s$ by weakening
+$(x.t)\sigma = x.t(\wks\sigma s)$.
+Moreover, routine calculations show that substitutions are thus
+morphisms of a \emph{category} acting \emph{functorially} on expressions. 
+\end{defn}
 
 
 \end{document}
