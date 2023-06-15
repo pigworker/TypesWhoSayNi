@@ -1,0 +1,282 @@
+% jfpguide.tex
+% v1.0, released 19 Nov 2019
+% Copyright 2019 Cambridge University Press
+
+\documentclass[orivec]{jfp}
+
+\usepackage{graphicx}
+
+\usepackage{stmaryrd}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{upgreek}
+
+\usepackage{pig}
+\ColourEpigram
+
+\usepackage{marginnote}
+\newcommand{\yelp}{\marginnote}
+
+
+\newcommand{\D}[1]{\blue{\mathbf{#1}}}
+\newcommand{\C}[1]{\red{\mathrm{#1}}}
+\newcommand{\F}[1]{\green{\mathit{#1}}}
+\newcommand{\Ar}[1]{\D{Ar}\:#1}
+\newcommand{\Set}{\D{Set}}
+\newcommand{\hab}{\::\:}
+\renewcommand{\to}{\mathrel{\blue{\rightarrow}}}
+\newcommand{\Sort}{\mathit{Sort}}
+\newcommand{\Ctor}{\mathit{Ctor}}
+\newcommand{\SUn}{\C{1}}
+\newcommand{\SPr}{\mathop{\C{\times}}}
+\newcommand{\SBi}{\mathop{\C{\vartriangleright}}}
+\newcommand{\One}{\D{1}}
+\newcommand{\vd}{\C{\langle\rangle}}
+\newcommand{\Bwd}[1]{{#1}^{\D{\ast}}}
+\newcommand{\lin}{\C{\varepsilon}}
+\newcommand{\snoc}[2]{#1\C{,}\,#2}
+\newcommand{\dB}[2]{#1\mathrel{\D{\dashv_{dB}}}#2}
+\newcommand{\cd}[2]{#1\mathrel{\D{\dashv}}#2}
+\newcommand{\lar}{\mathrel{\D{\leftarrow}}}
+\newcommand{\con}[2]{#1\C{(}#2\C{)}}
+\newcommand{\la}[1]{\C{\uplambda}\:#1}
+\newcommand{\ka}[1]{\C{\upkappa}\:#1}
+\newcommand{\va}{\C{\bullet}}
+\newcommand{\thi}{\mathrel{\D{\le}}}
+\newcommand{\cov}{\mathrel{\D{\cup}}}
+\newcommand{\rp}[3]{#1\mathop{\C{\langle}#2\C{\rangle}}#3}
+\newcommand{\sm}{\mathop{\F{\fatsemi}}}
+\newcommand{\bO}{\C{0}}
+\newcommand{\bI}{\C{1}}
+\newcommand{\io}{\F{\bar{1}}}
+\newcommand{\no}{\F{\bar{0}}}
+\newcommand{\Tri}[3]{#1 \mathop{\D{\fatsemi}} #2 \mathrel{\D{\cong}} #3}
+\newcommand{\Ex}[1]{\D{\langle}#1\D{\rangle}}
+\newcommand{\tri}{\mathop{\F{\triangle}}}
+
+\begin{document}
+
+\journaltitle{JFP}
+\cpr{Cambridge University Press}
+\doival{10.1017/xxxxx}
+
+\lefttitle{How to do something}
+\righttitle{relevant for a change}
+
+\totalpg{\pageref{lastpage01}}
+\jnlDoiYr{2022}
+
+\title{How to do something relevant for a change}
+
+\begin{authgrp}
+\author{Conor Mc Bride}
+\affiliation{Mathematically Structured Programming Group,\\
+        Department of Computer and Information Sciences,
+        University of Strathclyde, G1 1XH\\
+        (\email{conor.mcbride@strath.ac.uk})}
+\end{authgrp}
+
+%\received{20 March 1995; revised 30 September 1998}
+
+\begin{abstract}
+This paper explores a particular manner of dependently typed programming in which specifications stand in the foreground. Where possible, the program text concerns irrelevant proofs of propositions about relevant existential witnesses which are left implicit and inferred. In other words, the text is the explanation which provokes the mechanical construction of the part of the program that gets executed. The technique is illustrated by the construction of the category of relevant simultaneous substitutions for generic `codeBruijn' syntax. The latter imposes the invariant that every variable in the scope of a term is used at least once within it; the former requires that every variable in the output scope of a substitution occurs in the image of at least one variable in the input scope; the action of substitution on terms (and on substitutions) thus maintains the invariant. An Agda implementation accompanies all the work presented herein.
+\end{abstract}
+
+\maketitle%[F]
+
+\section{Introduction}
+
+\yelp{There is too much tell, here, and not enough show. Perhaps that's inevitable.}
+Dependently typed programming in the \emph{intrinsic} style involves the imposition of key structural invariants \emph{a priori} on data and the maintenance of those invariants by operations on the data. Sometimes, the poor benighted typechecker (which can do \emph{arithmetic}, but very little \emph{algebra}) cannot see for itself that the programmer has successfully (re)established an invariant: the peg fits the hole but will not go in without the ministrations of the mallet that is proof.
+
+Reasoning about such programs is then complicated by reasoning about the proofs which hold them together, often requiring rather tight coordination between the proofs \emph{in} the programs and the proofs \emph{about} the programs, and so on, up the razor blade of meta. The `with'-abstraction feature of dependently typed languages, abstracting the value of an expression of interest from all types present and offering its value for inspection, provides a basic coordination mechanism, but sometimes the coupling is just too tight and the consequent game of `with-jenga' too macho. Let us make the game easier by loosening the coupling, rather than increasing the cleverness with which we play it.
+
+\newcommand{\thin}{\le}
+\newcommand{\sbst}{\Rightarrow}
+\newcommand{\term}{\dashv}
+\newcommand{\cover}{\cup}
+
+Let me briefly sketch the prospectus of this paper by way of furnishing some sort of example. We shall be working in a multisorted syntax where scope is explicitly managed. Scopes $\Gamma$, $\Delta$ will be snoc-lists of the sorts $S, T$ of the free variables. More particularly, \emph{relevance} will be managed. There will be a notion of relevant \emph{term} $S\term\Gamma$ requiring that every variable in $\Gamma$ occurs at least once. We shall further have a notion of relevant \emph{substitution} $\Gamma\sbst\Delta$ such that every variable in $\Delta$ occurs in the image of at least one variable from $\Gamma$. It should then be possible to construct an operation of type
+\[
+S\term\Gamma \;\to\; \Gamma\sbst\Delta \;\to\; S\term\Delta
+\]
+as the images of the $\Gamma$-variables are all substituted at least once, and every $\Delta$-variable occurs in at least one image.
+
+Wander we must, inward through the structure of the input, and we shall sometimes encounter \emph{pairing} constructs: relevance requires that every variable in scope occurs on the left or on the right or both. That is we must make two selections, $\theta_l : \Gamma_l\thin\Gamma$ and $\theta_r : \Gamma_r\thin\Gamma$ which collectively form a \emph{cover}. We say $\theta_l\cover\theta_r$ if every variable in $\Gamma$ is in $\Gamma_l$ or $\Gamma_r$ or both. Our \emph{relevant} pair will thus consist of two subterms in $S_l\term\Gamma_l$ and $S_r\term\Gamma_r$, respectively, together with a proof that $\theta_l\cover\theta_r$.
+
+How are we to push substitution $\sigma:\Gamma\sbst\Delta$ into these subterms? If have only variables in $\Gamma_l$, then we need only the part $\sigma_l : \Gamma_l\sbst\Delta_l$ which gives the images of those variables, and there must be some $\phi_l : \Delta_l\thin\Delta$. Similarly, we must have $\sigma_r : \Gamma_r\sbst\Delta_r$ and $\phi_r:\Delta_r\thin\Delta$. To reestablish the relevance of the substitution images, we shall need to show that $\phi_l\cover\phi_r$ whenever $\theta_l\cover\theta_r$. That is, if the two components covered the input variables, then their substitution images cover the output variables. Given such a proof, we may pair our $S_l\term\Delta_l$ and $S_r\term\Delta_r$.
+
+The data $\sigma_l,\Delta_l,\phi_l$ are computed from the $\Gamma_l,\theta_l,\Gamma,\sigma,\Delta$ and likewise on the right, and the proof that $\phi_l\cover\phi_r$ is essential to the substitution operation. Proving properties of the substitution operation thus, apparently, necessitates negotiating the behaviour of these auxiliary computations and the key covering proof. How are we to show that the action of composed substitutions is the composition of the action of substitutions with a gnarly knot like this?
+
+The key strategy to ameliorate these woes is \emph{wishful thinking}. We can write relational specifications for our operations which \emph{presuppose} all the coherence properties necessary to make the types fit together properly. Our specification of substitution will presume that the computed and proven data arrive as if by magic. We will say what `diagrams' we need without specifying how they are to be computed. Our metatheorems will be entirely diagram-pasting. Meanwhile, our implementations will be proofs of diagram \emph{completion}.
+
+We shall, for example, express what it is to be a square $x_l$
+\[\begin{array}{ccc}
+\Gamma & \sigma & \Delta \\
+\theta_l & x_l & \phi_l \\
+\Gamma_l & \sigma_l & \Delta_l
+\end{array}\]
+making a \emph{double category} with vertical edges in $\thin^{\mbox{op}}$ and horizontal edges in $\sbst$. To substitute through a pair, it enough to have \emph{somehow} acquired left and right squares $x_l$ and $x_r$, together with coverings $\theta_l\cover\theta_r$ and $\phi_l\cover\phi_r$. We can \emph{reason} about relevant substitution assuming we have all of these pieces and that they all fit together.
+
+To prove that we can \emph{perform} substitution, we need to show that these squares can be completed from their top left boundaries, and that if the two left boundaries form a covering, then so do the two right boundaries. The proof $x_l$ that the square is valid can be presented as data but is entirely \emph{propositional} --- there is at most one way such a square can be valid, and the code will be explicit about that explanation; the useful, bit-bearing data are the $\sigma_l, \Delta_l, \phi_l$ which constitute the rest of the boundary, and these the program text will suppress.
+
+We thus begin to subvert what I have sometimes called `Milner's Coincidence'. In ML, the program text is the program that is executed, and the types are inferred then erased. Here, the program text is the explanation which can be erased at run time: its purpose is to provoke the inference of a correct program that is retained for execution. That is to say, by putting Milner's idea of unification-based inference to work on the program as well as the types, we acquire a formalism for correct program calculation.
+
+
+\section{Relevant syntax}
+
+
+Let us begin at the beginning, which is to introduce a notion of multi-sorted syntax with binding, in the style of universal algebra. The whole setup is parametrised over some $\Sort\hab\Set$ of \emph{term} sorts, to be defined by mutual induction. We shall need to explain how to build terms from collections of subterms. So let us introduce a notion of \emph{arity}, $\Ar\Sort$, so that we can also have a parameter specifying the \emph{constructors} $\Ctor\hab \Sort\to\Ar\Sort \to\Set$, such that $\Ctor\:S\:T$ tells us which constructor tags make a term of sort $S$ with arity $T$. All $\Ar$ does is close $\Sort$ under unit, pairing and abstraction:
+\[
+\Rule{S\hab\Sort}
+     {S\hab\Ar\Sort}
+\qquad
+\Axiom{\SUn\hab\Ar\Sort}
+\qquad
+\Rule{T,U\hab\Ar\Sort}
+     {T\SPr U\hab\Ar\Sort}
+\qquad
+\Rule{T,U\hab\Ar\Sort}
+     {T\SBi U\hab\Ar\Sort}
+\]
+For example, the untyped lambda calculus might be given by taking $\Sort = \One$ (the unit type, with $\vd\hab\One$) and having
+\[
+\C{lam}\hab\Ctor\:\vd\:(\vd\SBi\vd)\qquad
+\C{app}\hab\Ctor\:\vd\:(\vd\SPr\vd)\qquad
+\]
+
+Scopes are snoc-lists of sorts:
+\[
+\Axiom{\lin\hab\Bwd X}
+\qquad
+\Rule{\mathit{xz}\hab\Bwd X\quad x\hab X}
+     {\snoc{\mathit{xz}}x\hab\Bwd X}
+\]
+Were we to introduce a \emph{de Bruijn} syntax, we should have terms
+\[
+\Rule{T\hab\Ar\Sort\quad \Gamma\hab\Bwd\Sort}
+     {\dB T\Gamma \hab \Set}
+\]
+with variables, constructors, unit, pairing and binding:
+\[\begin{array}{c}
+\Rule{i\hab S\lar\Gamma}
+     {i\hab \dB S\Gamma}
+\qquad
+\Rule{c\hab \Ctor\:S\:T\quad t\hab \dB T\Gamma}
+     {\con ct\hab \dB S\Gamma}
+\\
+\Axiom{\lin\hab\dB\SUn\Gamma}
+\qquad
+\Rule{t\hab \dB T\Gamma \quad v\hab \dB V\Gamma}
+     {\snoc tv\hab \dB{T\SPr V}{\Gamma}}
+\qquad
+\Rule{t\hab \dB T{\snoc\Gamma S}}
+     {\la t \hab \dB{S\SBi T}\Gamma}
+\end{array}\]
+where $S\lar\Gamma$ is the type of locations of $S$ in $\Gamma$, i.e., glorified numbers guaranteed to be in bounds and to index the intended sort.
+
+However, my aim is to be relevant, for a change. We shall have \emph{the} variable, but constructors are as before:
+\[
+\Axiom{\va\hab \cd S{\snoc\lin S}}
+\qquad
+\Rule{c\hab \Ctor\:S\:T\quad t\hab \cd T\Gamma}
+     {\con ct\hab \cd S\Gamma}
+\]
+Unit and pairing are sensitive to scope. I shall detail $\thi$ and $\cov$ shortly, but they allow us to ensure that the left scope $\Gamma_l$ and the right scope $\Gamma_r$ collectively cover the whole scope $\Gamma$.
+\[
+\Axiom{\lin\hab \cd\SUn\lin}
+\qquad
+\Rule{t\hab\cd T\Gamma_l\quad \theta_l\hab \Gamma_l\thi\Gamma \quad
+  u\hab \theta_l\cov\theta_r \quad \theta_r\hab \Gamma_r\thi\Gamma \quad
+  v\hab\cd V\Gamma_l}
+  {\rp tuv \hab \cd{T\SPr V}{\Gamma}}
+\]
+Binding comes in vacuous and relevant variants, so that the unused variable never comes \emph{into} scope:
+\[
+\Rule{t\hab \cd T\Gamma}
+     {\ka t\hab \cd{S\SBi T}\Gamma}
+\qquad
+\Rule{t\hab \cd T{\snoc\Gamma S}}
+     {\la t \hab \cd{S\SBi T}\Gamma}
+\]
+
+Note that every \emph{scope} $\Gamma\hab\Bwd\Sort$ induces an \emph{arity} $\bar\Gamma\hab\Ar\Sort$ by tupling:
+\[
+\bar\lin = \SUn \qquad \widebar{\snoc\Gamma S} = \bar\Gamma\SPr S
+\]
+Kindly let me suppress the $\bar{\cdot}$ and just write scopes in places that arities are expected. We thus acquire $\cd\Gamma\Delta$ as the type of \emph{relevant substitutions}, giving an image over some subscope of $\Delta$ for each variable in $\Gamma$, so that all variables in $\Delta$ get used. Our mission is thus to construct an action
+\[
+\cdot\sm\cdot\hab \cd S\Gamma \to \cd\Gamma\Delta \to \cd S\Delta
+\]
+which induces categorical structure.
+
+
+\section{The category of thinnings}
+
+Let me first, however, pick up on my promise to give the details of these `thinnings', such as our $\theta_l\hab\Gamma_l\thi\Gamma$. These may be thought of as bit vectors which witness the embedding (dually, selection) of a sublist into (from) a list. The $\bI$s in the vector mark the places where the sublist elements go to (come from). They amount to binomial coefficients, generalised from numbers to lists and reified as types.
+\[
+\Axiom{\lin\hab\lin\thi\lin}
+\qquad
+\Rule{\theta\hab\Gamma\thi\Delta}
+     {\snoc\theta\bI\hab\snoc\Gamma S\thi\snoc\Delta S}
+\qquad
+\Rule{\theta\hab\Gamma\thi\Delta}
+     {\snoc\theta\bO\hab\Gamma\thi\snoc\Delta S}     
+     \]
+     
+We may compute the `all $\bO$s' and `all $\bI$s' thinnings
+\[
+\no\hab\lin\thi\Gamma \qquad \io\hab\Gamma\thi\Gamma
+\]
+by iteration over $\Gamma$, with $\io$ giving us a suitable notion of `identity thinning'.
+
+What about composition? I \emph{could} define it as a \emph{function},
+\[
+\cdot\sm\cdot\hab \Gamma\thi\Delta \to \Delta\thi\Theta \to \Gamma\thi\Theta
+\]
+but then I would find myself referring to particular composite thinnings by but one of the compositions $\theta\sm\phi$ which might deliver it. If I have a commuting square
+\[\begin{array}{ccc}
+\Gamma & \theta_0 & \Delta_0 \\
+\theta_1 & & \phi_o \\
+\Delta_1 & \phi_1 & \Theta
+\end{array}\]
+then its diagonal is \emph{both} $\theta_0\sm\phi_0$ and $\theta_1\sm\phi_1$, an equation relating the \emph{outputs} of two computations from which we will learn nothing without inspecting the \emph{inputs}!
+
+The way out of this trouble is to specify commuting triangles \emph{inductively},
+\[
+\Rule{\theta\hab \Gamma\thi\Delta \quad \phi\hab\Delta\thi\Theta \quad \psi\hab\Gamma\thi\Theta}
+     {\Tri\theta\phi\psi \hab \Set}
+\qquad
+\Axiom{\lin\hab\Tri\lin\lin\lin}
+\]
+with a base case and three step cases,
+\[
+\Rule{v\hab\Tri\theta\phi\psi}
+     {\snoc v\bO\hab\Tri\theta{\snoc\phi\bO}{\snoc\phi\bO}}
+\qquad
+\Rule{v\hab\Tri\theta\phi\psi}
+     {\snoc v{\bO\bI}\hab\Tri{\snoc\theta\bO}{\snoc\phi\bI}{\snoc\phi\bO}}
+\qquad
+\Rule{v\hab\Tri\theta\phi\psi}
+     {\snoc v\bI\hab\Tri{\snoc\theta\bI}{\snoc\phi\bI}{\snoc\phi\bI}}
+\]
+which is of course, the \emph{graph} of the function we might otherwise have implemented.
+The difference is that dependent pattern matching will allow us to manipulate triangles directly, rather than via their edges or vertices.
+
+Allow me to write $\Ex{P\:\cdot}$ to abbreviate (constructive) existential quantification `$P\:x$ is inhabited for some $x$. We may thus write $\Ex{\Tri\theta\phi\cdot}$ as the \emph{proposition} that $\theta$ and $\phi$ can be completed to a composition triangle. It is immediate that any two proofs of this proposition are equal, because the relation is the graph of a deterministic function. Moreover, we may readily define (leaving the existential witnesses implicit).
+\[
+\Rule{\theta\hab \Gamma\thi\Delta \quad \phi\hab\Delta\thi\Theta}
+     {\theta\tri\phi \hab \Ex{\Tri\theta\phi\cdot}}
+\qquad
+\begin{array}[t]{r@{\;\tri\;}l@{\;=\;}l}
+  \theta & \snoc\phi\bO & \snoc{\theta\tri\phi}\bO \\
+  \snoc\theta\bO & \snoc\phi\bI & \snoc{\theta\tri\phi}{\bO\bI} \\
+  \snoc\theta\bI & \snoc\phi\bI & \snoc{\theta\tri\phi}\bI \\
+  \lin & \lin & \lin
+\end{array}       
+\]
+
+\label{lastpage01}
+
+\end{document}
