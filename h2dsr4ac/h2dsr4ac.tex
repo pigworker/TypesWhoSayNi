@@ -29,6 +29,7 @@
 \newcommand{\Sort}{\mathit{Sort}}
 \newcommand{\Ctor}{\mathit{Ctor}}
 \newcommand{\SUn}{\C{1}}
+\newcommand{\XX}{\mathrel{\D{\times}}}
 \newcommand{\SPr}{\mathop{\C{\times}}}
 \newcommand{\SBi}{\mathop{\C{\vartriangleright}}}
 \newcommand{\One}{\D{1}}
@@ -264,7 +265,7 @@ with a base case and three step cases,
 which is of course, the \emph{graph} of the function we might otherwise have implemented.
 The difference is that dependent pattern matching will allow us to manipulate triangles directly, rather than via their edges or vertices.
 
-Allow me to write $\Ex{P\:\cdot}$ to abbreviate (constructive) existential quantification `$P\:x$ is inhabited for some $x$. We may thus write $\Ex{\Tri\theta\phi\cdot}$ as the \emph{proposition} that $\theta$ and $\phi$ can be completed to a composition triangle. It is immediate that any two proofs of this proposition are equal, because the relation is the graph of a deterministic function. Moreover, we may readily define (leaving the existential witnesses implicit).
+Allow me to write $\Ex{P\:\cdot}$ to abbreviate (constructive) existential quantification `$P\:x$ is inhabited for some $x$'. We may thus write $\Ex{\Tri\theta\phi\cdot}$ as the \emph{proposition} that $\theta$ and $\phi$ can be completed to a composition triangle. It is immediate that any two proofs of this proposition are equal, because the relation is the graph of a deterministic function. Moreover, we may readily define triangle completion (leaving the existential witnesses implicit).
 \[
 \Rule{\theta\hab \Gamma\thi\Delta \quad \phi\hab\Delta\thi\Theta}
      {\theta\tri\phi \hab \Ex{\Tri\theta\phi\cdot}}
@@ -276,6 +277,90 @@ Allow me to write $\Ex{P\:\cdot}$ to abbreviate (constructive) existential quant
   \lin & \lin & \lin
 \end{array}       
 \]
+That is, we give as explicit output an irrelevant proof object, with the relevant data it specifies (the composite thinning) kept invisible because inevitable.
+
+It is straightforward to check the following
+\[
+\Tri\theta\io\theta \qquad
+\Tri\io\phi\phi \qquad
+\Tri\no\phi\no
+\]
+Meanwhile, the fact that thinnings represent \emph{injective} maps makes
+\[
+\Ex{\Tri\cdot\phi\psi}
+\]
+a proposition.
+
+Just as composition is the completion of triangles, so its associativity is the completion of \emph{tetrahedra}. If we have four points, $\Gamma_0,\ldots,\Gamma_3$ and six edges $\theta_{ij}:\Gamma_i\thi\Gamma_j$ for $i < j$, then we can fill in the $\Gamma_0,\Gamma_2,\Gamma_3$ face, given the other three.
+\[
+\Rule{v_{012}\hab\Tri{\theta_{01}}{\theta_{12}}{\theta_{02}} \quad
+      v_{013}\hab\Tri{\theta_{01}}{\theta_{13}}{\theta_{03}} \quad
+      v_{123}\hab\Tri{\theta_{12}}{\theta_{23}}{\theta_{13}}
+      }
+     {\F{assoc}\:v_{012}\:v_{013}\:v_{012}\hab
+      \Tri{\theta_{02}}{\theta_{23}}{\theta_{03}}}
+\]
+The proof has a base case and four step cases --- each element of $\Gamma_3$ is either dropped by one of $\theta_{23}$, $\theta_{12}$ or $\theta_{01}$, or else retained by all three.
+\[\begin{array}{@{\F{assoc}\:}c@{\:}c@{\:}c@{\;\;=\;\;}l@{\qquad}l}
+v_{012} & (\snoc{v_{013}}\bO) & (\snoc{v_{123}}\bO) &
+\snoc{\F{assoc}\:v_{012}\:v_{013}\:v_{123}}\bO
+  & \mbox{dropped by $\theta_{23}$} \\
+(\snoc{v_{012}}\bO) & (\snoc{v_{013}}\bO) & (\snoc{v_{123}}\bO\bI) &
+  \snoc{\F{assoc}\:v_{012}\:v_{013}\:v_{123}}\bO\bI
+  & \mbox{dropped by $\theta_{12}$} \\
+(\snoc{v_{012}}\bO\bI) & (\snoc{v_{013}}\bO\bI) & (\snoc{v_{123}}\bI) &
+  \snoc{\F{assoc}\:v_{012}\:v_{013}\:v_{123}}\bO\bI
+  & \mbox{dropped by $\theta_{01}$} \\
+(\snoc{v_{012}}\bI) & (\snoc{v_{013}}\bI) & (\snoc{v_{123}}\bI) &
+  \snoc{\F{assoc}\:v_{012}\:v_{013}\:v_{123}}\bI
+  & \mbox{retained} \\
+\lin & \lin & \lin & \lin
+\end{array}\]
+
+In fact, the tetrahedron can be completed from the faces adjoining $\theta_{12}$, $\theta_{02}$ or $\theta_{13}$, constructing $\theta_{03}$, $\theta_{13}$ or $\theta_{02}$, respectively. These results are straightforward consequences of $\F{assoc}$, together with the existence and uniqueness of triangle completion.
+
+Let us now define what it means for two thinnings to constitute a \emph{cover}.
+\[
+\Rule{\theta_l\hab\Gamma_l\thi\Gamma\quad\theta_r\hab\Gamma_r\thi\Gamma}
+     {\theta_l\cov\theta_r\hab\Set}
+\]
+Covering amounts to a bitwise disjunction, and is entirely propositional. We must ensure that every element is retained either on the left, on the right, or on both.
+\[
+\Rule{u\hab \theta_l\cov\theta_r}
+     {\snoc u{\bI\bO}\hab \snoc{\theta_l}\bI\cov\snoc{\theta_r}}
+\qquad
+\Rule{u\hab \theta_l\cov\theta_r}
+     {\snoc u{\bO\bI}\hab \snoc{\theta_l}\bO\cov\snoc{\theta_r}\bI}
+\qquad
+\Rule{u\hab \theta_l\cov\theta_r}
+     {\snoc u\bI\hab \snoc{\theta_l}\bI\cov\snoc{\theta_r}\bI}
+\qquad
+\Axiom{\lin\hab\lin\cov\lin}     
+\]
+
+We should not be at all surprised by this outbreak of Boolean logic. The `in-arrows' $\Ex{\cdot\thi\Delta}$ for some scope $\Delta$ give all the possible subscopes of $\Delta$, paired with their embeddings into the whole. We should naturally expect these to be partially ordered by inclusion, and to admit finite unions. (Category theorists may recognize these as coproducts in the slices of $\thi$.) If we have $\psi_l\hab\Gamma_l\thi\Delta$ and $\psi_r\hab\Gamma_r\thi\Delta$, we should be able to compute their union $\phi\hab\Gamma\thi\Delta$, together with $\theta_l\hab\Gamma_l\thi\Gamma$ and $\theta_r\hab\Gamma_r\thi\Gamma$ such that
+\[
+v_l\hab\Tri{\theta_l}\phi{\psi_l} \qquad u\hab \theta_l\cov\theta_r\qquad v_r\hab\Tri{\theta_r}\phi{\psi_r}
+\]
+Note that the thinnings $\theta_l,\phi,\theta_r$ are bit-bearing, but the triangles and the covering are not. Let us thus explain the \emph{latter} in such a way that the former are inferred. It is enough to tabulate the step changes in the outputs which result from the step changes in the inputs, as some sort of glorified truth table.
+\[\begin{array}{cc|ccc}
+\psi_l & \psi_r & v_l & u & v_r \\
+\hline
+\snoc\cdot\bO & \snoc\cdot\bO & \snoc\cdot\bO & \cdot & \snoc\cdot\bO \\
+\snoc\cdot\bO & \snoc\cdot\bI & \snoc\cdot\bO\bI & \snoc\cdot\bO\bI & \snoc\cdot\bI \\
+\snoc\cdot\bI & \snoc\cdot\bO & \snoc\cdot\bI & \snoc\cdot\bI\bO & \snoc\cdot\bO\bI \\
+\snoc\cdot\bI & \snoc\cdot\bI & \snoc\cdot\bI & \snoc\cdot\bI & \snoc\cdot\bI \\
+\end{array}\]
+
+Note that the triangles $v_l$ and $v_r$ present a \emph{factoring} of $\psi_l$ and $\psi_r$ through some $\phi$. We can establish a universal property that the best (smallest $\Gamma$) factoring is the one with the covering, $u$. That is, for any `primed pretenders', we have a mediating thinning --- the existential witness, below
+\[
+\Tri{\theta'_l}{\phi'}{\psi'_l} \;\XX\; \Tri{\theta'_r}{\phi'}{\psi'_r}
+\;\to\;
+\Ex{\Tri{\theta_l}\cdot{\theta'_l}\;\XX\;
+  \Tri\cdot{\phi'}{\phi}\;\XX\;
+  \Tri{\theta_r}\cdot{\theta'_r}}
+\]
+Whenever an element is retained on either side, the pretender has no choice but to retain it in $\phi'$, and neither have we; whenever an element is dropped on both sides, $\phi'$ may choose to retain it anyway, but $\phi$ surely drops it.
 
 \label{lastpage01}
 
