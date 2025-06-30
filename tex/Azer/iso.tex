@@ -1,0 +1,377 @@
+\documentclass[format=acmsmall, screen, review, anonymous, timestamp]{acmart}
+\bibliographystyle{ACM-Reference-Format}
+\newcommand{\blind}[2]{#2}
+
+%%%%% Packages %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\usepackage{MnSymbol}
+\usepackage{proof}
+\usepackage{upgreek}
+\usepackage{pig} \ColourEpigram
+\usepackage{stmaryrd}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amsthm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% Theorems etc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{eg}[thm]{Example}
+\newtheorem{notn}[thm]{Notation}
+\newtheorem{dog}[thm]{Dogma}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%% Misc %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\bsl}{\texttt{\symbol{92}}}
+\newcommand{\memo}[1]{\textbf{#1}}
+\newcommand{\fsl}{\texttt{/}}
+
+\newcommand{\A}[1]{\texttt{#1}}
+\newcommand{\V}[1]{\purple{\mathit{#1}}}
+
+\newcommand{\Pa}[1]{\texttt{(}\black{#1}\texttt{)}}
+\newcommand{\Bk}[1]{\texttt{[}\black{#1}\texttt{]}}
+\newcommand{\Bc}[1]{\texttt{\string{}\black{#1}\texttt{\string}}}
+\newcommand{\dt}{\texttt{.}}
+\newcommand{\cn}[2]{\Pa{#1 \dt #2}}
+\newcommand{\hb}{\texttt{:}}
+\newcommand{\ra}[2]{#1 \,:\, #2}
+\newcommand{\grp}[1]{\{ #1 \}}
+\newcommand{\Ne}{\underline}
+\newcommand{\LA}{\red{\uplambda}}
+\newcommand{\PI}{\blue{\Uppi}}
+\newcommand{\la}[1]{\bsl #1\:}
+\newcommand{\x}[1]{\V{x_{\mathrm{#1}}}}
+\newcommand{\Ty}{\blue{\star}}
+\newcommand{\emp}{\varepsilon}
+\newcommand{\sbs}[3]{#1\lfloor#2/#3\rfloor}
+
+\newcommand{\rred}{\leadsto^\ast}
+\newcommand{\llred}{\,\triangleright}
+
+\newcommand{\op}{^{op}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\title{Input $\langle$ Subject $\rangle$ Output}
+\author{Conor Mc Bride}
+\maketitle
+
+\section{Introduction\label{sec:intro}}
+
+This paper introduces a new standard by which to validate type
+systems, judging their judgments and ruling their rules. It is a
+discipline I have found helpful over the years, and it is long past
+time it was written down, so that others might find it helpful,
+too. Of course, it may not be to everyone's taste or serve everyone's
+purpose, but it should, at least, prove food for thought. In fact, I
+should like it to prove rather more. My purpose here is not to offer
+discipline for discipline's sake, but rather grow the class of
+metatheoretical properties attainable simply by conspicuously not
+doing anything to mess them up. This paper is thus a foray into
+metametatheory.
+
+Let me give an example: stability under substitution. Substitution
+acts by replacing free variables with other things. If one is careful
+never to talk about free variables, one cannot accidentally say
+anything true which is falsifiable by the action of substitution. The
+common practice of writing lots of contexts $\Gamma$ in typing rules
+is thus a risky practice, because it amounts to `talking about free
+variables'. Local context \emph{extension} with hypothetical judgments
+to go under a variable binding is perfectly safe, exactly because the
+variable binding gives protection from substitution. Stability under
+substitution is then nothing other than the lifting to typing
+derivations of a substitution action on terms, replacing appeals to
+hypothetical judgments about variables by actual derivations about the
+terms which replace the variables.
+
+However, the key contribution of this paper is its analysis of the
+flow of information in two separable forms: \emph{syntax} and
+\emph{trust}. We may consider the instances of typing rules which make
+up a typing derivation to be a hierarchy of communicating actors, in
+accordance with
+
+\begin{dog}[Client-Server]
+  A typing rule is a server for its conclusion and a client for its premises.
+\end{dog}
+
+The schematic variables we see in typing rules may thus be seen as
+standing for syntactic \emph{signals} which are \emph{directed},
+either client-to-server or server-to-client. However, there is a
+second kind of communication at work, trading in
+\emph{promises}. Every signal has not only a \emph{sender}, but also a
+\emph{guarantor} who makes a promise about it. We may thus distinguish the
+three\footnote{A signal sent by a server in the hope of a promise from
+the client could make sense in an interactive setting and should be
+called an \textbf{abject}, as it amounts to a cry for help.}
+\emph{modes} of the paper's title:
+
+\begin{center}
+\begin{tabular}{c|cc}
+  variety & sender & guarantor \\
+  \hline
+  \textbf{input} & client & client \\
+  \textbf{subject} & client & server \\
+  \textbf{output} & server & server \\
+\end{tabular}
+\end{center}
+
+
+\section{Judging Judgments}
+
+The flow of trust does not always align with the flow of
+syntax. We should be at pains to distinguish `I am sending you a term
+about which \emph{I} make a promise.' from `I am sending you a term
+about which I hope \emph{you} will make a promise.'. It is
+important that both of these things happen, and that we tell them
+apart. Consider, for example, the type theoretic judgment sans pareil:
+\[
+\framebox{\(\Gamma \vdash t : T\)}
+\]
+It has two pieces of punctuation separating three \emph{places}. Can
+we assign modes to the places? This question has multiple right
+answers, and which of them we choose has profound implications for the
+design of the syntax (where are type annotations necessary?) and for
+our requirements of the rules (what do they trust? what must they
+check?). For most purposes, $t$ should be a subject\footnote{It is fun
+to consider $t$ an output in the context of proof search or program
+synthesis.}, but what about $\Gamma$ and $T$?
+
+It is not unusual for presentations of type theories to treat all
+three places as subjects, and thus potential sources of
+misinformation. In this mode, we are required to ensure the admissibility of
+\[
+\Rule{\Gamma \vdash t : T}
+     {\Gamma \vdash}
+     \qquad
+\Rule{\Gamma \vdash t : T}
+     {\Gamma \vdash T : \Ty}
+\]
+where \framebox{\(\Gamma\vdash\)} judges context validity (with
+$\Gamma$ as subject) and $\Ty$ is the type of types. This choice
+results in rule systems where the only axiom is that the empty context
+is valid, while every atomic term is checked by a rule with a premise
+which validates the context. To take an example from Martin-L\"of's
+1971 (famously inconsistent) type theory:
+\[
+\Axiom{\vdash}
+\qquad
+\Rule{\Gamma \vdash S : \Ty}
+     {\Gamma, \V{x}\!:\!S \vdash}
+\qquad \qquad
+\Rule{\Gamma \vdash}
+     {\Gamma \vdash \Ty : \Ty}
+\]
+The axiom is indeed the validity of the empty context, but the
+validity rule for context extension has, suspiciously, no premise
+$\Gamma\vdash$, as the premise which is present validates \emph{both} $\Gamma$
+and $S$. Meanwhile the `type-in-type' rule maintains the admissibility
+of context validity by brute force, and the admissibility of types
+being types by self-certification, like that bit in St Paul's epistle
+to Timothy which asserts that the Bible is all true.
+
+If, instead, one takes $\Gamma$ as an \emph{input} to the typing judgment, we may spare ourselves the burden of revalidating it at every atom by daring to have trust. Of course, we should say \emph{what} we trust.
+
+\begin{dog}[Precondition]
+  Every input place in a judgment form must have an associated precondition
+  judgment of which it is the subject.
+\end{dog}
+
+If we presume that it is the \emph{client} for $\Gamma \vdash t : T$ who must ensure $\Gamma\vdash$, the above rules become
+\[
+\Axiom{\vdash}
+\qquad
+\Rule{\Gamma\vdash \quad \Gamma \vdash S : \Ty}
+     {\Gamma, \V{x}\!:\!S \vdash}
+\qquad \qquad
+\Axiom{\Gamma \vdash \Ty : \Ty}
+\]
+The `type-in-type' rule becomes an axiom, as $\Gamma$ is presupposed
+to be valid. Meanwhile the context validity rule acquires the extra
+premise $\Gamma \vdash$, as that is no longer an admissible
+consequence of validating $S$ --- indeed, we have no \emph{right} to
+validate $S$ in $\Gamma$ until we have validated $\Gamma$ itself. We
+are entitled to assume the preconditions of a rule's conclusion, but
+we must check that we can meet the preconditions of premises. In the
+context extension rule, $\Gamma$ and $S$ come from the subject of the
+conclusion and are each the subject of a premise. $\Gamma$ is
+validated as a subject \emph{before} it is deployed as the trusted
+input of a premise. There is a discipline at work. Let us dig it out!
+
+For a start, it is clear that we should also account for the
+properties of outputs.
+
+\begin{dog}[Postcondition]
+  Every output place in a judgment form must have an associated postcondition
+  judgment of which it is the subject.
+\end{dog}
+
+If we were to decide that the $T$ in $\Gamma \vdash t : T$ were an
+output, we should certainly promise that $\Gamma\vdash T : \Ty$.
+
+A judgment form should thus be specified as a Hoare triple, comprising
+\begin{enumerate}
+\item what you should ensure before asking the question
+\item the question, with subjects clearly delimited in angle brackets,
+  between inputs and outputs
+\item of what you are assured by the answer to the question
+\end{enumerate}
+\[
+\framebox{\(
+  \{\Gamma \vdash\}\quad\Gamma \vdash \langle\;t\;\rangle : T\quad
+  \{\Gamma \vdash T : \Ty\}
+  \)}
+\]
+
+In other words, input $\langle$ subject $\rangle$ output.
+
+
+\section{Subject or Citizen?}
+
+Trustworthy signals, whose sender and guarantor coincide, I refer to
+as \emph{citizens}, whether they are inputs or outputs, by contrast
+with subjects. In many cases, the point of a judgment is to establish
+the citizenship of its subject, as we saw in our revised context
+extension rule, just now.
+
+Subjects are purely syntactic entities, but citizens can be trusted to
+have a \emph{semantics}. In particular, in a dependently typed
+setting, it is only the citizens which may compute. It makes sense to
+ask syntactic questions of subjects, e.g., `Are you a function
+application?', but it is inappropriate to ask such questions of a
+citizen, because the property of being an application is readily
+destroyed by computation. Not only do citizens have a semantics: our
+treatment of them must respect their semantics.
+
+\begin{dog}[Subjects versus Citizens]
+  A subject says; a citizen means. They stand to each other as pawns
+  and queens.
+\end{dog}
+
+A subject can become a citizen once validated by a judgment, but there
+is no means of derogation from citizen to subject.
+
+\begin{dog}[Trust for Citizens]
+  No premise of a typing rule may use a citizen in a subject position.
+\end{dog}
+
+That is to say, when we make $\Gamma$ an input to the typing judgment,
+we not only make the context validation premises of rules for atoms
+unnecessary, we make them unacceptable. Taking this idea to its logical
+conclusion, we arrive at a particularly strong discipline.
+
+\begin{dog}[Subject Linearity]
+  The subjects of a rule's premises must use all and only of the components
+  of its conclusion's subjects exactly once.
+\end{dog}
+
+In effect, then we should not think of a subject as being a special
+kind of input. Rather it is \emph{both} an input and an output. The
+premises of a rule send their subjects to be validated and receive the
+citizen counterparts of those subjects in return, for which we deftly
+use the same schematic variable names.
+
+We can see subjects becoming citzens in more of the 1971 rules.
+\[
+\Rule{\Gamma\vdash S : \Ty\quad \Gamma,\V{x}\hb S\vdash T : \Ty}
+     {\Gamma\vdash \PI \V{x}\hb S.\: T : \Ty}
+\qquad
+\Rule{\Gamma\vdash S : \Ty\quad \Gamma,x\hb S\vdash t : T}
+     {\Gamma\vdash \LA\V{x}\hb S.\:t : \PI \V{x}\hb S.\: T}
+\]
+In these rules, respectively for function type formation and function
+value construction, the function's domain, $S$ is checked to be a type
+as the subject of the first premise, then used as a citizen to make a
+valid context extension in the second. In the rule for functions, $S$
+is also used as a citizen in the output of the conclusion, and we
+should check that these outputs really are types. For the function
+type rule, we know that type is a type.  For the fuction value rule,
+the first premise and the postcondition of the second are enough to
+ensure that we have a valid function type, by the function type rule.
+
+Meanwhile, for function application, we have
+\[
+\Rule{\Gamma\vdash f : \PI \V{x}\hb S_0.\: T \quad \Gamma \vdash s : S_1 \quad
+  S_0 \equiv S_1}
+  {\Gamma \vdash f\:s : \sbs{T}{s}{\V{x}}}
+\]
+where I am careful to note that the function domain and the argument
+type emerge from two distinct outputs and must be \emph{checked} to be
+equal.  There are plenty of choices about how to present that check,
+including by means of a judgment, but here by $\equiv$ I just mean
+syntactic equality up to renaming of bound variables
+($\alpha$-equivalence). We also see that the argument $s$ is the
+subject of the second premise, but then substituted for $\V{x}$ in the
+citizen output type. How do we show the postcondition of the
+conclusion? The postcondition of the first premise promises us a valid
+function type which, by inversion, must have a valid codomain $T$
+dependending on $\V{x}$. Our argument $s$ has been checked to have the
+same properties as the hypothetical $\V{x}$, so if our system is
+stable under substitution, this instance of $T$ remains a type.
+
+Of course, we have not yet proven stability under substitution, and in
+due course, I shall show you how to avoid doing so. But we are not
+quite ready. Two rules are still missing from our example.
+
+Firstly, we do not yet have any account of computation in
+types. Indeed, in the application rule, above, it may take computation
+to persuade $S_0$ and $S_1$ to coincide. This is often achieved by a
+`conversion' rule, allowing arbitrary forward and backward computation:
+\[
+\Rule{\Gamma\vdash s : S\quad\Gamma\vdash S\cong T\quad \Gamma\vdash T:\Ty}
+  {\Gamma\vdash s : T}
+\]
+where $\cong$ is the congruence and equivalence closure of $\beta$-reduction.
+Allowing any old backward step risks introducing nonsense, which is why
+$T$ has to be revalidated. I find both backwards computation and revalidation
+distasteful. In this formulation, $T$ comes from nowhere and bears no promises.
+In our actual use case, we start from $S_0$ and $S_1$, both citizens known to
+be types.
+
+\begin{dog}[Citizens Compute Forward]
+  Trust citizens to compute forwards. Never compute backwards.
+\end{dog}
+
+Let us do exactly that!
+\[
+\Rule{\Gamma\vdash s : S \quad S \llred S'}
+     {\Gamma\vdash s : S'}
+     \]
+That is, we allow forward postcomputation for outputs, and we shall
+have to justify this rule by type soundness.  Here, $\llred$ is the
+notion of \emph{parallel reduction} derived systematically from the
+$\beta$-contraction scheme
+\[
+(\LA\V{x}\hb S.\:t)\:s \;\leadsto\; \sbs{t}{s}{\V{x}}
+\]
+Parallel reduction allows you to contract simultaneously none, some or
+all of the redexes you can currently see, but nothing further. I use
+it because it is pleasingly compositional --- when a term
+parallel-reduces, so do all its subterms. So now, when we use the
+application rule in a derivation, we can use postcomputation in the
+function premise to obtain a function type in the first place, and
+then to compute its domain to something agreeable; we also use
+postcomputation in the argument premise to obtain a type which agrees!
+
+The other missing rule is the rule for looking up variables in the
+context, which often looks like
+\[
+\Axiom{\Gamma,\V{x}\hb S,\Gamma' \vdash \V{x} : S}
+\]
+possibly with a context revalidation premise. I want this rule to stay
+missing! In the logical frameworks tradition of \emph{hypothetical
+judgments},I regard the context not as a lookup table, but as a
+collection of axioms locally in force. The context \emph{lists} the
+variable \emph{rules}. I shall have more to say about having less to
+say about the context in just a moment.
+
+
+\section{Get $\Gamma$ Gone}
+
+
+\end{document}
