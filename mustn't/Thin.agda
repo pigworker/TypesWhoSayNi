@@ -136,6 +136,13 @@ module _ {X : Set} where
   allULeft (u -,^ x) with r~ , (r~ , r~) , r~ <- allULeft u = r~ , (r~ , r~) , r~
   allULeft [] = r~ , (r~ , r~) , r~
 
+  allURite : forall {ga de}{th : [] <= de}{ph : ga <= de}
+          -> (u : th /u\ ph)
+          -> (ga ~ de) >< \
+             { r~ -> ((th ~ no) * (ph ~ io)) >< \ { (r~ , r~) -> u ~ no/u\io } }
+  allURite (u -^, x) with r~ , (r~ , r~) , r~ <- allURite u = r~ , (r~ , r~) , r~
+  allURite [] = r~ , (r~ , r~) , r~
+
   egtbs : forall {de ga xi}{th : de <= ga}{ph : xi <= ga}
        -> th /u\ ph
        -> ((_ , i) : <: _<1 ga :>)

@@ -19,7 +19,7 @@ Cx (ga -, x) = Cx ga `* ` x
 
 module TM {X : Set}(C : Sort X -> X -> Set) where
 
-  infix 10 _|-_
+  infix 15 _|-_ _|=_
   
   data _|-_ : Bwd X -> Sort X -> Set where
     #       : forall {x} -> [] -, x |- ` x
@@ -35,9 +35,12 @@ module TM {X : Set}(C : Sort X -> X -> Set) where
   _|=_ : Bwd X -> Bwd X -> Set
   de |= ga = de |- Cx ga
 
+  wks : forall {ga de} -> ga |= de -> forall x -> ga -, x |= de -, x
+  wks sg x = sg <\ io/u\no -^, x /> #
+  
   is : forall {ga} -> ga |= ga
   is {[]} = <>
-  is {ga -, x} = is <\ io/u\no -^, x /> #
+  is {ga -, x} = wks is x
 
   data _%%_ : forall {be de}
            -> <: be <=_ :* de |=_ :>
@@ -147,11 +150,11 @@ module TM {X : Set}(C : Sort X -> X -> Set) where
          {u1 : ep1 |- s1}
       -> (_ , th1 , sg) %% br1
       -> [ ta1 \\ t1 ]~ u1
-      -> {u' : ph0 /u\ ph1}
+      -> (u' : ph0 /u\ ph1)
       -> [ sg \\ t0 <\ u /> t1 ]~ u0 <\ u' /> u1
   
     /\ : forall {ga de x s}{sg : ga |= de}{b : de -, x |- s}{b' : ga -, x |- s}
-      -> [ sg <\ io/u\no -^, x /> # \\ b ]~ b'
+      -> [ wks sg x \\ b ]~ b'
       -> [ sg \\ /\ b ]~ /\ b'
 
     |< : forall {ga de x s}{sg : ga |= de}{b : de |- s}{b' : ga |- s}
@@ -162,7 +165,7 @@ module TM {X : Set}(C : Sort X -> X -> Set) where
   isNop # = #
   isNop (c $ t) = c $ isNop t
   isNop <> = <>
-  isNop (t0 <\ u /> t1) = pair (this _) (isNop t0) (this _) (isNop t1)
+  isNop (t0 <\ u /> t1) = pair (this _) (isNop t0) (this _) (isNop t1) _
   isNop (/\ t) = /\ (isNop t)
   isNop (|< t) = |< (isNop t)
 
@@ -172,3 +175,20 @@ module TM {X : Set}(C : Sort X -> X -> Set) where
   ... | ff , <> | _ = ff , <>
   ... | tt , r~ , r~ | r~ , (r~ , r~) , r~ = tt , r~ , r~
   is? {ga} {de -, x} (sg <\ u /> t) = ff , <>
+
+  subst subst' : forall {ga de s}(sg : ga |= de)(t : de |- s)
+              -> <: [ sg \\ t ]~_ :>
+  subst sg t with is? sg
+  ... | ff , <> = subst' sg t
+  ... | tt , r~ , r~ = _ , isNop t
+  subst' (<> <\ u /> t) # with r~ , (r~ , r~) , r~ <- allURite u = _ , #
+  subst' sg (c $ t) with _ , t' <- subst' sg t = _ , c $ t'
+  subst' <> <> = _ , <>
+  subst' sg (t0 <\ u /> t1) = 
+    let _ , d0 = selectSub (_ , _ , sg) in
+    let _ , d1 = selectSub (_ , _ , sg) in
+    let _ , t0' = subst _ t0 in
+    let _ , t1' = subst _ t1 in
+    _ , (pair d0 t0' d1 t1' (roof d0 u d1))
+  subst' sg (/\ t) with _ , t' <- subst' (wks sg _) t = _ , /\ t'
+  subst' sg (|< t) with _ , t' <- subst' sg t = _ , |< t'
