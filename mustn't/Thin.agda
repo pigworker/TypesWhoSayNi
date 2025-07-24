@@ -121,6 +121,21 @@ module _ {X : Set} where
          -> forall x -> th -, x /u\ ph -, x
     []   : [] /u\ []
 
+  no/u\io : forall {de} -> no {de} /u\ io {de}
+  no/u\io {[]} = []
+  no/u\io {de -, x} = no/u\io -^, x
+
+  io/u\no : forall {de} -> io {de} /u\ no {de}
+  io/u\no {[]} = []
+  io/u\no {de -, x} = io/u\no -,^ x
+
+  allULeft : forall {ga de}{th : ga <= de}{ph : [] <= de}
+          -> (u : th /u\ ph)
+          -> (ga ~ de) >< \
+             { r~ -> ((th ~ io) * (ph ~ no)) >< \ { (r~ , r~) -> u ~ io/u\no } }
+  allULeft (u -,^ x) with r~ , (r~ , r~) , r~ <- allULeft u = r~ , (r~ , r~) , r~
+  allULeft [] = r~ , (r~ , r~) , r~
+
   egtbs : forall {de ga xi}{th : de <= ga}{ph : xi <= ga}
        -> th /u\ ph
        -> ((_ , i) : <: _<1 ga :>)
